@@ -1,0 +1,387 @@
+// SSR del display digital. HTML estatico pensado para pantallas con motores
+// WebKit/Chromium antiguos (pre-2015). Nada de flexbox, grid, css variables,
+// backdrop-filter, transitions complejas, ni JS moderno.
+// Layout con <table> + vertical-align. CSS con float donde corresponda.
+
+// Pequeno helper de escape HTML para evitar inyeccion.
+function escapeHtml(s) {
+  if (s === null || s === undefined) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+var SPANISH_DAYS = ['Domingo', 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'];
+var SPANISH_MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
+function formatDateTime(iso) {
+  if (!iso) return { date: '', time: '' };
+  var d = new Date(iso);
+  if (isNaN(d.getTime())) return { date: '', time: '' };
+  var date = SPANISH_DAYS[d.getDay()] + ' ' + d.getDate() + ' de ' +
+             SPANISH_MONTHS[d.getMonth()] + ' de ' + d.getFullYear();
+  var hour = d.getHours();
+  var minute = d.getMinutes();
+  if (minute < 10) minute = '0' + minute;
+  var ampm = hour >= 12 ? 'PM' : 'AM';
+  hour = hour % 12;
+  if (hour === 0) hour = 12;
+  return { date: date, time: hour + ':' + minute + ' ' + ampm };
+}
+
+// CSS comun. Sin flexbox, sin variables, sin grid. Usa table y absolute positioning.
+function commonCss() {
+  return [
+    '* { box-sizing: border-box; margin: 0; padding: 0; }',
+    'html, body { width: 100%; height: 100%; overflow: hidden; ',
+    '  background-color: #155f5d; ',
+    '  background-image: -webkit-gradient(linear, left top, right bottom, ',
+    '    from(#1a9490), color-stop(0.35, #1a7472), color-stop(0.7, #155f5d), to(#0f4a48)); ',
+    '  background-image: linear-gradient(160deg, #1a9490 0%, #1a7472 35%, #155f5d 70%, #0f4a48 100%); ',
+    '  color: #ffffff; font-family: "Hind Vadodara", Arial, Helvetica, sans-serif; }',
+    '.font-title { font-family: "Comfortaa", "Trebuchet MS", Arial, sans-serif; font-weight: bold; }',
+    '.layout { width: 100%; height: 100%; }',
+    '.layout-table { width: 100%; height: 100%; border-collapse: collapse; }',
+    '.col-left, .col-right { vertical-align: middle; padding: 40px; }',
+    '.col-left { width: 42%; text-align: center; }',
+    '.col-right { width: 58%; padding-right: 60px; }',
+    // Foto del difunto (forma organica suave con border-radius). Si el motor no lo soporta queda elipse.
+    '.photo-frame { display: inline-block; width: 320px; height: 400px; overflow: hidden; ',
+    '  border-radius: 40% 40% 50% 50% / 30% 30% 50% 50%; ',
+    '  border: 5px solid rgba(255,255,255,0.30); ',
+    '  background-color: rgba(255,255,255,0.10); }',
+    '.photo-frame img { width: 100%; height: 100%; ',
+    '  display: block; }',
+    // Foto mas pequena para pantalla del servicio (alt)
+    '.photo-frame-md { width: 280px; height: 360px; }',
+    '.name { font-size: 56px; line-height: 1.05; text-shadow: 0 3px 12px rgba(0,0,0,0.18); }',
+    '.dates { font-size: 22px; opacity: 0.85; margin-top: 8px; font-weight: 300; }',
+    '.divider { display: inline-block; width: 50px; height: 1px; background: #ffffff; opacity: 0.5; vertical-align: middle; margin: 0 12px; }',
+    '.intro { font-size: 22px; line-height: 1.55; opacity: 0.92; margin-top: 24px; margin-bottom: 24px; font-weight: 300; }',
+    '.emotional-message { font-size: 24px; line-height: 1.7; opacity: 0.92; font-weight: 300; }',
+    '.subtitle { font-size: 20px; opacity: 0.8; font-weight: 300; }',
+    '.section-title { font-size: 22px; font-weight: 300; opacity: 0.75; margin-bottom: 6px; }',
+    // Cards (servicio y mensajes). Sin backdrop-filter; fondo solido translucido.
+    '.card { background: #0f4a48; background: rgba(15,74,72,0.55); ',
+    '  border: 1px solid rgba(255,255,255,0.18); border-radius: 12px; padding: 14px 18px; ',
+    '  vertical-align: top; }',
+    '.card-label { font-size: 13px; letter-spacing: 2px; text-transform: uppercase; opacity: 0.75; ',
+    '  font-family: "Comfortaa", "Trebuchet MS", Arial, sans-serif; }',
+    '.card-value { font-size: 22px; font-weight: bold; line-height: 1.2; margin-top: 4px; ',
+    '  font-family: "Comfortaa", "Trebuchet MS", Arial, sans-serif; ',
+    '  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }',
+    '.card-value.missing { opacity: 0.6; font-style: italic; font-weight: normal; }',
+    '.card-date { font-size: 15px; opacity: 0.85; margin-top: 6px; font-weight: 300; }',
+    '.dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; ',
+    '  background: #f0c040; margin-right: 8px; vertical-align: middle; }',
+    // Grid 2x2 servicio
+    '.svc-grid { width: 100%; border-collapse: separate; border-spacing: 12px; margin-top: 10px; }',
+    '.svc-grid td { width: 50%; }',
+    // Grid 3x2 mensajes
+    '.msg-grid { width: 100%; border-collapse: separate; border-spacing: 14px; }',
+    '.msg-grid td { width: 33.33%; vertical-align: top; }',
+    '.msg-card { background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.22); ',
+    '  border-radius: 14px; padding: 16px; min-height: 200px; }',
+    '.msg-avatar { display: inline-block; width: 48px; height: 48px; border-radius: 50%; ',
+    '  background: #f0c040; color: #1a4a48; text-align: center; line-height: 48px; ',
+    '  font-size: 22px; font-weight: bold; vertical-align: middle; margin-right: 10px; }',
+    '.msg-avatar img { width: 100%; height: 100%; border-radius: 50%; display: block; }',
+    '.msg-name { display: inline-block; vertical-align: middle; font-weight: bold; font-size: 16px; ',
+    '  font-family: "Comfortaa", "Trebuchet MS", Arial, sans-serif; }',
+    '.msg-text { margin-top: 12px; font-size: 15px; line-height: 1.5; opacity: 0.9; ',
+    '  font-weight: 300; }',
+    '.msg-empty { text-align: center; padding: 80px 30px; opacity: 0.7; font-size: 22px; ',
+    '  font-weight: 300; }',
+    // QR
+    '.qr-box { display: inline-block; padding: 18px; background: #ffffff; border-radius: 24px; ',
+    '  border: 5px solid rgba(255,255,255,0.30); }',
+    '.qr-box svg { display: block; width: 280px; height: 280px; }',
+    // Header centrado pantalla mensajes
+    '.header-center { text-align: center; padding: 50px 40px 30px; }',
+    '.header-center .name-md { font-size: 38px; }',
+    // Footer fijo
+    '.footer { position: absolute; left: 0; right: 0; bottom: 0; ',
+    '  background: rgba(0,0,0,0.25); padding: 12px 30px; height: 56px; }',
+    '.footer-table { width: 100%; height: 100%; border-collapse: collapse; }',
+    '.footer-table td { vertical-align: middle; color: #ffffff; }',
+    '.footer-left { width: 33%; font-size: 13px; opacity: 0.75; }',
+    '.footer-center { width: 34%; text-align: center; }',
+    '.footer-center .brand { font-weight: bold; font-size: 14px; letter-spacing: 2px; ',
+    '  font-family: "Comfortaa", "Trebuchet MS", Arial, sans-serif; }',
+    '.footer-center .tagline { font-size: 12px; opacity: 0.65; margin-top: 2px; }',
+    '.footer-right { width: 33%; text-align: right; }',
+    '.dot-indicator { display: inline-block; width: 10px; height: 10px; border-radius: 50%; ',
+    '  background: rgba(255,255,255,0.4); margin-left: 5px; vertical-align: middle; }',
+    '.dot-indicator.active { background: #f0c040; width: 22px; border-radius: 5px; }',
+    // Body wrapper para reservar espacio del footer
+    '.viewport { position: relative; width: 100%; height: 100%; padding-bottom: 56px; ',
+    '  -webkit-box-sizing: border-box; box-sizing: border-box; }'
+  ].join('\n');
+}
+
+function renderShell(opts) {
+  // opts: { title, screen, nextUrl, body, totalScreens }
+  var dots = '';
+  for (var i = 1; i <= opts.totalScreens; i++) {
+    dots += '<span class="dot-indicator' + (i === opts.screen ? ' active' : '') + '"></span>';
+  }
+
+  var refresh = '';
+  if (opts.nextUrl) {
+    // Meta refresh: cambia a siguiente vista cada 25s. Cada request al backend
+    // trae datos frescos automaticamente.
+    refresh = '<meta http-equiv="refresh" content="25; url=' + escapeHtml(opts.nextUrl) + '">';
+  }
+
+  return '<!DOCTYPE html>\n' +
+    '<html lang="es">\n' +
+    '<head>\n' +
+    '<meta http-equiv="content-type" content="text/html; charset=utf-8">\n' +
+    '<meta http-equiv="X-UA-Compatible" content="IE=edge">\n' +
+    '<meta name="viewport" content="width=device-width, initial-scale=1">\n' +
+    '<meta http-equiv="cache-control" content="no-cache, no-store, must-revalidate">\n' +
+    '<meta http-equiv="pragma" content="no-cache">\n' +
+    '<meta http-equiv="expires" content="0">\n' +
+    refresh + '\n' +
+    '<title>' + escapeHtml(opts.title) + '</title>\n' +
+    '<style type="text/css">\n' + commonCss() + '\n</style>\n' +
+    '</head>\n' +
+    '<body>\n' +
+    '<div class="viewport">\n' +
+    opts.body + '\n' +
+    '</div>\n' +
+    renderFooter(opts.screen, opts.totalScreens, opts.scheduleStart, opts.scheduleEnd) + '\n' +
+    '</body>\n' +
+    '</html>';
+}
+
+function renderFooter(currentScreen, totalScreens, scheduleStart, scheduleEnd) {
+  var dots = '';
+  for (var i = 1; i <= totalScreens; i++) {
+    dots += '<span class="dot-indicator' + (i === currentScreen ? ' active' : '') + '"></span>';
+  }
+  return '<div class="footer">\n' +
+    '  <table class="footer-table"><tr>\n' +
+    '    <td class="footer-left">Salas habilitadas de <b>' +
+        escapeHtml(scheduleStart || '08:00 a.m') + '</b> a <b>' +
+        escapeHtml(scheduleEnd || '11:00 p.m') + '</b></td>\n' +
+    '    <td class="footer-center">\n' +
+    '      <div class="brand">FUNERARIA LOS OLIVOS</div>\n' +
+    '      <div class="tagline">Un homenaje al amor &middot; SERCOFUN LTDA</div>\n' +
+    '    </td>\n' +
+    '    <td class="footer-right">' + dots + '</td>\n' +
+    '  </tr></table>\n' +
+    '</div>';
+}
+
+// =========== SCREEN 1: Info del servicio ===========
+function renderScreenService(m) {
+  var photo = m.photoUrl || '';
+  var ingreso = formatDateTime(m.scheduleStart);
+  var salida = formatDateTime(m.scheduleEnd);
+  var exequias = formatDateTime(m.exequiasDatetime);
+  var destino = formatDateTime(m.finalDestinationDatetime);
+
+  function eventCard(label, placeName, dt, missing) {
+    var nameClass = 'card-value' + (missing ? ' missing' : '');
+    var html = '<div class="card">' +
+      '<div class="card-label"><span class="dot"></span>' + escapeHtml(label) + '</div>' +
+      '<div class="' + nameClass + '">' + escapeHtml(placeName || 'Por confirmar') + '</div>';
+    if (dt && dt.date) {
+      html += '<div class="card-date">' + escapeHtml(dt.date) + ' &middot; ' + escapeHtml(dt.time) + '</div>';
+    }
+    html += '</div>';
+    return html;
+  }
+
+  var body = '<table class="layout-table">' +
+    '<tr>' +
+      '<td class="col-left">' +
+        '<div class="photo-frame">' +
+          (photo ? '<img src="' + escapeHtml(photo) + '" alt="Foto">' : '') +
+        '</div>' +
+      '</td>' +
+      '<td class="col-right" style="text-align:center;">' +
+        '<div class="font-title name">' + escapeHtml(m.name) + '</div>' +
+        '<div class="dates">' +
+          '<span class="divider"></span>' +
+          escapeHtml(m.birthYear || '') + ' &mdash; ' + escapeHtml(m.deathYear || '') +
+          '<span class="divider"></span>' +
+        '</div>' +
+        '<div class="intro">' +
+          'Hoy nos reunimos para honrar una vida inolvidable.<br>' +
+          'Conmemorando cada recuerdo como el m&aacute;s sincero homenaje de amor.' +
+        '</div>' +
+        '<table class="svc-grid"><tr>' +
+          '<td>' + eventCard('Ingreso', m.roomName, ingreso, false) + '</td>' +
+          '<td>' + eventCard('Salida', m.roomName, salida, false) + '</td>' +
+        '</tr><tr>' +
+          '<td>' + eventCard('Exequias', m.exequiasVenue, exequias, !m.exequiasVenue) + '</td>' +
+          '<td>' + eventCard('Destino Final', m.finalDestinationVenue, destino, !m.finalDestinationVenue) + '</td>' +
+        '</tr></table>' +
+      '</td>' +
+    '</tr></table>';
+  return body;
+}
+
+// =========== SCREEN 2: Foto + mensaje emocional ===========
+function renderScreenEmotional(m) {
+  var photo = m.photoUrl || '';
+  var firstName = (m.name || '').split(' ')[0] || '';
+  return '<table class="layout-table">' +
+    '<tr>' +
+      '<td class="col-left">' +
+        '<div class="photo-frame">' +
+          (photo ? '<img src="' + escapeHtml(photo) + '" alt="Foto">' : '') +
+        '</div>' +
+        '<div class="font-title" style="font-size:36px;margin-top:20px;">' + escapeHtml(m.name) + '</div>' +
+        '<div class="dates">' + escapeHtml(m.birthYear) + ' &mdash; ' + escapeHtml(m.deathYear) + '</div>' +
+      '</td>' +
+      '<td class="col-right">' +
+        '<div class="subtitle">En memoria de</div>' +
+        '<div class="font-title" style="font-size:72px;line-height:1;margin:6px 0;">' +
+           escapeHtml(firstName) +
+        '</div>' +
+        '<div class="subtitle" style="margin-bottom:30px;">siempre en nuestro coraz&oacute;n</div>' +
+        '<div class="emotional-message">' + escapeHtml(m.emotionalMessage || '') + '</div>' +
+      '</td>' +
+    '</tr></table>';
+}
+
+// =========== SCREEN 3: Mensajes recibidos (grid 3x2) ===========
+function renderScreenMessages(m, condolences, totalCount) {
+  // totalCount es el total real (no solo los visibles); fallback a length por compat.
+  var count = (typeof totalCount === 'number') ? totalCount : condolences.length;
+  if (count === 0) {
+    return '<div class="header-center">' +
+      '<div class="subtitle">Mensajes para</div>' +
+      '<div class="font-title name-md" style="margin-top:6px;">' + escapeHtml(m.name) + '</div>' +
+      '</div>' +
+      '<div class="msg-empty">' +
+      'A&uacute;n no hay mensajes.<br>S&eacute; el primero en dejar un recuerdo.' +
+      '</div>';
+  }
+
+  // Solo mostramos los 6 mas recientes (cabe en 3x2). Para mas, considerar paginar
+  // en backend con query ?page. Por ahora basta.
+  var visible = condolences.slice(0, 6);
+
+  // Layout 3x2 con table. Si hay menos de 6, las celdas vacias quedan en blanco.
+  var rows = '';
+  for (var r = 0; r < 2; r++) {
+    var tr = '<tr>';
+    for (var c = 0; c < 3; c++) {
+      var idx = r * 3 + c;
+      var item = visible[idx];
+      tr += '<td>';
+      if (item) {
+        var initial = (item.sender_name || '?').charAt(0).toUpperCase();
+        var avatar = item.file1_url
+          ? '<span class="msg-avatar"><img src="' + escapeHtml(item.file1_url) + '" alt=""></span>'
+          : '<span class="msg-avatar">' + escapeHtml(initial) + '</span>';
+        tr += '<div class="msg-card">' +
+          avatar +
+          '<span class="msg-name">' + escapeHtml(item.sender_name) + '</span>' +
+          '<div class="msg-text">' + escapeHtml(item.message || '') + '</div>' +
+        '</div>';
+      }
+      tr += '</td>';
+    }
+    tr += '</tr>';
+    rows += tr;
+  }
+
+  return '<div class="header-center">' +
+    '<div class="subtitle">Mensajes para</div>' +
+    '<div class="font-title name-md" style="margin-top:6px;">' + escapeHtml(m.name) + '</div>' +
+    '<div class="subtitle" style="margin-top:4px;font-size:16px;">' +
+      count + ' ' + (count === 1 ? 'mensaje recibido' : 'mensajes recibidos') +
+    '</div>' +
+    '</div>' +
+    '<div style="padding:0 40px;">' +
+      '<table class="msg-grid">' + rows + '</table>' +
+    '</div>';
+}
+
+// =========== SCREEN 4: QR ===========
+function renderScreenQr(m, qrSvg) {
+  var firstName = (m.name || '').split(' ')[0] || '';
+  return '<table class="layout-table">' +
+    '<tr>' +
+      '<td class="col-left">' +
+        '<div class="qr-box">' + (qrSvg || '') + '</div>' +
+        '<div style="margin-top:24px;font-size:20px;font-weight:bold;">' +
+        'Escanea el c&oacute;digo QR</div>' +
+      '</td>' +
+      '<td class="col-right">' +
+        '<div class="subtitle">En memoria de</div>' +
+        '<div class="font-title" style="font-size:64px;line-height:1;margin:6px 0;">' +
+        escapeHtml(firstName) + '</div>' +
+        '<div class="subtitle" style="margin-bottom:30px;">estamos a su lado</div>' +
+        '<div style="font-size:24px;font-weight:600;line-height:1.5;">' +
+        'Hazte presente dejando un mensaje</div>' +
+        '<div style="font-size:18px;opacity:0.8;margin-top:12px;font-weight:300;line-height:1.5;">' +
+        'que proviene desde todo el amor que hay al recordar con el coraz&oacute;n</div>' +
+      '</td>' +
+    '</tr></table>';
+}
+
+// =========== Sala disponible (sin homenaje activo) ===========
+function renderEmptyRoom(message) {
+  return '<!DOCTYPE html>\n<html lang="es"><head>' +
+    '<meta http-equiv="content-type" content="text/html; charset=utf-8">' +
+    '<meta http-equiv="refresh" content="60">' +
+    '<title>Sala disponible</title>' +
+    '<style type="text/css">' + commonCss() +
+    '.center-box { position: absolute; top: 50%; left: 0; right: 0; margin-top: -80px; text-align: center; padding: 0 40px; }' +
+    '</style></head><body>' +
+    '<div class="center-box">' +
+    '<div class="font-title" style="font-size:64px;">Sala disponible</div>' +
+    '<div style="font-size:24px;opacity:0.85;margin-top:14px;font-weight:300;">' +
+    escapeHtml(message || 'No hay homenaje activo en esta sala en este momento') + '</div>' +
+    '<div style="font-size:16px;opacity:0.6;margin-top:40px;">SERCOFUN &middot; Funerario Los Olivos</div>' +
+    '</div></body></html>';
+}
+
+// =========== Render principal ===========
+// Devuelve el HTML de la vista solicitada.
+function render(opts) {
+  // opts: { memorial, condolences, screen (1..4), roomId, baseUrl, qrSvg }
+  var TOTAL = 4;
+  var screen = parseInt(opts.screen, 10);
+  if (isNaN(screen) || screen < 1 || screen > TOTAL) screen = 1;
+
+  var nextScreen = screen + 1;
+  if (nextScreen > TOTAL) nextScreen = 1;
+  // URL siguiente: misma ruta + ?screen=N (sin querystring si es la 1 para
+  // que cuente como "vuelta al inicio" y el navegador tenga un punto de ancla limpio).
+  var nextUrl = '/digital-display-screen/' + encodeURIComponent(opts.roomId) +
+                (nextScreen === 1 ? '' : '?screen=' + nextScreen);
+
+  var m = opts.memorial;
+  var body;
+  if (screen === 1) body = renderScreenService(m);
+  else if (screen === 2) body = renderScreenEmotional(m);
+  else if (screen === 3) body = renderScreenMessages(m, opts.condolences || [], opts.totalMessages);
+  else body = renderScreenQr(m, opts.qrSvg);
+
+  // Horario para footer; tomamos el HH:MM puro de schedule_start_time/end_time
+  var schedStart = m.scheduleStartTime ? m.scheduleStartTime + ' a.m' : '08:00 a.m';
+  var schedEnd = m.scheduleEndTime ? m.scheduleEndTime + ' p.m' : '11:00 p.m';
+
+  return renderShell({
+    title: 'Memorial Digital - ' + (m.name || ''),
+    screen: screen,
+    totalScreens: TOTAL,
+    nextUrl: nextUrl,
+    body: body,
+    scheduleStart: schedStart,
+    scheduleEnd: schedEnd
+  });
+}
+
+module.exports = { render: render, renderEmptyRoom: renderEmptyRoom };

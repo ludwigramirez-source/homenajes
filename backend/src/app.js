@@ -15,8 +15,15 @@ const memorialsRoutes = require('./routes/memorials.routes');
 const condolencesRoutes = require('./routes/condolences.routes');
 const analyticsRoutes = require('./routes/analytics.routes');
 const ceremonyVenuesRoutes = require('./routes/ceremonyVenues.routes');
+const displayRoutes = require('./routes/display.routes');
 
 const app = express();
+
+// IMPORTANTE: el SSR del display se registra ANTES de helmet global porque
+// las pantallas LG con WebKit antiguo no respetan CSP y la CSP estricta
+// bloqueaba inline <style>. Esta ruta es publica de solo-lectura (sin
+// inputs del usuario) y el HTML escapa todo con escapeHtml.
+app.use('/digital-display-screen', displayRoutes);
 
 // Seguridad y middlewares basicos
 app.use(helmet({
@@ -69,6 +76,9 @@ app.use('/api/memorials', memorialsRoutes);
 app.use('/api/condolences', condolencesRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/ceremony-venues', ceremonyVenuesRoutes);
+
+// (la ruta /digital-display-screen se registra arriba, antes de helmet,
+// para que el SSR no quede sujeto a CSP estricta)
 
 // Endpoint de informacion (lista todas las rutas)
 app.get('/api/docs', (req, res) => {
