@@ -1,0 +1,297 @@
+@import url('https://fonts.googleapis.com/css2?family=Comfortaa:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Hind+Vadodara:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Raleway:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Primary Colors - Dark Teal (Pantone 4188 C / 7477 C) */
+    --color-primary: #1a7472; /* teal brand */
+    --color-primary-foreground: #FFFFFF;
+    
+    /* Secondary Colors - Dark Green */
+    --color-secondary: #234b50; /* dark green brand */
+    --color-secondary-foreground: #FFFFFF;
+    
+    /* Accent Colors - Mauve/Purple (Pantone 2343 C) */
+    --color-accent: #8b3a5a; /* mauve brand */
+    --color-accent-foreground: #FFFFFF;
+    
+    /* Background Colors */
+    --color-background: #f4f7f7; /* very light teal tint */
+    --color-foreground: #182e39; /* deep dark green */
+    
+    /* Surface Colors */
+    --color-card: #FFFFFF;
+    --color-card-foreground: #182e39;
+    
+    --color-popover: #FFFFFF;
+    --color-popover-foreground: #182e39;
+    
+    /* Muted Colors */
+    --color-muted: #eaf1f1; /* light teal tint */
+    --color-muted-foreground: #4a6b6e; /* medium teal-grey */
+    
+    /* Border & Input */
+    --color-border: rgba(26, 116, 114, 0.15); /* teal with opacity */
+    --color-input: rgba(26, 116, 114, 0.15);
+    --color-ring: #1a7472; /* teal */
+    
+    /* Status Colors */
+    --color-success: #1a7472; /* teal as success */
+    --color-success-foreground: #FFFFFF;
+    
+    --color-warning: #b8860b; /* golden */
+    --color-warning-foreground: #FFFFFF;
+    
+    --color-error: #8b3a5a; /* mauve as error */
+    --color-error-foreground: #FFFFFF;
+    
+    --color-destructive: #8b3a5a;
+    --color-destructive-foreground: #FFFFFF;
+    
+    /* Spacing & Layout */
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    /* Primary Colors */
+    --color-primary: #477a7b; /* lighter teal for dark mode */
+    --color-primary-foreground: #FFFFFF;
+    
+    /* Secondary Colors */
+    --color-secondary: #234b50;
+    --color-secondary-foreground: #FFFFFF;
+    
+    /* Accent Colors */
+    --color-accent: #9b7faa; /* lavender for dark mode */
+    --color-accent-foreground: #FFFFFF;
+    
+    /* Background Colors */
+    --color-background: #0f1e20; /* very dark teal */
+    --color-foreground: rgba(255, 255, 255, 0.90);
+    
+    /* Surface Colors */
+    --color-card: #182e39; /* dark green-teal */
+    --color-card-foreground: rgba(255, 255, 255, 0.90);
+    
+    --color-popover: #182e39;
+    --color-popover-foreground: rgba(255, 255, 255, 0.90);
+    
+    /* Muted Colors */
+    --color-muted: #234b50;
+    --color-muted-foreground: rgba(255, 255, 255, 0.6);
+    
+    /* Border & Input */
+    --color-border: rgba(71, 122, 123, 0.2);
+    --color-input: rgba(71, 122, 123, 0.2);
+    --color-ring: rgba(71, 122, 123, 0.5);
+    
+    /* Status Colors */
+    --color-success: #477a7b;
+    --color-success-foreground: #FFFFFF;
+    
+    --color-warning: #d4af37;
+    --color-warning-foreground: #0f1e20;
+    
+    --color-error: #b771bf;
+    --color-error-foreground: #FFFFFF;
+    
+    --color-destructive: #b771bf;
+    --color-destructive-foreground: #FFFFFF;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Hind Vadodara', sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Comfortaa', cursive;
+    font-weight: 600;
+  }
+
+  h1 {
+    font-size: 2.25rem;
+    line-height: 1.2;
+  }
+
+  h2 {
+    font-size: 1.875rem;
+    line-height: 1.25;
+  }
+
+  h3 {
+    font-size: 1.5rem;
+    line-height: 1.3;
+  }
+
+  h4 {
+    font-size: 1.25rem;
+    line-height: 1.4;
+  }
+
+  h5 {
+    font-size: 1.125rem;
+    line-height: 1.5;
+  }
+
+  .caption {
+    font-family: 'Raleway', sans-serif;
+    font-size: 0.875rem;
+    line-height: 1.4;
+    letter-spacing: 0.025em;
+  }
+
+  .data-text {
+    font-family: 'JetBrains Mono', monospace;
+    font-feature-settings: 'tnum' on, 'lnum' on;
+  }
+
+  @media (max-width: 768px) {
+    body {
+      font-size: 15px;
+    }
+  }
+}
+
+@layer utilities {
+  .transition-smooth {
+    transition: all 250ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  .shadow-elevation-sm {
+    box-shadow: 0 2px 4px rgba(26, 116, 114, 0.08);
+  }
+
+  .shadow-elevation-md {
+    box-shadow: 0 6px 12px rgba(26, 116, 114, 0.12);
+  }
+
+  .shadow-elevation-lg {
+    box-shadow: 0 12px 24px rgba(26, 116, 114, 0.14);
+  }
+
+  .shadow-elevation-xl {
+    box-shadow: 0 24px 48px rgba(26, 116, 114, 0.16);
+  }
+
+  .dark .shadow-elevation-sm {
+    box-shadow: 0 2px 4px rgba(71, 122, 123, 0.12);
+  }
+
+  .dark .shadow-elevation-md {
+    box-shadow: 0 6px 12px rgba(71, 122, 123, 0.18);
+  }
+
+  .dark .shadow-elevation-lg {
+    box-shadow: 0 12px 24px rgba(71, 122, 123, 0.22);
+  }
+
+  .dark .shadow-elevation-xl {
+    box-shadow: 0 24px 48px rgba(71, 122, 123, 0.26);
+  }
+
+  .focus-ring {
+    @apply outline-none ring-ring ring-offset-background;
+  }
+
+  .press-scale {
+    @apply active:scale-[0.97];
+  }
+
+  .hover-lift {
+    @apply hover:-translate-y-[1px];
+  }
+
+  .skeleton-pulse {
+    @apply animate-pulse bg-muted;
+  }
+
+  .scroll-smooth {
+    scroll-behavior: smooth;
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .max-measure {
+    max-width: 70ch;
+  }
+
+  /* Brand gradient utilities */
+  .bg-brand-gradient-1 {
+    background: linear-gradient(135deg, #234b50, #182e39);
+  }
+
+  .bg-brand-gradient-2 {
+    background: linear-gradient(135deg, #477a7b, #274149);
+  }
+
+  .bg-brand-gradient-3 {
+    background: linear-gradient(135deg, #a7c9d2, #5f9793);
+  }
+
+  .bg-brand-gradient-purple {
+    background: linear-gradient(135deg, #b771bf, #712b48);
+  }
+
+  .bg-brand-gradient-teal {
+    background: linear-gradient(135deg, #77b8b8, #240e36);
+  }
+}
+
+/* Custom animations for memorial views */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.6s ease-out forwards;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s ease-out forwards;
+}

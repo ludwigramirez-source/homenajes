@@ -1,0 +1,260 @@
+{
+  "info": {
+    "name": "SERCOFUN Homenajes API",
+    "description": "API completa para el Sistema de Gestion de Homenajes Digitales - IPTEGRA / SERCOFUN",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3001",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "room_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "memorial_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.token) {",
+                  "    pm.collectionVariables.set('token', jsonData.data.token);",
+                  "    console.log('Token guardado:', jsonData.data.token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\"\n}"
+            },
+            "url": "{{base_url}}/api/auth/login"
+          }
+        },
+        {
+          "name": "Me (Datos del usuario actual)",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": "{{base_url}}/api/auth/me"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Locations (Sedes)",
+      "item": [
+        {
+          "name": "Listar sedes",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": "{{base_url}}/api/locations"
+          }
+        },
+        {
+          "name": "Crear sede",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Funerario Los Olivos - Nueva Sede\",\n  \"city\": \"Bogota\",\n  \"address\": \"Calle 100 #15-30\",\n  \"phone\": \"+57 601 1234567\"\n}"
+            },
+            "url": "{{base_url}}/api/locations"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Rooms (Salas)",
+      "item": [
+        {
+          "name": "Listar todas las salas",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.length > 0) {",
+                  "    pm.collectionVariables.set('room_id', jsonData.data[0].id);",
+                  "    console.log('Room ID guardado:', jsonData.data[0].id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": "{{base_url}}/api/rooms"
+          }
+        },
+        {
+          "name": "Memorial activo (PUBLICO - para display)",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/rooms/{{room_id}}/active-memorial"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Memorials (Homenajes)",
+      "item": [
+        {
+          "name": "Listar homenajes",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.length > 0) {",
+                  "    pm.collectionVariables.set('memorial_id', jsonData.data[0].id);",
+                  "    console.log('Memorial ID guardado:', jsonData.data[0].id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": "{{base_url}}/api/memorials"
+          }
+        },
+        {
+          "name": "Detalle homenaje",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": "{{base_url}}/api/memorials/{{memorial_id}}"
+          }
+        },
+        {
+          "name": "Crear homenaje",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"room_id\": \"{{room_id}}\",\n  \"deceased_name\": \"Maria Lopez\",\n  \"birth_year\": 1950,\n  \"death_year\": 2026,\n  \"photo_url\": \"https://example.com/foto.jpg\",\n  \"emotional_message\": \"Querida madre, esposa y abuela. Tu amor sera recordado por siempre.\",\n  \"schedule_start\": \"2026-05-19T08:00:00Z\",\n  \"schedule_end\": \"2026-05-19T23:00:00Z\"\n}"
+            },
+            "url": "{{base_url}}/api/memorials"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Condolences (Condolencias)",
+      "item": [
+        {
+          "name": "Enviar condolencia (PUBLICO)",
+          "request": {
+            "method": "POST",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {"key": "memorial_id", "value": "{{memorial_id}}", "type": "text"},
+                {"key": "sender_name", "value": "Juan Perez Demo", "type": "text"},
+                {"key": "sender_email", "value": "juan@example.com", "type": "text"},
+                {"key": "sender_phone", "value": "+57 300 1234567", "type": "text"},
+                {"key": "message", "value": "Mis sinceras condolencias para toda la familia en estos momentos dificiles.", "type": "text"},
+                {"key": "marketing_consent", "value": "true", "type": "text"}
+              ]
+            },
+            "url": "{{base_url}}/api/condolences/submit"
+          }
+        },
+        {
+          "name": "Listar todas las condolencias (admin)",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": "{{base_url}}/api/condolences"
+          }
+        },
+        {
+          "name": "Por homenaje",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": "{{base_url}}/api/condolences/memorial/{{memorial_id}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Analytics",
+      "item": [
+        {
+          "name": "KPIs Ejecutivos",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": "{{base_url}}/api/analytics/executive"
+          }
+        },
+        {
+          "name": "Por sede",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": "{{base_url}}/api/analytics/by-location"
+          }
+        },
+        {
+          "name": "Centro de operaciones",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": "{{base_url}}/api/analytics/operations"
+          }
+        },
+        {
+          "name": "Estado del sistema",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/analytics/health"
+          }
+        }
+      ]
+    }
+  ]
+}
