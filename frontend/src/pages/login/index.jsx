@@ -94,27 +94,11 @@ const Login = () => {
             </button>
           </form>
 
-          <div className="mt-8 pt-6 border-t border-gray-200">
-            <p className="text-xs text-gray-500 text-center mb-3">Credenciales de prueba:</p>
-            <div className="grid grid-cols-3 gap-2 text-xs">
-              <div className="bg-gray-50 p-2 rounded text-center">
-                <div className="font-medium text-gray-700">admin</div>
-                <div className="text-gray-500">admin123</div>
-              </div>
-              <div className="bg-gray-50 p-2 rounded text-center">
-                <div className="font-medium text-gray-700">supervisor</div>
-                <div className="text-gray-500">super123</div>
-              </div>
-              <div className="bg-gray-50 p-2 rounded text-center">
-                <div className="font-medium text-gray-700">operator</div>
-                <div className="text-gray-500">operator123</div>
-              </div>
-            </div>
+          <div className="mt-8 pt-6 border-t border-gray-200 text-center">
+            <p className="text-xs text-gray-400 tracking-wider">
+              DESARROLLADO PARA SERCOFUN POR IPTEGRA SAS &copy; 2026
+            </p>
           </div>
-
-          <p className="text-xs text-gray-400 text-center mt-6">
-            IPTEGRA SAS &copy; 2026
-          </p>
         </div>
       </div>
     </>
