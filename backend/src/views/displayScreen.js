@@ -122,17 +122,20 @@ function commonCss() {
     // Header centrado pantalla mensajes
     '.header-center { text-align: center; padding: 40px 40px 24px; }',
     '.header-center .name-md { font-size: 42px; }',
-    // Footer fijo. Altura 90px para acomodar el logo (180px de ancho, ~62px alto)
-    // mas la tagline "Un homenaje al amor" debajo, sin que se aprieten.
+    // Footer fijo. Altura 100px: aloja el logo (180x~62), la tagline debajo y
+    // deja respiro vertical para el texto del horario a la izquierda.
     '.footer { position: absolute; left: 0; right: 0; bottom: 0; ',
-    '  background: rgba(0,0,0,0.25); padding: 10px 36px; height: 90px; }',
+    '  background: rgba(0,0,0,0.25); padding: 10px 36px; height: 100px; }',
     '.footer-table { width: 100%; height: 100%; border-collapse: collapse; }',
     '.footer-table td { vertical-align: middle; color: #ffffff; }',
-    '.footer-left { width: 33%; font-size: 16px; opacity: 0.78; }',
+    // Horario a la izquierda, alineado a la izquierda y centrado verticalmente.
+    '.footer-left { width: 33%; font-size: 19px; opacity: 0.78; text-align: left; }',
     '.footer-center { width: 34%; text-align: center; }',
     '.footer-center .brand { font-weight: bold; font-size: 18px; letter-spacing: 3px; ',
     '  font-family: "Comfortaa", "Trebuchet MS", Arial, sans-serif; }',
-    '.footer-center .tagline { font-size: 15px; opacity: 0.75; margin-top: 4px; }',
+    // Tagline 2px mas pequena y explicitamente centrada bajo el logo.
+    '.footer-center .tagline { font-size: 13px; opacity: 0.75; margin-top: 4px; ',
+    '  text-align: center; }',
     // Logo en el centro del footer: sutil pero reconocible (opacidad 0.55,
     // ancho 180px). Recomendado por el diseno para reemplazar el texto del brand.
     '.footer-logo { display: inline-block; width: 180px; height: auto; opacity: 0.55; ',
@@ -142,7 +145,7 @@ function commonCss() {
     '  background: rgba(255,255,255,0.4); margin-left: 6px; vertical-align: middle; }',
     '.dot-indicator.active { background: #f0c040; width: 26px; border-radius: 6px; }',
     // Body wrapper para reservar espacio del footer
-    '.viewport { position: relative; width: 100%; height: 100%; padding-bottom: 90px; ',
+    '.viewport { position: relative; width: 100%; height: 100%; padding-bottom: 100px; ',
     '  -webkit-box-sizing: border-box; box-sizing: border-box; }'
   ].join('\n');
 }
