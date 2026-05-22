@@ -46,79 +46,80 @@ function commonCss() {
     '.font-title { font-family: "Comfortaa", "Trebuchet MS", Arial, sans-serif; font-weight: bold; }',
     '.layout { width: 100%; height: 100%; }',
     '.layout-table { width: 100%; height: 100%; border-collapse: collapse; }',
-    '.col-left, .col-right { vertical-align: middle; padding: 40px; }',
-    '.col-left { width: 42%; text-align: center; }',
-    '.col-right { width: 58%; padding-right: 60px; }',
-    // Foto del difunto (forma organica suave con border-radius). Si el motor no lo soporta queda elipse.
-    '.photo-frame { display: inline-block; width: 320px; height: 400px; overflow: hidden; ',
+    '.col-left, .col-right { vertical-align: middle; padding: 30px 30px; }',
+    '.col-left { width: 44%; text-align: center; }',
+    '.col-right { width: 56%; padding-right: 50px; }',
+    // Foto del difunto (mas grande). Si el motor no soporta border-radius queda elipse o rectangulo.
+    '.photo-frame { display: inline-block; width: 400px; height: 500px; overflow: hidden; ',
     '  border-radius: 40% 40% 50% 50% / 30% 30% 50% 50%; ',
-    '  border: 5px solid rgba(255,255,255,0.30); ',
+    '  border: 6px solid rgba(255,255,255,0.30); ',
     '  background-color: rgba(255,255,255,0.10); }',
     '.photo-frame img { width: 100%; height: 100%; ',
     '  display: block; }',
-    // Foto mas pequena para pantalla del servicio (alt)
-    '.photo-frame-md { width: 280px; height: 360px; }',
-    '.name { font-size: 56px; line-height: 1.05; text-shadow: 0 3px 12px rgba(0,0,0,0.18); }',
-    '.dates { font-size: 22px; opacity: 0.85; margin-top: 8px; font-weight: 300; }',
+    // Foto un poco mas pequena para pantalla del servicio (alt)
+    '.photo-frame-md { width: 360px; height: 450px; }',
+    // Tipografias: +3-4 px a casi todo
+    '.name { font-size: 60px; line-height: 1.05; text-shadow: 0 3px 12px rgba(0,0,0,0.18); }',
+    '.dates { font-size: 26px; opacity: 0.85; margin-top: 8px; font-weight: 300; }',
     '.divider { display: inline-block; width: 50px; height: 1px; background: #ffffff; opacity: 0.5; vertical-align: middle; margin: 0 12px; }',
-    '.intro { font-size: 22px; line-height: 1.55; opacity: 0.92; margin-top: 24px; margin-bottom: 24px; font-weight: 300; }',
-    '.emotional-message { font-size: 24px; line-height: 1.7; opacity: 0.92; font-weight: 300; }',
-    '.subtitle { font-size: 20px; opacity: 0.8; font-weight: 300; }',
-    '.section-title { font-size: 22px; font-weight: 300; opacity: 0.75; margin-bottom: 6px; }',
+    '.intro { font-size: 26px; line-height: 1.55; opacity: 0.92; margin-top: 28px; margin-bottom: 28px; font-weight: 300; }',
+    '.emotional-message { font-size: 28px; line-height: 1.7; opacity: 0.92; font-weight: 300; }',
+    '.subtitle { font-size: 24px; opacity: 0.8; font-weight: 300; }',
+    '.section-title { font-size: 26px; font-weight: 300; opacity: 0.75; margin-bottom: 6px; }',
     // Cards (servicio y mensajes). Sin backdrop-filter; fondo solido translucido.
     '.card { background: #0f4a48; background: rgba(15,74,72,0.55); ',
-    '  border: 1px solid rgba(255,255,255,0.18); border-radius: 12px; padding: 14px 18px; ',
+    '  border: 1px solid rgba(255,255,255,0.18); border-radius: 12px; padding: 16px 20px; ',
     '  vertical-align: top; }',
-    '.card-label { font-size: 13px; letter-spacing: 2px; text-transform: uppercase; opacity: 0.75; ',
+    '.card-label { font-size: 16px; letter-spacing: 2px; text-transform: uppercase; opacity: 0.78; ',
     '  font-family: "Comfortaa", "Trebuchet MS", Arial, sans-serif; }',
-    '.card-value { font-size: 22px; font-weight: bold; line-height: 1.2; margin-top: 4px; ',
+    '.card-value { font-size: 26px; font-weight: bold; line-height: 1.2; margin-top: 6px; ',
     '  font-family: "Comfortaa", "Trebuchet MS", Arial, sans-serif; ',
     '  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }',
     '.card-value.missing { opacity: 0.6; font-style: italic; font-weight: normal; }',
-    '.card-date { font-size: 15px; opacity: 0.85; margin-top: 6px; font-weight: 300; }',
-    '.dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; ',
-    '  background: #f0c040; margin-right: 8px; vertical-align: middle; }',
+    '.card-date { font-size: 19px; opacity: 0.88; margin-top: 8px; font-weight: 300; }',
+    '.dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; ',
+    '  background: #f0c040; margin-right: 10px; vertical-align: middle; }',
     // Grid 2x2 servicio
-    '.svc-grid { width: 100%; border-collapse: separate; border-spacing: 12px; margin-top: 10px; }',
+    '.svc-grid { width: 100%; border-collapse: separate; border-spacing: 14px; margin-top: 12px; }',
     '.svc-grid td { width: 50%; }',
     // Grid 3x2 mensajes
-    '.msg-grid { width: 100%; border-collapse: separate; border-spacing: 14px; }',
+    '.msg-grid { width: 100%; border-collapse: separate; border-spacing: 16px; }',
     '.msg-grid td { width: 33.33%; vertical-align: top; }',
     '.msg-card { background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.22); ',
-    '  border-radius: 14px; padding: 16px; min-height: 200px; }',
-    '.msg-avatar { display: inline-block; width: 48px; height: 48px; border-radius: 50%; ',
-    '  background: #f0c040; color: #1a4a48; text-align: center; line-height: 48px; ',
-    '  font-size: 22px; font-weight: bold; vertical-align: middle; margin-right: 10px; }',
+    '  border-radius: 14px; padding: 18px; min-height: 230px; }',
+    '.msg-avatar { display: inline-block; width: 54px; height: 54px; border-radius: 50%; ',
+    '  background: #f0c040; color: #1a4a48; text-align: center; line-height: 54px; ',
+    '  font-size: 26px; font-weight: bold; vertical-align: middle; margin-right: 12px; }',
     '.msg-avatar img { width: 100%; height: 100%; border-radius: 50%; display: block; }',
-    '.msg-name { display: inline-block; vertical-align: middle; font-weight: bold; font-size: 16px; ',
+    '.msg-name { display: inline-block; vertical-align: middle; font-weight: bold; font-size: 20px; ',
     '  font-family: "Comfortaa", "Trebuchet MS", Arial, sans-serif; }',
-    '.msg-text { margin-top: 12px; font-size: 15px; line-height: 1.5; opacity: 0.9; ',
+    '.msg-text { margin-top: 14px; font-size: 19px; line-height: 1.5; opacity: 0.92; ',
     '  font-weight: 300; }',
-    '.msg-empty { text-align: center; padding: 80px 30px; opacity: 0.7; font-size: 22px; ',
+    '.msg-empty { text-align: center; padding: 80px 30px; opacity: 0.7; font-size: 26px; ',
     '  font-weight: 300; }',
-    // QR
-    '.qr-box { display: inline-block; padding: 18px; background: #ffffff; border-radius: 24px; ',
-    '  border: 5px solid rgba(255,255,255,0.30); }',
-    '.qr-box svg { display: block; width: 280px; height: 280px; }',
+    // QR mas grande
+    '.qr-box { display: inline-block; padding: 22px; background: #ffffff; border-radius: 28px; ',
+    '  border: 6px solid rgba(255,255,255,0.30); }',
+    '.qr-box svg { display: block; width: 360px; height: 360px; }',
     // Header centrado pantalla mensajes
-    '.header-center { text-align: center; padding: 50px 40px 30px; }',
-    '.header-center .name-md { font-size: 38px; }',
-    // Footer fijo
+    '.header-center { text-align: center; padding: 40px 40px 24px; }',
+    '.header-center .name-md { font-size: 42px; }',
+    // Footer fijo (un poco mas alto y con mas tamano de letra)
     '.footer { position: absolute; left: 0; right: 0; bottom: 0; ',
-    '  background: rgba(0,0,0,0.25); padding: 12px 30px; height: 56px; }',
+    '  background: rgba(0,0,0,0.25); padding: 12px 36px; height: 62px; }',
     '.footer-table { width: 100%; height: 100%; border-collapse: collapse; }',
     '.footer-table td { vertical-align: middle; color: #ffffff; }',
-    '.footer-left { width: 33%; font-size: 13px; opacity: 0.75; }',
+    '.footer-left { width: 33%; font-size: 16px; opacity: 0.78; }',
     '.footer-center { width: 34%; text-align: center; }',
-    '.footer-center .brand { font-weight: bold; font-size: 14px; letter-spacing: 2px; ',
+    '.footer-center .brand { font-weight: bold; font-size: 18px; letter-spacing: 3px; ',
     '  font-family: "Comfortaa", "Trebuchet MS", Arial, sans-serif; }',
-    '.footer-center .tagline { font-size: 12px; opacity: 0.65; margin-top: 2px; }',
+    '.footer-center .tagline { font-size: 15px; opacity: 0.7; margin-top: 3px; }',
     '.footer-right { width: 33%; text-align: right; }',
-    '.dot-indicator { display: inline-block; width: 10px; height: 10px; border-radius: 50%; ',
-    '  background: rgba(255,255,255,0.4); margin-left: 5px; vertical-align: middle; }',
-    '.dot-indicator.active { background: #f0c040; width: 22px; border-radius: 5px; }',
+    '.dot-indicator { display: inline-block; width: 12px; height: 12px; border-radius: 50%; ',
+    '  background: rgba(255,255,255,0.4); margin-left: 6px; vertical-align: middle; }',
+    '.dot-indicator.active { background: #f0c040; width: 26px; border-radius: 6px; }',
     // Body wrapper para reservar espacio del footer
-    '.viewport { position: relative; width: 100%; height: 100%; padding-bottom: 56px; ',
+    '.viewport { position: relative; width: 100%; height: 100%; padding-bottom: 62px; ',
     '  -webkit-box-sizing: border-box; box-sizing: border-box; }'
   ].join('\n');
 }
@@ -170,8 +171,8 @@ function renderFooter(currentScreen, totalScreens, scheduleStart, scheduleEnd) {
         escapeHtml(scheduleStart || '08:00 a.m') + '</b> a <b>' +
         escapeHtml(scheduleEnd || '11:00 p.m') + '</b></td>\n' +
     '    <td class="footer-center">\n' +
-    '      <div class="brand">FUNERARIA LOS OLIVOS</div>\n' +
-    '      <div class="tagline">Un homenaje al amor &middot; SERCOFUN LTDA</div>\n' +
+    '      <div class="brand">LOS OLIVOS</div>\n' +
+    '      <div class="tagline">Un homenaje al amor</div>\n' +
     '    </td>\n' +
     '    <td class="footer-right">' + dots + '</td>\n' +
     '  </tr></table>\n' +
@@ -238,15 +239,15 @@ function renderScreenEmotional(m) {
         '<div class="photo-frame">' +
           (photo ? '<img src="' + escapeHtml(photo) + '" alt="Foto">' : '') +
         '</div>' +
-        '<div class="font-title" style="font-size:36px;margin-top:20px;">' + escapeHtml(m.name) + '</div>' +
+        '<div class="font-title" style="font-size:42px;margin-top:22px;">' + escapeHtml(m.name) + '</div>' +
         '<div class="dates">' + escapeHtml(m.birthYear) + ' &mdash; ' + escapeHtml(m.deathYear) + '</div>' +
       '</td>' +
       '<td class="col-right">' +
         '<div class="subtitle">En memoria de</div>' +
-        '<div class="font-title" style="font-size:72px;line-height:1;margin:6px 0;">' +
+        '<div class="font-title" style="font-size:80px;line-height:1;margin:8px 0;">' +
            escapeHtml(firstName) +
         '</div>' +
-        '<div class="subtitle" style="margin-bottom:30px;">siempre en nuestro coraz&oacute;n</div>' +
+        '<div class="subtitle" style="margin-bottom:32px;">siempre en nuestro coraz&oacute;n</div>' +
         '<div class="emotional-message">' + escapeHtml(m.emotionalMessage || '') + '</div>' +
       '</td>' +
     '</tr></table>';
@@ -314,17 +315,17 @@ function renderScreenQr(m, qrSvg) {
     '<tr>' +
       '<td class="col-left">' +
         '<div class="qr-box">' + (qrSvg || '') + '</div>' +
-        '<div style="margin-top:24px;font-size:20px;font-weight:bold;">' +
+        '<div style="margin-top:26px;font-size:24px;font-weight:bold;">' +
         'Escanea el c&oacute;digo QR</div>' +
       '</td>' +
       '<td class="col-right">' +
         '<div class="subtitle">En memoria de</div>' +
-        '<div class="font-title" style="font-size:64px;line-height:1;margin:6px 0;">' +
+        '<div class="font-title" style="font-size:72px;line-height:1;margin:8px 0;">' +
         escapeHtml(firstName) + '</div>' +
-        '<div class="subtitle" style="margin-bottom:30px;">estamos a su lado</div>' +
-        '<div style="font-size:24px;font-weight:600;line-height:1.5;">' +
+        '<div class="subtitle" style="margin-bottom:32px;">estamos a su lado</div>' +
+        '<div style="font-size:28px;font-weight:600;line-height:1.5;">' +
         'Hazte presente dejando un mensaje</div>' +
-        '<div style="font-size:18px;opacity:0.8;margin-top:12px;font-weight:300;line-height:1.5;">' +
+        '<div style="font-size:22px;opacity:0.85;margin-top:14px;font-weight:300;line-height:1.5;">' +
         'que proviene desde todo el amor que hay al recordar con el coraz&oacute;n</div>' +
       '</td>' +
     '</tr></table>';

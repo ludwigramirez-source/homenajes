@@ -108,7 +108,7 @@ const getDisplay = async (req, res, next) => {
       errorCorrectionLevel: 'H',
       margin: 1,
       color: { dark: '#1a7472', light: '#ffffff' },
-      width: 280
+      width: 360
     });
 
     // 5) Normalizar datos del memorial para el view.
