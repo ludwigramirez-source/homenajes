@@ -3,6 +3,24 @@
 // backdrop-filter, transitions complejas, ni JS moderno.
 // Layout con <table> + vertical-align. CSS con float donde corresponda.
 
+var fs = require('fs');
+var path = require('path');
+
+// Logo Los Olivos (blanco). Se carga UNA vez al cargar el modulo y se embebe
+// como data URI: cero requests adicionales (ideal para WebKit antiguo) y evita
+// configurar una ruta estatica nueva. Si falla la lectura, el footer cae a
+// texto "LOS OLIVOS" como fallback.
+var LOGO_DATA_URI = (function () {
+  try {
+    var p = path.join(__dirname, '..', 'assets', 'logo-los-olivos-blanco.png');
+    var buf = fs.readFileSync(p);
+    return 'data:image/png;base64,' + buf.toString('base64');
+  } catch (e) {
+    console.error('[displayScreen] No se pudo cargar el logo:', e.message);
+    return '';
+  }
+})();
+
 // Pequeno helper de escape HTML para evitar inyeccion.
 function escapeHtml(s) {
   if (s === null || s === undefined) return '';
@@ -104,22 +122,27 @@ function commonCss() {
     // Header centrado pantalla mensajes
     '.header-center { text-align: center; padding: 40px 40px 24px; }',
     '.header-center .name-md { font-size: 42px; }',
-    // Footer fijo (un poco mas alto y con mas tamano de letra)
+    // Footer fijo. Altura 90px para acomodar el logo (180px de ancho, ~62px alto)
+    // mas la tagline "Un homenaje al amor" debajo, sin que se aprieten.
     '.footer { position: absolute; left: 0; right: 0; bottom: 0; ',
-    '  background: rgba(0,0,0,0.25); padding: 12px 36px; height: 62px; }',
+    '  background: rgba(0,0,0,0.25); padding: 10px 36px; height: 90px; }',
     '.footer-table { width: 100%; height: 100%; border-collapse: collapse; }',
     '.footer-table td { vertical-align: middle; color: #ffffff; }',
     '.footer-left { width: 33%; font-size: 16px; opacity: 0.78; }',
     '.footer-center { width: 34%; text-align: center; }',
     '.footer-center .brand { font-weight: bold; font-size: 18px; letter-spacing: 3px; ',
     '  font-family: "Comfortaa", "Trebuchet MS", Arial, sans-serif; }',
-    '.footer-center .tagline { font-size: 15px; opacity: 0.7; margin-top: 3px; }',
+    '.footer-center .tagline { font-size: 15px; opacity: 0.75; margin-top: 4px; }',
+    // Logo en el centro del footer: sutil pero reconocible (opacidad 0.55,
+    // ancho 180px). Recomendado por el diseno para reemplazar el texto del brand.
+    '.footer-logo { display: inline-block; width: 180px; height: auto; opacity: 0.55; ',
+    '  vertical-align: middle; }',
     '.footer-right { width: 33%; text-align: right; }',
     '.dot-indicator { display: inline-block; width: 12px; height: 12px; border-radius: 50%; ',
     '  background: rgba(255,255,255,0.4); margin-left: 6px; vertical-align: middle; }',
     '.dot-indicator.active { background: #f0c040; width: 26px; border-radius: 6px; }',
     // Body wrapper para reservar espacio del footer
-    '.viewport { position: relative; width: 100%; height: 100%; padding-bottom: 62px; ',
+    '.viewport { position: relative; width: 100%; height: 100%; padding-bottom: 90px; ',
     '  -webkit-box-sizing: border-box; box-sizing: border-box; }'
   ].join('\n');
 }
@@ -171,7 +194,9 @@ function renderFooter(currentScreen, totalScreens, scheduleStart, scheduleEnd) {
         escapeHtml(scheduleStart || '08:00 a.m') + '</b> a <b>' +
         escapeHtml(scheduleEnd || '11:00 p.m') + '</b></td>\n' +
     '    <td class="footer-center">\n' +
-    '      <div class="brand">LOS OLIVOS</div>\n' +
+         (LOGO_DATA_URI
+           ? '      <img class="footer-logo" src="' + LOGO_DATA_URI + '" alt="Los Olivos">\n'
+           : '      <div class="brand">LOS OLIVOS</div>\n') +
     '      <div class="tagline">Un homenaje al amor</div>\n' +
     '    </td>\n' +
     '    <td class="footer-right">' + dots + '</td>\n' +
