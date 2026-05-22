@@ -130,6 +130,31 @@ const LocationDetailsForm = ({ formData, errors, updateFormData }) => {
         />
       </div>
 
+      {/* Horario diario que la sala esta habilitada (aparece en el footer del display) */}
+      <div className="pt-2">
+        <h4 className="text-sm font-semibold text-foreground mb-1">Horario de la Sala</h4>
+        <p className="text-xs text-muted-foreground mb-3">
+          Hora del dia en que la sala esta habilitada al publico. Se muestra en el footer
+          de la pantalla del display.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Input
+            type="time"
+            label="Sala habilitada desde"
+            value={formData?.dailyHoursStart || '08:00'}
+            onChange={(e) => updateFormData('dailyHoursStart', e?.target?.value)}
+            description="Hora de apertura (por defecto 08:00)"
+          />
+          <Input
+            type="time"
+            label="Sala habilitada hasta"
+            value={formData?.dailyHoursEnd || '23:00'}
+            onChange={(e) => updateFormData('dailyHoursEnd', e?.target?.value)}
+            description="Hora de cierre (por defecto 23:00)"
+          />
+        </div>
+      </div>
+
       {/* Exequias y Destino Final */}
       <div className="pt-2">
         <h4 className="text-sm font-semibold text-foreground mb-3">Ceremonias y Destino Final</h4>

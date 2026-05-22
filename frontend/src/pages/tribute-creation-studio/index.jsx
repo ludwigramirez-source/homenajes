@@ -6,7 +6,6 @@ import Header from '../../components/ui/Header';
 import Icon from '../../components/AppIcon';
 import DeceasedInfoForm from './components/DeceasedInfoForm';
 import LocationDetailsForm from './components/LocationDetailsForm';
-import VisualDesignForm from './components/VisualDesignForm';
 import AccountHolderForm from './components/AccountHolderForm';
 import TributePreview from './components/TributePreview';
 import TributesList from './components/TributesList';
@@ -53,6 +52,9 @@ const TributeCreationStudio = () => {
     room: '',
     serviceStartDate: '',
     serviceEndDate: '',
+    // Horario diario que la sala esta habilitada (footer del display)
+    dailyHoursStart: '08:00',
+    dailyHoursEnd: '23:00',
 
     // Ceremonias y destino final (catalogos en BD: ceremony_venues)
     exequiasVenueId: '',
@@ -60,20 +62,11 @@ const TributeCreationStudio = () => {
     finalDestinationVenueId: '',
     finalDestinationDatetime: '',
 
-    // Diseño visual
-    backgroundTheme: 'nature',
-    colorScheme: 'classic',
-    typography: 'elegant',
-    messageTemplate: 'template1',
-    customMessage: '',
-    slideshowTiming: 45,
-    
-    // Titular de cuenta
+    // Titular de cuenta (se persiste en memorials.family_contact_*)
     familyContactName: '',
     familyContactPhone: '',
     familyContactEmail: '',
-    billingAddress: '',
-    accessPermissions: 'family'
+    billingAddress: ''
   });
 
   const [errors, setErrors] = useState({});
@@ -102,6 +95,14 @@ const TributeCreationStudio = () => {
           } catch (_) { /* ignore */ }
         }
 
+        // PG entrega TIME como "HH:MM:SS"; el input type="time" del browser
+        // requiere "HH:MM". Truncamos si viene con segundos.
+        const toTimeInput = (val) => {
+          if (!val) return '';
+          const s = String(val);
+          return s.length >= 5 ? s.substring(0, 5) : s;
+        };
+
         setFormData(prev => ({
           ...prev,
           fullName: m.deceased_name || '',
@@ -116,13 +117,20 @@ const TributeCreationStudio = () => {
           room: m.room_id || '',
           serviceStartDate: toLocalDatetimeInput(m.schedule_start),
           serviceEndDate: toLocalDatetimeInput(m.schedule_end),
+          dailyHoursStart: toTimeInput(m.daily_hours_start) || '08:00',
+          dailyHoursEnd: toTimeInput(m.daily_hours_end) || '23:00',
 
           exequiasVenueId: m.exequias_venue_id || '',
           exequiasDatetime: toLocalDatetimeInput(m.exequias_datetime),
           finalDestinationVenueId: m.final_destination_venue_id || '',
           finalDestinationDatetime: toLocalDatetimeInput(m.final_destination_datetime),
 
-          messageTemplate: m.template_id || 'default'
+          // Datos del titular: estos no se precargaban antes (de ahi el bug
+          // "no me mantiene los datos al editar").
+          familyContactName: m.family_contact_name || '',
+          familyContactPhone: m.family_contact_phone || '',
+          familyContactEmail: m.family_contact_email || '',
+          billingAddress: m.billing_address || ''
         }));
       } catch (e) {
         console.error('Error cargando memorial:', e);
@@ -137,7 +145,6 @@ const TributeCreationStudio = () => {
   const tabs = [
     { id: 'deceased', label: 'Información del Difunto', icon: 'User' },
     { id: 'location', label: 'Ubicación y Servicio', icon: 'MapPin' },
-    { id: 'design', label: 'Diseño Visual', icon: 'Palette' },
     { id: 'account', label: 'Titular de Cuenta', icon: 'Users' },
     { id: 'tributes', label: 'Mis tributos', icon: 'List' }
   ];
@@ -204,15 +211,21 @@ const TributeCreationStudio = () => {
         birth_year: birthYear,
         death_year: deathYear,
         photo_url: photoUrl,
-        emotional_message: formData?.biography || formData?.customMessage
+        emotional_message: formData?.biography
           || 'En memoria de un ser querido. Su vida y su amor permanecen con nosotros.',
-        template_id: formData?.messageTemplate || 'default',
+        template_id: 'default',
         schedule_start: scheduleStart,
         schedule_end: scheduleEnd,
         exequias_venue_id: formData?.exequiasVenueId || null,
         exequias_datetime: toIsoOrNull(formData?.exequiasDatetime),
         final_destination_venue_id: formData?.finalDestinationVenueId || null,
-        final_destination_datetime: toIsoOrNull(formData?.finalDestinationDatetime)
+        final_destination_datetime: toIsoOrNull(formData?.finalDestinationDatetime),
+        daily_hours_start: formData?.dailyHoursStart || null,
+        daily_hours_end: formData?.dailyHoursEnd || null,
+        family_contact_name: formData?.familyContactName || null,
+        family_contact_phone: formData?.familyContactPhone || null,
+        family_contact_email: formData?.familyContactEmail || null,
+        billing_address: formData?.billingAddress || null
       };
 
       // En modo edicion: PUT; en modo creacion: POST.
@@ -244,7 +257,6 @@ const TributeCreationStudio = () => {
     const tabErrors = {
       deceased: ['fullName', 'birthDate', 'deathDate'],
       location: ['funeralHome', 'room'],
-      design: [],
       account: ['familyContactName', 'familyContactEmail']
     };
     
@@ -402,14 +414,6 @@ const TributeCreationStudio = () => {
                   
                   {activeTab === 'location' && (
                     <LocationDetailsForm
-                      formData={formData}
-                      errors={errors}
-                      updateFormData={updateFormData}
-                    />
-                  )}
-                  
-                  {activeTab === 'design' && (
-                    <VisualDesignForm
                       formData={formData}
                       errors={errors}
                       updateFormData={updateFormData}

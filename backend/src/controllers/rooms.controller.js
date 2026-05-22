@@ -82,8 +82,8 @@ const getActiveMemorial = async (req, res, next) => {
         l.city as location_city,
         ev.name as exequias_venue_name,
         fd.name as final_destination_venue_name,
-        TO_CHAR(m.schedule_start, 'HH24:MI') as schedule_start_time,
-        TO_CHAR(m.schedule_end, 'HH24:MI') as schedule_end_time
+        TO_CHAR(m.daily_hours_start, 'HH24:MI') as daily_hours_start_str,
+        TO_CHAR(m.daily_hours_end, 'HH24:MI') as daily_hours_end_str
       FROM memorials m
       JOIN rooms r ON m.room_id = r.id
       JOIN locations l ON r.location_id = l.id

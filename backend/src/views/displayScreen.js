@@ -36,6 +36,19 @@ var SPANISH_DAYS = ['Domingo', 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Vierne
 var SPANISH_MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
                       'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
+// Convierte "HH:MM" 24h a "H:MM a.m"/"H:MM p.m" 12h.
+function format12h(hhmm) {
+  if (!hhmm) return '';
+  var parts = String(hhmm).split(':');
+  var h = parseInt(parts[0], 10);
+  var m = parts[1] || '00';
+  if (isNaN(h)) return hhmm;
+  var ampm = h >= 12 ? 'p.m' : 'a.m';
+  var h12 = h % 12;
+  if (h12 === 0) h12 = 12;
+  return h12 + ':' + m + ' ' + ampm;
+}
+
 function formatDateTime(iso) {
   if (!iso) return { date: '', time: '' };
   var d = new Date(iso);
@@ -437,9 +450,11 @@ function render(opts) {
   else if (screen === 3) body = renderScreenMessages(m, opts.condolences || [], opts.totalMessages, page, totalPages);
   else body = renderScreenQr(m, opts.qrSvg);
 
-  // Horario para footer; tomamos el HH:MM puro de schedule_start_time/end_time
-  var schedStart = m.scheduleStartTime ? m.scheduleStartTime + ' a.m' : '08:00 a.m';
-  var schedEnd = m.scheduleEndTime ? m.scheduleEndTime + ' p.m' : '11:00 p.m';
+  // Horario diario que la sala esta habilitada (footer). Convertimos 24h a 12h
+  // con a.m/p.m correcto (antes hardcodeaba "a.m" en start y "p.m" en end,
+  // lo cual era incorrecto si el horario estaba fuera del rango 08-23).
+  var schedStart = format12h(m.dailyHoursStart || '08:00');
+  var schedEnd = format12h(m.dailyHoursEnd || '23:00');
 
   return renderShell({
     title: 'Memorial Digital - ' + (m.name || ''),

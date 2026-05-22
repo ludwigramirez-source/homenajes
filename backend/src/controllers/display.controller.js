@@ -53,8 +53,8 @@ const getDisplay = async (req, res, next) => {
         l.city as location_city,
         ev.name as exequias_venue_name,
         fd.name as final_destination_venue_name,
-        TO_CHAR(m.schedule_start, 'HH24:MI') as schedule_start_time,
-        TO_CHAR(m.schedule_end, 'HH24:MI') as schedule_end_time
+        TO_CHAR(m.daily_hours_start, 'HH24:MI') as daily_hours_start_str,
+        TO_CHAR(m.daily_hours_end, 'HH24:MI') as daily_hours_end_str
       FROM memorials m
       JOIN rooms r ON m.room_id = r.id
       JOIN locations l ON r.location_id = l.id
@@ -126,8 +126,9 @@ const getDisplay = async (req, res, next) => {
       qrMessage: m.qr_message,
       scheduleStart: m.schedule_start,
       scheduleEnd: m.schedule_end,
-      scheduleStartTime: m.schedule_start_time,
-      scheduleEndTime: m.schedule_end_time,
+      // Horario diario que la sala esta habilitada (footer del display).
+      dailyHoursStart: m.daily_hours_start_str || '08:00',
+      dailyHoursEnd: m.daily_hours_end_str || '23:00',
       roomName: m.room_name,
       locationName: m.location_name,
       exequiasVenue: m.exequias_venue_name,

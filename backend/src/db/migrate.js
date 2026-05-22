@@ -105,6 +105,21 @@ const createTables = async () => {
     `);
     console.log('[MIGRATE] Columnas exequias/destino final agregadas a "memorials"');
 
+    // ========== ALTER: memorials: horario diario de la sala + datos del titular ==========
+    // - daily_hours_start/end: horario que la sala esta habilitada cada dia (footer del display).
+    //   Distinto de schedule_start/end (ingreso/salida del cuerpo, fechas+horas).
+    // - family_contact_*: datos del titular de la cuenta / contacto familiar.
+    await client.query(`
+      ALTER TABLE memorials
+        ADD COLUMN IF NOT EXISTS daily_hours_start TIME DEFAULT '08:00',
+        ADD COLUMN IF NOT EXISTS daily_hours_end TIME DEFAULT '23:00',
+        ADD COLUMN IF NOT EXISTS family_contact_name VARCHAR(150),
+        ADD COLUMN IF NOT EXISTS family_contact_phone VARCHAR(50),
+        ADD COLUMN IF NOT EXISTS family_contact_email VARCHAR(150),
+        ADD COLUMN IF NOT EXISTS billing_address TEXT
+    `);
+    console.log('[MIGRATE] Columnas horario diario + titular agregadas a "memorials"');
+
     // ========== TABLA: condolences (Condolencias) ==========
     await client.query(`
       CREATE TABLE IF NOT EXISTS condolences (

@@ -103,7 +103,9 @@ const create = async (req, res, next) => {
       room_id, deceased_name, birth_year, death_year, photo_url,
       emotional_message, qr_message, template_id, schedule_start, schedule_end,
       exequias_venue_id, exequias_datetime,
-      final_destination_venue_id, final_destination_datetime
+      final_destination_venue_id, final_destination_datetime,
+      daily_hours_start, daily_hours_end,
+      family_contact_name, family_contact_phone, family_contact_email, billing_address
     } = req.body;
 
     if (!room_id || !deceased_name || !emotional_message || !schedule_start || !schedule_end) {
@@ -119,9 +121,13 @@ const create = async (req, res, next) => {
         emotional_message, qr_message, template_id, schedule_start, schedule_end,
         active, created_by,
         exequias_venue_id, exequias_datetime,
-        final_destination_venue_id, final_destination_datetime
+        final_destination_venue_id, final_destination_datetime,
+        daily_hours_start, daily_hours_end,
+        family_contact_name, family_contact_phone, family_contact_email, billing_address
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, true, $11, $12, $13, $14, $15)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, true, $11, $12, $13, $14, $15,
+              COALESCE($16, '08:00'), COALESCE($17, '23:00'),
+              $18, $19, $20, $21)
       RETURNING *
     `, [
       room_id, deceased_name, birth_year, death_year, photo_url,
@@ -130,7 +136,13 @@ const create = async (req, res, next) => {
       exequias_venue_id || null,
       exequias_datetime || null,
       final_destination_venue_id || null,
-      final_destination_datetime || null
+      final_destination_datetime || null,
+      daily_hours_start || null,
+      daily_hours_end || null,
+      family_contact_name || null,
+      family_contact_phone || null,
+      family_contact_email || null,
+      billing_address || null
     ]);
 
     res.status(201).json({ success: true, data: result.rows[0] });
@@ -146,7 +158,9 @@ const update = async (req, res, next) => {
       deceased_name, birth_year, death_year, photo_url,
       emotional_message, qr_message, template_id, schedule_start, schedule_end, active,
       exequias_venue_id, exequias_datetime,
-      final_destination_venue_id, final_destination_datetime
+      final_destination_venue_id, final_destination_datetime,
+      daily_hours_start, daily_hours_end,
+      family_contact_name, family_contact_phone, family_contact_email, billing_address
     } = req.body;
 
     const result = await db.query(`
@@ -164,8 +178,14 @@ const update = async (req, res, next) => {
           exequias_venue_id = COALESCE($11, exequias_venue_id),
           exequias_datetime = COALESCE($12, exequias_datetime),
           final_destination_venue_id = COALESCE($13, final_destination_venue_id),
-          final_destination_datetime = COALESCE($14, final_destination_datetime)
-      WHERE id = $15
+          final_destination_datetime = COALESCE($14, final_destination_datetime),
+          daily_hours_start = COALESCE($15, daily_hours_start),
+          daily_hours_end = COALESCE($16, daily_hours_end),
+          family_contact_name = COALESCE($17, family_contact_name),
+          family_contact_phone = COALESCE($18, family_contact_phone),
+          family_contact_email = COALESCE($19, family_contact_email),
+          billing_address = COALESCE($20, billing_address)
+      WHERE id = $21
       RETURNING *
     `, [
       deceased_name, birth_year, death_year, photo_url,
@@ -173,6 +193,8 @@ const update = async (req, res, next) => {
       schedule_start, schedule_end, active,
       exequias_venue_id, exequias_datetime,
       final_destination_venue_id, final_destination_datetime,
+      daily_hours_start, daily_hours_end,
+      family_contact_name, family_contact_phone, family_contact_email, billing_address,
       id
     ]);
 
