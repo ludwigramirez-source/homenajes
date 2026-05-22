@@ -189,13 +189,16 @@ const MemorialForm = () => {
               </svg>
             </div>
 
-            {/* Branding del homenaje (mismo estilo que el footer del display) */}
+            {/* Branding: logo Los Olivos (opacidad sutil) + tagline. Mismo
+                tratamiento que el footer del display digital. */}
             <div className="mt-8 pt-6 text-center" style={{ borderTop: '1px solid rgba(255,255,255,0.15)' }}>
-              <p className="text-white font-bold text-[0.95rem] tracking-wider" style={{ fontFamily: 'Comfortaa, cursive' }}>
-                FUNERARIA LOS OLIVOS
-              </p>
-              <p className="text-white opacity-60 text-[0.8rem] mt-1" style={{ fontFamily: 'Hind Vadodara, sans-serif' }}>
-                Un homenaje al amor · SERCOFUN LTDA
+              <img
+                src="/logo-los-olivos-blanco.png"
+                alt="Los Olivos"
+                style={{ display: 'inline-block', width: '160px', height: 'auto', opacity: 0.55 }}
+              />
+              <p className="text-white opacity-75 text-[0.75rem] mt-2" style={{ fontFamily: 'Hind Vadodara, sans-serif' }}>
+                Un homenaje al amor
               </p>
             </div>
           </div>
@@ -516,10 +519,15 @@ const MemorialForm = () => {
               </div>
             </form>
 
-            {/* Footer brand */}
+            {/* Footer brand: logo + tagline (estilo consistente con el display) */}
             <div className="mt-8 pt-6 text-center" style={{ borderTop: '1px solid rgba(255,255,255,0.15)' }}>
-              <p className="text-white opacity-50 text-xs tracking-wider" style={{ fontFamily: 'Comfortaa, cursive' }}>
-                FUNERARIA LOS OLIVOS · Un homenaje al amor
+              <img
+                src="/logo-los-olivos-blanco.png"
+                alt="Los Olivos"
+                style={{ display: 'inline-block', width: '140px', height: 'auto', opacity: 0.55 }}
+              />
+              <p className="text-white opacity-70 text-[0.7rem] mt-2" style={{ fontFamily: 'Hind Vadodara, sans-serif' }}>
+                Un homenaje al amor
               </p>
             </div>
           </div>

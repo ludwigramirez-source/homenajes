@@ -24,6 +24,9 @@ const getDisplay = async (req, res, next) => {
   try {
     const { roomId } = req.params;
     const screenParam = req.query.screen;
+    const pageParam = parseInt(req.query.page, 10);
+    const page = (Number.isFinite(pageParam) && pageParam >= 0) ? pageParam : 0;
+    const PAGE_SIZE = 6;
     const baseUrl = getBaseUrl(req);
 
     // Cabeceras para que las pantallas SIEMPRE traigan datos frescos.
@@ -75,14 +78,24 @@ const getDisplay = async (req, res, next) => {
       VALUES ($1, 'display', $2, $3)
     `, [m.id, req.ip, req.get('user-agent') || '']).catch(() => { /* ignore */ });
 
-    // 3) Cargar condolencias (limit 6 que es lo que cabe en grid 3x2).
+    // 3) Total real de mensajes para calcular paginacion.
+    const totalRes = await db.query(
+      'SELECT COUNT(*)::int AS count FROM condolences WHERE memorial_id = $1', [m.id]
+    );
+    const totalCount = totalRes.rows[0].count;
+    const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+    // Clampear page por si llega un valor invalido o fuera de rango.
+    const effectivePage = (page >= totalPages) ? 0 : page;
+
+    // 4) Cargar la "pagina" de 6 mensajes que toca mostrar ahora.
+    //    Orden DESC por created_at (mas recientes primero), paginado en backend.
     const condResult = await db.query(`
       SELECT id, sender_name, message, file1_url, created_at
       FROM condolences
       WHERE memorial_id = $1
       ORDER BY created_at DESC
-      LIMIT 6
-    `, [m.id]);
+      LIMIT $2 OFFSET $3
+    `, [m.id, PAGE_SIZE, effectivePage * PAGE_SIZE]);
 
     const condolences = condResult.rows.map(c => ({
       id: c.id,
@@ -91,15 +104,6 @@ const getDisplay = async (req, res, next) => {
       file1_url: absoluteUploadUrl(baseUrl, c.file1_url),
       created_at: c.created_at
     }));
-
-    // Tambien necesitamos el total para mostrar "X mensajes recibidos"
-    const totalRes = await db.query(
-      'SELECT COUNT(*)::int AS count FROM condolences WHERE memorial_id = $1', [m.id]
-    );
-    // Usamos un truco: agregamos la propiedad totalCount a condolences via length virtual.
-    // Pero como condolences.length se usa en el template, hacemos otra cosa:
-    // pasamos un array con .totalCount esta mal. Mejor exponer total via memorial.
-    const totalCount = totalRes.rows[0].count;
 
     // 4) Generar QR como SVG inline (cero JS cliente, escala bien en cualquier resolucion).
     const qrTarget = baseUrl + '/memorial-form/' + encodeURIComponent(roomId);
@@ -141,6 +145,8 @@ const getDisplay = async (req, res, next) => {
       memorial: memorialView,
       condolences: condolences,
       totalMessages: totalCount,
+      page: effectivePage,
+      totalPages: totalPages,
       screen: screenParam,
       roomId: roomId,
       baseUrl: baseUrl,

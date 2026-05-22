@@ -144,6 +144,10 @@ function commonCss() {
     '.dot-indicator { display: inline-block; width: 12px; height: 12px; border-radius: 50%; ',
     '  background: rgba(255,255,255,0.4); margin-left: 6px; vertical-align: middle; }',
     '.dot-indicator.active { background: #f0c040; width: 26px; border-radius: 6px; }',
+    // Indicador de paginacion dentro de la pantalla de mensajes
+    '.page-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; ',
+    '  background: rgba(255,255,255,0.35); margin: 0 4px; }',
+    '.page-dot.active { background: #f0c040; width: 22px; border-radius: 5px; }',
     // Body wrapper para reservar espacio del footer
     '.viewport { position: relative; width: 100%; height: 100%; padding-bottom: 100px; ',
     '  -webkit-box-sizing: border-box; box-sizing: border-box; }'
@@ -281,9 +285,10 @@ function renderScreenEmotional(m) {
     '</tr></table>';
 }
 
-// =========== SCREEN 3: Mensajes recibidos (grid 3x2) ===========
-function renderScreenMessages(m, condolences, totalCount) {
-  // totalCount es el total real (no solo los visibles); fallback a length por compat.
+// =========== SCREEN 3: Mensajes recibidos (grid 3x2 con paginacion) ===========
+// condolences viene ya pre-paginado desde el controller (LIMIT 6 OFFSET page*6).
+// page/totalPages se reciben para mostrar indicador "Pagina X de Y".
+function renderScreenMessages(m, condolences, totalCount, page, totalPages) {
   var count = (typeof totalCount === 'number') ? totalCount : condolences.length;
   if (count === 0) {
     return '<div class="header-center">' +
@@ -295,11 +300,10 @@ function renderScreenMessages(m, condolences, totalCount) {
       '</div>';
   }
 
-  // Solo mostramos los 6 mas recientes (cabe en 3x2). Para mas, considerar paginar
-  // en backend con query ?page. Por ahora basta.
+  // condolences ya viene paginado del controller (max 6).
   var visible = condolences.slice(0, 6);
 
-  // Layout 3x2 con table. Si hay menos de 6, las celdas vacias quedan en blanco.
+  // Layout 3x2 con table. Si hay menos de 6 en la pagina, las celdas vacias quedan en blanco.
   var rows = '';
   for (var r = 0; r < 2; r++) {
     var tr = '<tr>';
@@ -324,15 +328,27 @@ function renderScreenMessages(m, condolences, totalCount) {
     rows += tr;
   }
 
+  // Indicador de paginacion: solo si hay mas de una pagina
+  var pageIndicator = '';
+  if (totalPages > 1) {
+    var dots = '';
+    for (var p = 0; p < totalPages; p++) {
+      dots += '<span class="page-dot' + (p === page ? ' active' : '') + '"></span>';
+    }
+    pageIndicator = '<div style="text-align:center;margin-top:18px;">' + dots + '</div>';
+  }
+
   return '<div class="header-center">' +
     '<div class="subtitle">Mensajes para</div>' +
     '<div class="font-title name-md" style="margin-top:6px;">' + escapeHtml(m.name) + '</div>' +
-    '<div class="subtitle" style="margin-top:4px;font-size:16px;">' +
+    '<div class="subtitle" style="margin-top:4px;font-size:18px;">' +
       count + ' ' + (count === 1 ? 'mensaje recibido' : 'mensajes recibidos') +
+      (totalPages > 1 ? ' &middot; P&aacute;gina ' + (page + 1) + ' de ' + totalPages : '') +
     '</div>' +
     '</div>' +
     '<div style="padding:0 40px;">' +
       '<table class="msg-grid">' + rows + '</table>' +
+      pageIndicator +
     '</div>';
 }
 
@@ -379,23 +395,41 @@ function renderEmptyRoom(message) {
 // =========== Render principal ===========
 // Devuelve el HTML de la vista solicitada.
 function render(opts) {
-  // opts: { memorial, condolences, screen (1..4), roomId, baseUrl, qrSvg }
+  // opts: { memorial, condolences, totalMessages, screen (1..4), page,
+  //         totalPages, roomId, baseUrl, qrSvg }
   var TOTAL = 4;
   var screen = parseInt(opts.screen, 10);
   if (isNaN(screen) || screen < 1 || screen > TOTAL) screen = 1;
 
+  var page = parseInt(opts.page, 10);
+  if (isNaN(page) || page < 0) page = 0;
+  var totalPages = Math.max(1, opts.totalPages || 1);
+  if (page >= totalPages) page = 0;
+
   var nextScreen = screen + 1;
   if (nextScreen > TOTAL) nextScreen = 1;
-  // URL siguiente: misma ruta + ?screen=N (sin querystring si es la 1 para
-  // que cuente como "vuelta al inicio" y el navegador tenga un punto de ancla limpio).
-  var nextUrl = '/digital-display-screen/' + encodeURIComponent(opts.roomId) +
-                (nextScreen === 1 ? '' : '?screen=' + nextScreen);
+
+  // Avanzamos la pagina de mensajes JUSTO al salir de la pantalla 3 (screen=3 -> 4).
+  // Asi cuando vuelva el ciclo a la pantalla 3 (despues de 4 y 1 y 2), mostrara la
+  // siguiente "tanda" de 6. Wraparound al final.
+  var nextPage = page;
+  if (screen === 3 && totalPages > 1) {
+    nextPage = (page + 1) % totalPages;
+  }
+
+  // URL siguiente: mantiene page si toca; en screen=1 conserva ?page para no perder
+  // el contexto del ciclo. Si nextPage es 0 y nextScreen es 1, URL limpio.
+  var qsParts = [];
+  if (nextScreen !== 1) qsParts.push('screen=' + nextScreen);
+  if (nextPage > 0) qsParts.push('page=' + nextPage);
+  var qs = qsParts.length ? '?' + qsParts.join('&') : '';
+  var nextUrl = '/digital-display-screen/' + encodeURIComponent(opts.roomId) + qs;
 
   var m = opts.memorial;
   var body;
   if (screen === 1) body = renderScreenService(m);
   else if (screen === 2) body = renderScreenEmotional(m);
-  else if (screen === 3) body = renderScreenMessages(m, opts.condolences || [], opts.totalMessages);
+  else if (screen === 3) body = renderScreenMessages(m, opts.condolences || [], opts.totalMessages, page, totalPages);
   else body = renderScreenQr(m, opts.qrSvg);
 
   // Horario para footer; tomamos el HH:MM puro de schedule_start_time/end_time
