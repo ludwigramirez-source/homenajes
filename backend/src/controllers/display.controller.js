@@ -26,6 +26,9 @@ const getDisplay = async (req, res, next) => {
     const screenParam = req.query.screen;
     const pageParam = parseInt(req.query.page, 10);
     const page = (Number.isFinite(pageParam) && pageParam >= 0) ? pageParam : 0;
+    // ?preview=1 desactiva el meta refresh (usado por el iframe del studio para
+    // que la rotacion automatica no recargue mientras el usuario navega manualmente).
+    const isPreview = req.query.preview === '1' || req.query.preview === 'true';
     const PAGE_SIZE = 6;
     const baseUrl = getBaseUrl(req);
 
@@ -151,7 +154,8 @@ const getDisplay = async (req, res, next) => {
       screen: screenParam,
       roomId: roomId,
       baseUrl: baseUrl,
-      qrSvg: qrSvg
+      qrSvg: qrSvg,
+      preview: isPreview
     });
 
     res.send(html);

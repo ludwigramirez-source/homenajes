@@ -182,9 +182,10 @@ function renderShell(opts) {
   }
 
   var refresh = '';
-  if (opts.nextUrl) {
-    // Meta refresh: cambia a siguiente vista cada 25s. Cada request al backend
-    // trae datos frescos automaticamente.
+  // En modo preview (iframe del studio) NO emitimos meta refresh: el usuario
+  // navega manualmente con botones avanzar/retroceder, y la rotacion automatica
+  // recargaria el iframe y perderia el contexto.
+  if (opts.nextUrl && !opts.preview) {
     refresh = '<meta http-equiv="refresh" content="25; url=' + escapeHtml(opts.nextUrl) + '">';
   }
 
@@ -463,7 +464,8 @@ function render(opts) {
     nextUrl: nextUrl,
     body: body,
     scheduleStart: schedStart,
-    scheduleEnd: schedEnd
+    scheduleEnd: schedEnd,
+    preview: opts.preview
   });
 }
 

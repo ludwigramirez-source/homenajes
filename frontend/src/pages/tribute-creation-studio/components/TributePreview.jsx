@@ -1,157 +1,183 @@
-import React from 'react';
-import { QRCodeSVG } from 'qrcode.react';
+import React, { useMemo, useRef, useState } from 'react';
+import { useParams } from 'react-router-dom';
+import Icon from '../../../components/AppIcon';
 import { cn } from '../../../utils/cn';
 
+// Vista previa del tributo: muestra el display SSR real dentro de un iframe
+// escalado, con botones manuales para rotar entre las 4 pantallas.
+// Funciona solo en modo edicion (cuando ya existe el memorial en BD); en
+// creacion, muestra un placeholder pidiendo guardar primero.
+const SCREENS = [
+  { n: 1, label: 'Servicio' },
+  { n: 2, label: 'Mensaje' },
+  { n: 3, label: 'Mensajes recibidos' },
+  { n: 4, label: 'Código QR' }
+];
+
+// Resolucion nativa del display (las pantallas LG son 1920x1080).
+// Renderizamos el iframe a esta resolucion y la escalamos via CSS transform
+// para que quepa en el panel lateral del studio sin perder fidelidad visual.
+const NATIVE_WIDTH = 1920;
+const NATIVE_HEIGHT = 1080;
+
 const TributePreview = ({ formData }) => {
-  const getBackgroundGradient = () => {
-    const themes = {
-      nature: 'from-green-900/20 via-emerald-800/20 to-teal-900/20',
-      religious: 'from-blue-900/20 via-indigo-800/20 to-purple-900/20',
-      abstract: 'from-gray-900/20 via-slate-800/20 to-zinc-900/20',
-      floral: 'from-pink-900/20 via-rose-800/20 to-red-900/20',
-      sky: 'from-sky-900/20 via-blue-800/20 to-cyan-900/20',
-      minimal: 'from-gray-50 via-gray-100 to-gray-50'
-    };
-    return themes?.[formData?.backgroundTheme] || themes?.nature;
-  };
+  // En edicion la URL del studio es /tribute-creation-studio/:memorialId
+  // Pero el display SSR usa roomId, no memorialId. roomId esta en formData.room.
+  const { memorialId } = useParams();
+  const roomId = formData?.room;
 
-  const getColorSchemeClass = () => {
-    const schemes = {
-      classic: 'text-slate-800',
-      warm: 'text-amber-900',
-      cool: 'text-blue-900',
-      elegant: 'text-gray-900',
-      peaceful: 'text-slate-700'
-    };
-    return schemes?.[formData?.colorScheme] || schemes?.classic;
-  };
+  const [currentScreen, setCurrentScreen] = useState(1);
+  const containerRef = useRef(null);
 
-  const getTypographyClass = () => {
-    const fonts = {
-      elegant: 'font-serif',
-      modern: 'font-sans',
-      traditional: 'font-serif'
-    };
-    return fonts?.[formData?.typography] || fonts?.elegant;
-  };
+  // El iframe se reinicia cuando cambia su src; con un nonce forzamos a recargar
+  // cuando el usuario guarda cambios (ej. cambia la foto y queremos verla refrescada).
+  const [refreshNonce, setRefreshNonce] = useState(0);
 
-  const getMessageText = () => {
-    if (formData?.messageTemplate === 'custom') {
-      return formData?.customMessage || 'Mensaje personalizado';
-    }
-    
-    const templates = {
-      template1: 'En memoria de un ser querido',
-      template2: 'Siempre en nuestros corazones',
-      template3: 'Su legado vivirá por siempre',
-      template4: 'Descansa en paz',
-      template5: 'Hasta pronto, querido amigo'
-    };
-    return templates?.[formData?.messageTemplate] || templates?.template1;
-  };
+  const previewSrc = useMemo(() => {
+    if (!roomId) return '';
+    const qs = ['preview=1', `screen=${currentScreen}`, `_=${refreshNonce}`].join('&');
+    return `/digital-display-screen/${encodeURIComponent(roomId)}?${qs}`;
+  }, [roomId, currentScreen, refreshNonce]);
 
-  const formatDate = (dateString) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    return date?.toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' });
-  };
+  const goPrev = () => setCurrentScreen(s => (s === 1 ? 4 : s - 1));
+  const goNext = () => setCurrentScreen(s => (s === 4 ? 1 : s + 1));
+
+  // Calculamos el scale dinamicamente a partir del ancho del contenedor.
+  // Usamos un estado local que se actualiza con ResizeObserver para responder
+  // a cambios de tamano del panel lateral.
+  const [scale, setScale] = useState(0.22);
+  React.useEffect(() => {
+    if (!containerRef.current) return;
+    const update = () => {
+      const w = containerRef.current?.clientWidth || 0;
+      if (w > 0) setScale(w / NATIVE_WIDTH);
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(containerRef.current);
+    return () => ro.disconnect();
+  }, []);
+
+  const scaledHeight = NATIVE_HEIGHT * scale;
+
+  // Si NO hay roomId / memorial guardado, mostramos placeholder.
+  const canPreview = !!roomId && !!memorialId;
 
   return (
     <div className="bg-card rounded-lg border border-border shadow-elevation-md overflow-hidden">
-      <div className="bg-accent/10 border-b border-border px-4 py-3">
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-error"></div>
-          <div className="w-3 h-3 rounded-full bg-warning"></div>
-          <div className="w-3 h-3 rounded-full bg-success"></div>
-          <span className="ml-2 text-xs font-medium text-muted-foreground">Vista Previa - Pantalla Digital</span>
+      {/* Header */}
+      <div className="bg-accent/10 border-b border-border px-4 py-2.5 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="w-3 h-3 rounded-full bg-error" />
+          <div className="w-3 h-3 rounded-full bg-warning" />
+          <div className="w-3 h-3 rounded-full bg-success" />
+          <span className="ml-1 text-xs font-medium text-muted-foreground truncate">
+            Vista Previa &middot; Pantalla {currentScreen} de 4
+            <span className="hidden lg:inline"> &middot; {SCREENS[currentScreen - 1].label}</span>
+          </span>
         </div>
+        {canPreview && (
+          <button
+            type="button"
+            onClick={() => setRefreshNonce(n => n + 1)}
+            className="p-1.5 rounded hover:bg-muted transition-colors text-muted-foreground"
+            title="Refrescar vista previa"
+          >
+            <Icon name="RefreshCw" size={14} />
+          </button>
+        )}
       </div>
-      <div className="aspect-video bg-gray-900 relative overflow-hidden">
-        {/* Fondo con gradiente */}
-        <div className={cn(
-          "absolute inset-0 bg-gradient-to-br",
-          getBackgroundGradient()
-        )}>
-          {/* Overlay sutil */}
-          <div className="absolute inset-0 bg-black/30"></div>
-        </div>
 
-        {/* Contenido del tributo */}
-        <div className="relative h-full flex flex-col items-center justify-center p-8 text-white">
-          {/* Foto del difunto */}
-          <div className="mb-6">
-            {formData?.photoPreview ? (
-              <div className="relative">
-                <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-white/80 shadow-2xl">
-                  <img
-                    src={formData?.photoPreview}
-                    alt="Fotografía del difunto"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              </div>
-            ) : (
-              <div className="w-32 h-32 rounded-full bg-white/10 border-4 border-white/30 flex items-center justify-center">
-                <svg className="w-16 h-16 text-white/50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-              </div>
+      {/* Viewport */}
+      <div ref={containerRef} className="bg-gray-900 relative" style={{ height: scaledHeight }}>
+        {canPreview ? (
+          <iframe
+            key={refreshNonce}
+            src={previewSrc}
+            title="Vista previa del display"
+            // Necesitamos width/height nativos del display porque escalamos via transform.
+            // Sin estos, el iframe arrastraria el layout original.
+            style={{
+              width: NATIVE_WIDTH + 'px',
+              height: NATIVE_HEIGHT + 'px',
+              border: 'none',
+              transform: `scale(${scale})`,
+              transformOrigin: 'top left',
+              backgroundColor: '#155f5d'
+            }}
+          />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center text-center p-6 text-white/80">
+            <div>
+              <Icon name="Monitor" size={40} className="mx-auto mb-3 opacity-60" />
+              <p className="text-sm font-medium">Vista previa no disponible</p>
+              <p className="text-xs mt-1 opacity-70">
+                {memorialId
+                  ? 'Selecciona una sala para ver la vista previa.'
+                  : 'Guarda el tributo para ver cómo se verá en el display.'}
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Controles de navegacion manual entre pantallas */}
+      <div className="px-3 py-2.5 bg-muted/30 border-t border-border">
+        <div className="flex items-center justify-between gap-2">
+          <button
+            type="button"
+            onClick={goPrev}
+            disabled={!canPreview}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
+              canPreview
+                ? "border border-border hover:bg-muted text-foreground"
+                : "opacity-50 cursor-not-allowed text-muted-foreground"
             )}
+            title="Pantalla anterior"
+          >
+            <Icon name="ChevronLeft" size={14} />
+            Atr&aacute;s
+          </button>
+
+          {/* Indicadores de pantalla, clickeables */}
+          <div className="flex items-center gap-1.5">
+            {SCREENS.map(s => (
+              <button
+                key={s.n}
+                type="button"
+                onClick={() => canPreview && setCurrentScreen(s.n)}
+                disabled={!canPreview}
+                className={cn(
+                  "rounded-full transition-all",
+                  s.n === currentScreen ? "bg-primary" : "bg-muted-foreground/30 hover:bg-muted-foreground/50",
+                  canPreview ? "cursor-pointer" : "cursor-not-allowed"
+                )}
+                style={{
+                  width: s.n === currentScreen ? 22 : 8,
+                  height: 8
+                }}
+                title={`Pantalla ${s.n}: ${s.label}`}
+              />
+            ))}
           </div>
 
-          {/* Nombre */}
-          <h1 className={cn(
-            "text-3xl font-bold text-center mb-2 drop-shadow-lg",
-            getTypographyClass()
-          )}>
-            {formData?.fullName || 'Nombre del Difunto'}
-          </h1>
-
-          {/* Fechas */}
-          <div className="flex items-center gap-3 mb-4 text-sm opacity-90">
-            <span>{formatDate(formData?.birthDate) || 'Fecha de nacimiento'}</span>
-            <span className="text-2xl">✦</span>
-            <span>{formatDate(formData?.deathDate) || 'Fecha de fallecimiento'}</span>
-          </div>
-
-          {/* Mensaje conmemorativo */}
-          <p className={cn(
-            "text-lg italic text-center mb-6 max-w-md opacity-90",
-            getTypographyClass()
-          )}>
-            "{getMessageText()}"
-          </p>
-
-          {/* Código QR */}
-          <div className="bg-white p-4 rounded-lg shadow-2xl">
-            <QRCodeSVG
-              value={`https://tributos.funeraria.com/${formData?.room || 'sala'}/${Date.now()}`}
-              size={80}
-              level="H"
-              includeMargin={false}
-            />
-          </div>
-          <p className="text-xs mt-2 opacity-75">Escanea para dejar tu mensaje</p>
+          <button
+            type="button"
+            onClick={goNext}
+            disabled={!canPreview}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
+              canPreview
+                ? "border border-border hover:bg-muted text-foreground"
+                : "opacity-50 cursor-not-allowed text-muted-foreground"
+            )}
+            title="Pantalla siguiente"
+          >
+            Avanzar
+            <Icon name="ChevronRight" size={14} />
+          </button>
         </div>
-
-        {/* Indicador de sala */}
-        <div className="absolute bottom-4 left-4 bg-black/50 backdrop-blur-sm px-3 py-1 rounded-full">
-          <p className="text-xs text-white/80">
-            {formData?.room ? `Sala: ${formData?.room}` : 'Sin sala asignada'}
-          </p>
-        </div>
-
-        {/* Tiempo de rotación */}
-        <div className="absolute bottom-4 right-4 bg-black/50 backdrop-blur-sm px-3 py-1 rounded-full">
-          <p className="text-xs text-white/80">
-            Rotación: {formData?.slideshowTiming}s
-          </p>
-        </div>
-      </div>
-      <div className="px-4 py-3 bg-muted/30 border-t border-border">
-        <p className="text-xs text-muted-foreground text-center">
-          Esta es una representación aproximada de cómo se verá el tributo en las pantallas digitales
-        </p>
       </div>
     </div>
   );
