@@ -1,0 +1,13 @@
+# Override de produccion:
+# - postgres: !reset [] => no exponer al host
+# - backend/frontend: !override => reemplazar puertos para escuchar solo en loopback
+#   (Nginx hace el reverse proxy con TLS)
+services:
+  postgres:
+    ports: !reset []
+  backend:
+    ports: !override
+      - "127.0.0.1:3001:3001"
+  frontend:
+    ports: !override
+      - "127.0.0.1:8080:80"

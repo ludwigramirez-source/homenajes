@@ -7,6 +7,11 @@
 backend/.env
 frontend/.env
 
+# Artifacts de despliegue con credenciales del server (NUNCA subir).
+# Las plantillas seguras (nginx config, compose override) si se commitean.
+.deploy/production.env
+.deploy/ssh_run.py
+
 # =============================================
 # Dependencias
 # =============================================
