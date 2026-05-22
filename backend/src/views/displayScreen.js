@@ -67,13 +67,18 @@ function commonCss() {
     '.col-left, .col-right { vertical-align: middle; padding: 30px 30px; }',
     '.col-left { width: 44%; text-align: center; }',
     '.col-right { width: 56%; padding-right: 50px; }',
-    // Foto del difunto (mas grande). Si el motor no soporta border-radius queda elipse o rectangulo.
-    '.photo-frame { display: inline-block; width: 400px; height: 500px; overflow: hidden; ',
+    // Foto del difunto: usamos background-image en lugar de <img> para que se
+    // centre y recorte bien (background-size:cover + background-position:center)
+    // sin depender de object-fit (no fiable en WebKit antiguo). El border-radius
+    // recorta organicamente; si el motor no lo soporta queda rectangulo.
+    '.photo-frame { display: inline-block; width: 400px; height: 500px; ',
     '  border-radius: 40% 40% 50% 50% / 30% 30% 50% 50%; ',
     '  border: 6px solid rgba(255,255,255,0.30); ',
-    '  background-color: rgba(255,255,255,0.10); }',
-    '.photo-frame img { width: 100%; height: 100%; ',
-    '  display: block; }',
+    '  background-color: rgba(255,255,255,0.10); ',
+    '  background-position: center center; ',
+    '  background-repeat: no-repeat; ',
+    '  background-size: cover; ',
+    '  overflow: hidden; }',
     // Foto un poco mas pequena para pantalla del servicio (alt)
     '.photo-frame-md { width: 360px; height: 450px; }',
     // Tipografias: +3-4 px a casi todo
@@ -231,12 +236,11 @@ function renderScreenService(m) {
     return html;
   }
 
+  var photoStyle = photo ? ' style="background-image:url(\'' + escapeHtml(photo) + '\');"' : '';
   var body = '<table class="layout-table">' +
     '<tr>' +
       '<td class="col-left">' +
-        '<div class="photo-frame">' +
-          (photo ? '<img src="' + escapeHtml(photo) + '" alt="Foto">' : '') +
-        '</div>' +
+        '<div class="photo-frame"' + photoStyle + '></div>' +
       '</td>' +
       '<td class="col-right" style="text-align:center;">' +
         '<div class="font-title name">' + escapeHtml(m.name) + '</div>' +
@@ -265,12 +269,11 @@ function renderScreenService(m) {
 function renderScreenEmotional(m) {
   var photo = m.photoUrl || '';
   var firstName = (m.name || '').split(' ')[0] || '';
+  var photoStyle = photo ? ' style="background-image:url(\'' + escapeHtml(photo) + '\');"' : '';
   return '<table class="layout-table">' +
     '<tr>' +
       '<td class="col-left">' +
-        '<div class="photo-frame">' +
-          (photo ? '<img src="' + escapeHtml(photo) + '" alt="Foto">' : '') +
-        '</div>' +
+        '<div class="photo-frame"' + photoStyle + '></div>' +
         '<div class="font-title" style="font-size:42px;margin-top:22px;">' + escapeHtml(m.name) + '</div>' +
         '<div class="dates">' + escapeHtml(m.birthYear) + ' &mdash; ' + escapeHtml(m.deathYear) + '</div>' +
       '</td>' +

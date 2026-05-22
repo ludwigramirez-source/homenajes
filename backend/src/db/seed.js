@@ -1,5 +1,24 @@
 const bcrypt = require('bcryptjs');
+const fs = require('fs');
+const path = require('path');
 const { pool } = require('../config/database');
+
+// Copia un asset desde backend/src/assets al directorio uploads (volumen Docker).
+// Devuelve la URL relativa "/uploads/<name>" si tuvo exito, o null si no existe.
+function copyAssetToUploads(filename) {
+  try {
+    const src = path.join(__dirname, '..', 'assets', filename);
+    if (!fs.existsSync(src)) return null;
+    const uploadsDir = process.env.UPLOAD_DIR || path.join(__dirname, '..', '..', 'uploads');
+    if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+    const dst = path.join(uploadsDir, filename);
+    if (!fs.existsSync(dst)) fs.copyFileSync(src, dst);
+    return '/uploads/' + filename;
+  } catch (e) {
+    console.warn('[SEED] No se pudo copiar asset', filename, e.message);
+    return null;
+  }
+}
 
 const seedDatabase = async () => {
   const client = await pool.connect();
@@ -134,6 +153,11 @@ const seedDatabase = async () => {
       const exequiasDatetime = new Date(scheduleStart.getTime() + 24 * 60 * 60 * 1000);
       const finalDestDatetime = new Date(exequiasDatetime.getTime() + 2 * 60 * 60 * 1000);
 
+      // Foto del difunto: si esta el asset local optimizado, lo copiamos al
+      // volumen uploads. Si no, fallback a una imagen demo en CDN externo.
+      const pedroPhotoUrl = copyAssetToUploads('pedrorojas.jpg')
+        || 'https://cdn.prod.website-files.com/63d16ac1f3b67004193c8ff9/63d2e9a8a700ac724c0b51f2_adulto-mayor-h.jpg';
+
       const memorialResult = await client.query(`
         INSERT INTO memorials (
           room_id, deceased_name, birth_year, death_year, photo_url,
@@ -149,7 +173,7 @@ const seedDatabase = async () => {
         'Pedro Rojas',
         1995,
         2026,
-        'https://cdn.prod.website-files.com/63d16ac1f3b67004193c8ff9/63d2e9a8a700ac724c0b51f2_adulto-mayor-h.jpg',
+        pedroPhotoUrl,
         'Hay seres que no se van, solo se transforman en luz para guiarnos. Con el corazon roto, pero agradecidos por cada segundo compartido, despedimos a nuestro/a querido/a. Su amor sera nuestro refugio eterno.',
         scheduleStart,
         scheduleEnd,

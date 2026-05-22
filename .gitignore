@@ -11,6 +11,12 @@ frontend/.env
 # Las plantillas seguras (nginx config, compose override) si se commitean.
 .deploy/production.env
 .deploy/ssh_run.py
+.deploy/pedrorojas.jpg
+
+# Foto original sin optimizar (9.5MB) en la raiz. La version optimizada vive
+# en backend/src/assets/pedrorojas.jpg y SI se trackea (slash inicial limita
+# el patron al root, no a cualquier carpeta).
+/pedrorojas.jpg
 
 # =============================================
 # Dependencias
