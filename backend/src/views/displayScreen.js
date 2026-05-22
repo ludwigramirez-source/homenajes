@@ -67,15 +67,17 @@ function commonCss() {
     '.col-left, .col-right { vertical-align: middle; padding: 30px 30px; }',
     '.col-left { width: 44%; text-align: center; }',
     '.col-right { width: 56%; padding-right: 50px; }',
-    // Foto del difunto: usamos background-image en lugar de <img> para que se
-    // centre y recorte bien (background-size:cover + background-position:center)
-    // sin depender de object-fit (no fiable en WebKit antiguo). El border-radius
-    // recorta organicamente; si el motor no lo soporta queda rectangulo.
+    // Foto del difunto: background-image (no <img>) para evitar object-fit que
+    // no es fiable en WebKit antiguo. background-size:cover recorta para llenar
+    // el marco vertical sin deformar; background-position:center top hace que
+    // la cara (tipicamente en el tercio superior de un retrato) quede visible
+    // en lugar del torso/cuerpo. Mismo comportamiento que el React previo con
+    // object-cover object-top.
     '.photo-frame { display: inline-block; width: 400px; height: 500px; ',
     '  border-radius: 40% 40% 50% 50% / 30% 30% 50% 50%; ',
     '  border: 6px solid rgba(255,255,255,0.30); ',
     '  background-color: rgba(255,255,255,0.10); ',
-    '  background-position: center center; ',
+    '  background-position: center top; ',
     '  background-repeat: no-repeat; ',
     '  background-size: cover; ',
     '  overflow: hidden; }',
