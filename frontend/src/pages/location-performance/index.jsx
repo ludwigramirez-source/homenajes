@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Helmet } from 'react-helmet';
-import Header from '../../components/ui/Header';
 import LocationContextSelector from '../../components/ui/LocationContextSelector';
 import UserRoleIndicator from '../../components/ui/UserRoleIndicator';
 import DataRefreshStatus from '../../components/ui/DataRefreshStatus';
@@ -341,9 +340,8 @@ const LocationPerformance = () => {
         <meta name="description" content="Comparación de rendimiento operacional y mejores prácticas entre ubicaciones de FuneralTribute en Colombia" />
       </Helmet>
       <div className="min-h-screen bg-background">
-        <Header />
 
-        <main className="pt-16">
+        <main>
           {/* Brand page header banner */}
           <div className="relative overflow-hidden"
             style={{ background: 'linear-gradient(135deg, #1a7472 0%, #234b50 60%, #182e39 100%)' }}>

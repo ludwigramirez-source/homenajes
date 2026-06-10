@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { useNavigate, useParams } from 'react-router-dom';
-import Header from '../../components/ui/Header';
 
 import Icon from '../../components/AppIcon';
 import DeceasedInfoForm from './components/DeceasedInfoForm';
@@ -273,7 +272,6 @@ const TributeCreationStudio = () => {
     return (
       <>
         <Helmet><title>Cargando tributo... | SERCOFUN</title></Helmet>
-        <Header />
         <div className="min-h-screen bg-background flex items-center justify-center">
           <div className="text-center text-muted-foreground">
             <Icon name="Loader" size={32} className="animate-spin mx-auto mb-3" />
@@ -291,10 +289,9 @@ const TributeCreationStudio = () => {
           {isEditMode ? 'Editar Tributo' : 'Estudio de Creación de Tributos'} | Sistema Funerario
         </title>
       </Helmet>
-      <Header />
       <div className="min-h-screen bg-background">
         {/* Brand header del estudio */}
-        <div className="relative overflow-hidden sticky top-16 z-40"
+        <div className="relative overflow-hidden sticky top-0 z-40"
           style={{ background: 'linear-gradient(135deg, #1a7472 0%, #234b50 60%, #182e39 100%)' }}>
           {/* Decorative circles */}
           <div className="absolute top-0 right-0 w-40 h-40 rounded-full opacity-10 pointer-events-none"

@@ -3,6 +3,7 @@ import { BrowserRouter, Routes as RouterRoutes, Route } from "react-router-dom";
 import ScrollToTop from "components/ScrollToTop";
 import ErrorBoundary from "components/ErrorBoundary";
 import { AuthProvider, ProtectedRoute } from "./context/AuthContext";
+import AppLayout from "./components/ui/AppLayout";
 import NotFound from "pages/NotFound";
 import Login from "./pages/login";
 import AnalyticsHub from './pages/analytics-hub';
@@ -29,18 +30,20 @@ const Routes = () => {
             <Route path="/digital-display-screen/:roomId" element={<DigitalDisplayScreen />} />
             <Route path="/memorial-form/:roomId" element={<MemorialForm />} />
 
-            {/* Rutas protegidas (requieren login) */}
-            <Route path="/" element={<ProtectedRoute><ExecutiveOverview /></ProtectedRoute>} />
-            <Route path="/executive-overview" element={<ProtectedRoute><ExecutiveOverview /></ProtectedRoute>} />
-            <Route path="/analytics-hub" element={<ProtectedRoute><AnalyticsHub /></ProtectedRoute>} />
-            <Route path="/system-health-monitor" element={<ProtectedRoute><SystemHealthMonitor /></ProtectedRoute>} />
-            <Route path="/location-performance" element={<ProtectedRoute><LocationPerformance /></ProtectedRoute>} />
-            <Route path="/operations-control-center" element={<ProtectedRoute><OperationsControlCenter /></ProtectedRoute>} />
-            <Route path="/tribute-creation-studio" element={<ProtectedRoute><TributeCreationStudio /></ProtectedRoute>} />
-            <Route path="/tribute-creation-studio/:memorialId" element={<ProtectedRoute><TributeCreationStudio /></ProtectedRoute>} />
-            <Route path="/memorials" element={<ProtectedRoute><MemorialsPage /></ProtectedRoute>} />
-            <Route path="/memorials/:id" element={<ProtectedRoute><MemorialDetail /></ProtectedRoute>} />
-            <Route path="/salas" element={<ProtectedRoute><RoomsManagement /></ProtectedRoute>} />
+            {/* Rutas protegidas (requieren login) — comparten el AppLayout con sidebar */}
+            <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
+              <Route path="/" element={<ExecutiveOverview />} />
+              <Route path="/executive-overview" element={<ExecutiveOverview />} />
+              <Route path="/analytics-hub" element={<AnalyticsHub />} />
+              <Route path="/system-health-monitor" element={<SystemHealthMonitor />} />
+              <Route path="/location-performance" element={<LocationPerformance />} />
+              <Route path="/operations-control-center" element={<OperationsControlCenter />} />
+              <Route path="/tribute-creation-studio" element={<TributeCreationStudio />} />
+              <Route path="/tribute-creation-studio/:memorialId" element={<TributeCreationStudio />} />
+              <Route path="/memorials" element={<MemorialsPage />} />
+              <Route path="/memorials/:id" element={<MemorialDetail />} />
+              <Route path="/salas" element={<RoomsManagement />} />
+            </Route>
 
             <Route path="*" element={<NotFound />} />
           </RouterRoutes>

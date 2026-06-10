@@ -1,7 +1,6 @@
 import React from 'react';
 import { Helmet } from 'react-helmet';
 import { Link } from 'react-router-dom';
-import Header from '../../components/ui/Header';
 import Icon from '../../components/AppIcon';
 import TributesList from '../tribute-creation-studio/components/TributesList';
 
@@ -13,11 +12,10 @@ const MemorialsPage = () => {
       <Helmet>
         <title>Homenajes | SERCOFUN</title>
       </Helmet>
-      <Header />
       <div className="min-h-screen bg-background">
         {/* Brand header de la seccion */}
         <div
-          className="relative overflow-hidden sticky top-16 z-40"
+          className="relative overflow-hidden sticky top-0 z-40"
           style={{ background: 'linear-gradient(135deg, #1a7472 0%, #234b50 60%, #182e39 100%)' }}
         >
           <div className="absolute top-0 right-0 w-40 h-40 rounded-full opacity-10 pointer-events-none"

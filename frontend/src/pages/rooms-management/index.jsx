@@ -1,7 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { useSearchParams } from 'react-router-dom';
-import Header from '../../components/ui/Header';
 import Icon from '../../components/AppIcon';
 import { cn } from '../../utils/cn';
 import LocationsTab from './components/LocationsTab';
@@ -31,10 +30,9 @@ const RoomsManagement = () => {
   return (
     <>
       <Helmet><title>Gestión de Salas | SERCOFUN</title></Helmet>
-      <Header />
       <div className="min-h-screen bg-background">
         {/* Brand header */}
-        <div className="relative overflow-hidden sticky top-16 z-40"
+        <div className="relative overflow-hidden sticky top-0 z-40"
           style={{ background: 'linear-gradient(135deg, #1a7472 0%, #234b50 60%, #182e39 100%)' }}>
           <div className="absolute top-0 right-0 w-40 h-40 rounded-full opacity-10 pointer-events-none"
             style={{ background: 'radial-gradient(circle, #a7c9d2, transparent)', transform: 'translate(30%, -30%)' }} />

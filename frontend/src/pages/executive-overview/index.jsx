@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import Header from '../../components/ui/Header';
 import LocationContextSelector from '../../components/ui/LocationContextSelector';
 import UserRoleIndicator from '../../components/ui/UserRoleIndicator';
 import DataRefreshStatus from '../../components/ui/DataRefreshStatus';
@@ -308,8 +307,7 @@ const ExecutiveOverview = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
-      <main className="pt-16">
+      <main>
         {/* Brand page header banner */}
         <div className="relative overflow-hidden"
           style={{ background: 'linear-gradient(135deg, #1a7472 0%, #234b50 60%, #182e39 100%)' }}>

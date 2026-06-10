@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import Header from '../../components/ui/Header';
 import AlertNotificationBadge from '../../components/ui/AlertNotificationBadge';
 import UserRoleIndicator from '../../components/ui/UserRoleIndicator';
 import DataRefreshStatus from '../../components/ui/DataRefreshStatus';
@@ -194,8 +193,7 @@ const AnalyticsHub = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
-      <main className="pt-16">
+      <main>
         {/* Brand page header banner */}
         <div className="relative overflow-hidden"
           style={{ background: 'linear-gradient(135deg, #1a7472 0%, #234b50 60%, #182e39 100%)' }}>

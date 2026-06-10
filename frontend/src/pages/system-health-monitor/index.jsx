@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
-import Header from '../../components/ui/Header';
 import AlertNotificationBadge from '../../components/ui/AlertNotificationBadge';
 import LocationContextSelector from '../../components/ui/LocationContextSelector';
 import UserRoleIndicator from '../../components/ui/UserRoleIndicator';
@@ -505,9 +504,8 @@ const SystemHealthMonitor = () => {
       </Helmet>
 
       <div className="min-h-screen bg-background">
-        <Header />
 
-        <main className="pt-16">
+        <main>
           {/* Brand page header banner */}
           <div className="relative overflow-hidden"
             style={{ background: 'linear-gradient(135deg, #1a7472 0%, #234b50 60%, #182e39 100%)' }}>
