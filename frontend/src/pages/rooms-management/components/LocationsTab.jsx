@@ -8,7 +8,7 @@ import Modal from './Modal';
 
 const emptyForm = { name: '', city: '', address: '', phone: '' };
 
-const LocationsTab = () => {
+const LocationsTab = ({ registerCreate }) => {
   const [locations, setLocations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -40,6 +40,11 @@ const LocationsTab = () => {
     setFormError(null);
     setModalOpen(true);
   };
+
+  // Exponer openCreate al header (boton "Nueva sede" siempre visible).
+  useEffect(() => {
+    if (registerCreate) registerCreate(openCreate);
+  });
 
   const openEdit = (loc) => {
     setEditing(loc);

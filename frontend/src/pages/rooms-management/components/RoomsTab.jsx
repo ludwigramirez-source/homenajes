@@ -27,7 +27,7 @@ const sedeSlug = (name) => (name || '')
 
 const emptyForm = { location_id: '', room_type: '', name: '', code: '', capacity: '' };
 
-const RoomsTab = () => {
+const RoomsTab = ({ registerCreate }) => {
   const [rooms, setRooms] = useState([]);
   const [locations, setLocations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -91,6 +91,11 @@ const RoomsTab = () => {
     setFormError(null);
     setModalOpen(true);
   };
+
+  // Exponer openCreate al header (boton "Nueva sala" siempre visible).
+  useEffect(() => {
+    if (registerCreate) registerCreate(openCreate);
+  });
 
   const openEdit = (room) => {
     setEditing(room);
