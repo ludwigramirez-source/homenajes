@@ -77,19 +77,26 @@ const AnalyticsHub = () => {
               <div className="bg-card border border-border rounded-lg p-5">
                 <h3 className="text-lg font-heading font-semibold text-foreground mb-1">Embudo de interacción del público</h3>
                 <p className="text-xs text-muted-foreground mb-4">Del display a dejar un mensaje</p>
-                <div className="space-y-3">
-                  {funnelSteps.map(s => (
-                    <div key={s.label} className="flex items-center gap-3">
-                      <div className="w-44 shrink-0 flex items-center gap-2 text-sm text-foreground">
-                        <Icon name={s.icon} size={15} className="text-muted-foreground" /> {s.label}
-                      </div>
-                      <div className="flex-1 h-6 rounded-md bg-muted overflow-hidden">
-                        <div className="h-full rounded-md flex items-center justify-end px-2" style={{ width: `${Math.max(6, (s.value / funnelMax) * 100)}%`, background: '#1a7472' }}>
-                          <span className="text-xs font-medium text-white">{s.value}</span>
+                <div className="space-y-4">
+                  {funnelSteps.map(s => {
+                    const pct = data.funnel.display_views > 0
+                      ? Math.round((s.value / data.funnel.display_views) * 100)
+                      : null;
+                    return (
+                      <div key={s.label} className="flex items-center gap-3">
+                        <div className="w-44 shrink-0 flex items-center gap-2 text-sm text-foreground">
+                          <Icon name={s.icon} size={16} className="text-muted-foreground" /> {s.label}
+                        </div>
+                        <div className="flex-1 h-9 rounded-md bg-muted overflow-hidden">
+                          <div className="h-full rounded-md" style={{ width: `${s.value > 0 ? Math.max(2, (s.value / funnelMax) * 100) : 0}%`, background: '#1a7472' }} />
+                        </div>
+                        <div className="w-24 shrink-0 text-right">
+                          <span className="text-lg font-semibold text-foreground">{s.value}</span>
+                          {pct !== null && <span className="text-xs text-muted-foreground ml-1">{pct}%</span>}
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 
