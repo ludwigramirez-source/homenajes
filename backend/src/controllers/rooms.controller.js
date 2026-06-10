@@ -114,9 +114,12 @@ const getActiveMemorial = async (req, res, next) => {
   }
 };
 
+// Tipos de sala validos.
+const VALID_ROOM_TYPES = ['ejecutiva', 'presidencial', 'vip'];
+
 const create = async (req, res, next) => {
   try {
-    const { location_id, name, code, capacity } = req.body;
+    const { location_id, name, code, capacity, room_type } = req.body;
 
     if (!location_id || !name || !code) {
       return res.status(400).json({
@@ -125,14 +128,22 @@ const create = async (req, res, next) => {
       });
     }
 
+    if (room_type && !VALID_ROOM_TYPES.includes(room_type)) {
+      return res.status(400).json({ success: false, error: 'Tipo de sala invalido' });
+    }
+
     const result = await db.query(`
-      INSERT INTO rooms (location_id, name, code, capacity, active)
-      VALUES ($1, $2, $3, $4, true)
+      INSERT INTO rooms (location_id, name, code, capacity, room_type, active)
+      VALUES ($1, $2, $3, $4, $5, true)
       RETURNING *
-    `, [location_id, name, code, capacity]);
+    `, [location_id, name, code, capacity || null, room_type || null]);
 
     res.status(201).json({ success: true, data: result.rows[0] });
   } catch (error) {
+    // 23505 = unique_violation (codigo de sala duplicado)
+    if (error.code === '23505') {
+      return res.status(409).json({ success: false, error: 'Ya existe una sala con ese codigo' });
+    }
     next(error);
   }
 };
@@ -140,17 +151,22 @@ const create = async (req, res, next) => {
 const update = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { name, code, capacity, active } = req.body;
+    const { name, code, capacity, room_type, active } = req.body;
+
+    if (room_type && !VALID_ROOM_TYPES.includes(room_type)) {
+      return res.status(400).json({ success: false, error: 'Tipo de sala invalido' });
+    }
 
     const result = await db.query(`
       UPDATE rooms
       SET name = COALESCE($1, name),
           code = COALESCE($2, code),
           capacity = COALESCE($3, capacity),
-          active = COALESCE($4, active)
-      WHERE id = $5
+          room_type = COALESCE($4, room_type),
+          active = COALESCE($5, active)
+      WHERE id = $6
       RETURNING *
-    `, [name, code, capacity, active, id]);
+    `, [name, code, capacity, room_type, active, id]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, error: 'Sala no encontrada' });
@@ -158,6 +174,9 @@ const update = async (req, res, next) => {
 
     res.json({ success: true, data: result.rows[0] });
   } catch (error) {
+    if (error.code === '23505') {
+      return res.status(409).json({ success: false, error: 'Ya existe una sala con ese codigo' });
+    }
     next(error);
   }
 };

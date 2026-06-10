@@ -41,70 +41,74 @@ const seedDatabase = async () => {
     `, [adminPassword, supervisorPassword, operatorPassword]);
     console.log('[SEED] Usuarios creados (admin/admin123, supervisor/super123, operator/operator123)');
 
-    // ========== SEDES (LOCATIONS) ==========
-    const locations = [
-      { name: 'Funerario Los Olivos - Sede Principal', city: 'Cali', address: 'Avenida Roosevelt #38-20', phone: '+57 602 5530000' },
-      { name: 'Funerario Los Olivos - Norte', city: 'Cali', address: 'Carrera 100 #16-15', phone: '+57 602 5530001' },
-      { name: 'Funerario Los Olivos - Palmira', city: 'Palmira', address: 'Calle 30 #28-10', phone: '+57 602 2720000' },
-      { name: 'Funerario Los Olivos - Buga', city: 'Buga', address: 'Carrera 14 #4-12', phone: '+57 602 2370000' },
-      { name: 'Funerario Los Olivos - Tulua', city: 'Tulua', address: 'Calle 26 #25-30', phone: '+57 602 2330000' }
+    // ========== SEDES (LOCATIONS) + SALAS (ROOMS) ==========
+    // Datos reales de SERCOFUN Los Olivos. Cada sede tiene salas tipificadas:
+    // ejecutiva / presidencial / vip. Sedes marcadas N/A en la tabla original
+    // (Cai, Palmira Horno, Calarca) se crean con 1 sala ejecutiva por defecto;
+    // se puede ajustar luego desde el modulo de gestion de salas.
+    const SEDES = [
+      { name: 'Cali Templo',            city: 'Cali',                   address: 'Calle 13 # 50-70',              slug: 'CALITEMPLO',   rooms: { ejecutiva: 7, presidencial: 3, vip: 0 } },
+      { name: 'Vásquez Cobo',           city: 'Cali',                   address: 'Av Vásquez Cobo # 24 AN-44',    slug: 'VASQUEZCOBO',  rooms: { ejecutiva: 3, presidencial: 1, vip: 0 } },
+      { name: 'San Fernando',           city: 'Cali',                   address: 'Cra 36 # 5B 3-14',              slug: 'SANFERNANDO',  rooms: { ejecutiva: 4, presidencial: 0, vip: 0 } },
+      { name: 'Cai',                    city: 'Cali',                   address: 'Cra 36 # 4B-08 B/San Fernando', slug: 'CAI',          rooms: { ejecutiva: 1, presidencial: 0, vip: 0 } },
+      { name: 'Aguablanca',             city: 'Cali',                   address: 'Cra 27 # 96-32',                slug: 'AGUABLANCA',   rooms: { ejecutiva: 2, presidencial: 0, vip: 0 } },
+      { name: 'Palmira',                city: 'Palmira',                address: 'Calle 23 # 33-122',             slug: 'PALMIRA',      rooms: { ejecutiva: 3, presidencial: 2, vip: 1 } },
+      { name: 'Palmira Horno',          city: 'Palmira',                address: 'Calle 20 # 33A-66',             slug: 'PALMIRAHORNO', rooms: { ejecutiva: 1, presidencial: 0, vip: 0 } },
+      { name: 'Santander de Quilichao', city: 'Santander de Quilichao', address: 'Calle 2 # 8A-12',               slug: 'SANTANDERQ',   rooms: { ejecutiva: 2, presidencial: 1, vip: 0 } },
+      { name: 'Buenaventura',           city: 'Buenaventura',           address: 'Calle 6 # 55-40 B/Laureles',    slug: 'BUENAVENTURA', rooms: { ejecutiva: 2, presidencial: 1, vip: 0 } },
+      { name: 'Pasto',                  city: 'Pasto',                  address: 'Cra 36 # 19-44 B/Palermo',      slug: 'PASTO',        rooms: { ejecutiva: 1, presidencial: 1, vip: 0 } },
+      { name: 'Pereira Cuba',           city: 'Pereira',                address: 'Calle 72-16 # 26-20 B/Cuba',    slug: 'PEREIRACUBA',  rooms: { ejecutiva: 2, presidencial: 0, vip: 0 } },
+      { name: 'Pereira 30 de Agosto',   city: 'Pereira',                address: 'Av 30 de Agosto # 39-16',       slug: 'PEREIRA30',    rooms: { ejecutiva: 3, presidencial: 1, vip: 0 } },
+      { name: 'Calarcá',                city: 'Calarcá',                address: 'Calle 38 # 25-25',              slug: 'CALARCA',      rooms: { ejecutiva: 1, presidencial: 0, vip: 0 } },
+      { name: 'Dosquebradas',           city: 'Dosquebradas',           address: 'Cra 16 # 36-83',                slug: 'DOSQUEBRADAS', rooms: { ejecutiva: 2, presidencial: 0, vip: 0 } },
+      { name: 'Cartago',                city: 'Cartago',                address: 'Cra 2 # 12-37',                 slug: 'CARTAGO',      rooms: { ejecutiva: 2, presidencial: 0, vip: 0 } },
+      { name: 'Armenia Centro',         city: 'Armenia',                address: 'Cra 13 # 24-27',                slug: 'ARMENIACENTRO',rooms: { ejecutiva: 4, presidencial: 0, vip: 0 } },
+      { name: 'Armenia Fundadores',     city: 'Armenia',                address: 'Cra 13A # 2 Norte-29',          slug: 'ARMENIAFUND',  rooms: { ejecutiva: 2, presidencial: 1, vip: 0 } }
     ];
 
-    const locationIds = [];
-    for (const loc of locations) {
-      const result = await client.query(`
-        INSERT INTO locations (name, city, address, phone, active)
-        VALUES ($1, $2, $3, $4, true)
-        ON CONFLICT DO NOTHING
-        RETURNING id
-      `, [loc.name, loc.city, loc.address, loc.phone]);
-      
-      if (result.rows.length > 0) {
-        locationIds.push(result.rows[0].id);
-      } else {
-        const existing = await client.query('SELECT id FROM locations WHERE name = $1', [loc.name]);
-        if (existing.rows.length > 0) locationIds.push(existing.rows[0].id);
-      }
-    }
-    console.log(`[SEED] ${locationIds.length} sedes creadas`);
+    const TYPE_META = {
+      ejecutiva:    { label: 'Ejecutiva',    abbr: 'EJE' },
+      presidencial: { label: 'Presidencial', abbr: 'PRE' },
+      vip:          { label: 'VIP',          abbr: 'VIP' }
+    };
 
-    // ========== SALAS (ROOMS) ==========
-    // 11 salas por sede = 55 salas en total
-    const roomsPerLocation = [
-      { name: 'Capilla 1', code: 'CAP-01' },
-      { name: 'Capilla 2', code: 'CAP-02' },
-      { name: 'Capilla 3', code: 'CAP-03' },
-      { name: 'Capilla 4', code: 'CAP-04' },
-      { name: 'Capilla 5', code: 'CAP-05' },
-      { name: 'Sala Principal', code: 'SP-01' },
-      { name: 'Sala VIP', code: 'VIP-01' },
-      { name: 'Sala A', code: 'SA-A' },
-      { name: 'Sala B', code: 'SA-B' },
-      { name: 'Sala C', code: 'SA-C' },
-      { name: 'Sala Familiar', code: 'SF-01' }
-    ];
-
+    let totalSedes = 0;
     let totalRooms = 0;
-    let firstRoomId = null;
-    
-    for (let i = 0; i < locationIds.length; i++) {
-      const locationId = locationIds[i];
-      for (const room of roomsPerLocation) {
-        const uniqueCode = `${room.code}-${i + 1}`;
-        const result = await client.query(`
-          INSERT INTO rooms (location_id, name, code, capacity, active)
-          VALUES ($1, $2, $3, $4, true)
-          ON CONFLICT (code) DO NOTHING
+
+    for (const sede of SEDES) {
+      // Sede idempotente: buscar por nombre, crear si no existe.
+      let locationId;
+      const existing = await client.query('SELECT id FROM locations WHERE name = $1', [sede.name]);
+      if (existing.rows.length > 0) {
+        locationId = existing.rows[0].id;
+      } else {
+        const ins = await client.query(`
+          INSERT INTO locations (name, city, address, phone, active)
+          VALUES ($1, $2, $3, NULL, true)
           RETURNING id
-        `, [locationId, room.name, uniqueCode, 50]);
-        
-        if (result.rows.length > 0) {
-          totalRooms++;
-          if (!firstRoomId) firstRoomId = result.rows[0].id;
+        `, [sede.name, sede.city, sede.address]);
+        locationId = ins.rows[0].id;
+        totalSedes++;
+      }
+
+      // Salas por tipo. Codigo unico: <SLUG>-<ABBR>-<NN>.
+      for (const type of ['ejecutiva', 'presidencial', 'vip']) {
+        const count = sede.rooms[type] || 0;
+        const meta = TYPE_META[type];
+        for (let n = 1; n <= count; n++) {
+          const code = `${sede.slug}-${meta.abbr}-${String(n).padStart(2, '0')}`;
+          const name = `Sala ${meta.label} ${n}`;
+          const r = await client.query(`
+            INSERT INTO rooms (location_id, name, code, room_type, active)
+            VALUES ($1, $2, $3, $4, true)
+            ON CONFLICT (code) DO NOTHING
+            RETURNING id
+          `, [locationId, name, code, type]);
+          if (r.rows.length > 0) totalRooms++;
         }
       }
     }
-    console.log(`[SEED] ${totalRooms} salas creadas (11 por sede)`);
+    console.log(`[SEED] ${totalSedes} sedes nuevas, ${totalRooms} salas nuevas creadas`);
 
     // ========== CATALOGO: CEREMONY VENUES (exequias y destino final) ==========
     // Venues globales (sin location_id) que aplican para todas las sedes.
@@ -138,92 +142,11 @@ const seedDatabase = async () => {
     }
     console.log(`[SEED] ${venues.length} venues de ceremonia creados`);
 
-    // ========== HOMENAJE DEMO: PEDRO ROJAS ==========
-    if (firstRoomId) {
-      const adminUser = await client.query("SELECT id FROM users WHERE username = 'admin'");
-      const adminId = adminUser.rows[0]?.id;
+    // Nota: ya no se crea un homenaje demo (Pedro Rojas). Los homenajes reales
+    // se crean desde el modulo de creacion de tributos. Las salas quedan
+    // "disponibles" hasta que se les asigne un homenaje activo.
 
-      // Ventana amplia para que el homenaje demo siempre este activo,
-      // independiente de la zona horaria del servidor o el momento de acceso.
-      const scheduleStart = new Date(Date.now() - 60 * 60 * 1000);          // hace 1 hora
-      const scheduleEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);  // en 30 dias
-
-      // Datos de ceremonia para el demo: exequias 1 dia despues del ingreso,
-      // destino final 2 horas despues de las exequias.
-      const exequiasDatetime = new Date(scheduleStart.getTime() + 24 * 60 * 60 * 1000);
-      const finalDestDatetime = new Date(exequiasDatetime.getTime() + 2 * 60 * 60 * 1000);
-
-      // Foto del difunto: si esta el asset local optimizado, lo copiamos al
-      // volumen uploads. Si no, fallback a una imagen demo en CDN externo.
-      const pedroPhotoUrl = copyAssetToUploads('pedrorojas.jpg')
-        || 'https://cdn.prod.website-files.com/63d16ac1f3b67004193c8ff9/63d2e9a8a700ac724c0b51f2_adulto-mayor-h.jpg';
-
-      const memorialResult = await client.query(`
-        INSERT INTO memorials (
-          room_id, deceased_name, birth_year, death_year, photo_url,
-          emotional_message, schedule_start, schedule_end, active, created_by,
-          exequias_venue_id, exequias_datetime,
-          final_destination_venue_id, final_destination_datetime
-        )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true, $9, $10, $11, $12, $13)
-        ON CONFLICT DO NOTHING
-        RETURNING id
-      `, [
-        firstRoomId,
-        'Pedro Rojas',
-        1995,
-        2026,
-        pedroPhotoUrl,
-        'Hay seres que no se van, solo se transforman en luz para guiarnos. Con el corazon roto, pero agradecidos por cada segundo compartido, despedimos a nuestro/a querido/a. Su amor sera nuestro refugio eterno.',
-        scheduleStart,
-        scheduleEnd,
-        adminId,
-        venueIds['Capilla de Los Olivos'] || null,
-        exequiasDatetime,
-        venueIds['Crematorio Los Olivos'] || null,
-        finalDestDatetime
-      ]);
-
-      if (memorialResult.rows.length > 0) {
-        const memorialId = memorialResult.rows[0].id;
-        console.log(`[SEED] Homenaje demo creado: Pedro Rojas (ID: ${memorialId})`);
-
-        // Algunas condolencias de ejemplo
-        const sampleCondolences = [
-          {
-            name: 'Maria Gonzalez',
-            email: 'maria.gonzalez@email.com',
-            phone: '+57 300 1234567',
-            message: 'Mi mas sentido pesame a la familia. Pedro fue una persona maravillosa que dejo huella en todos los que lo conocimos. Que descanse en paz.',
-            consent: true
-          },
-          {
-            name: 'Carlos Ramirez',
-            email: 'carlos.r@email.com',
-            phone: '+57 301 9876543',
-            message: 'Compartimos tantos momentos juntos en el trabajo. Su sonrisa y bondad siempre nos acompanaran. Un fuerte abrazo a toda la familia.',
-            consent: true
-          },
-          {
-            name: 'Ana Martinez',
-            email: 'ana.martinez@email.com',
-            phone: null,
-            message: 'Aunque no nos conocimos personalmente, supe de Pedro a traves de mi esposo. Solo escuche cosas buenas de el. Mis oraciones para su familia.',
-            consent: false
-          }
-        ];
-
-        for (const cond of sampleCondolences) {
-          await client.query(`
-            INSERT INTO condolences (memorial_id, sender_name, sender_email, sender_phone, message, marketing_consent)
-            VALUES ($1, $2, $3, $4, $5, $6)
-          `, [memorialId, cond.name, cond.email, cond.phone, cond.message, cond.consent]);
-        }
-        console.log(`[SEED] ${sampleCondolences.length} condolencias de muestra creadas`);
-      }
-    }
-
-    console.log('[SEED] Datos demo cargados exitosamente');
+    console.log('[SEED] Datos base cargados exitosamente');
     console.log('\n=========================================');
     console.log('CREDENCIALES DE ACCESO:');
     console.log('=========================================');

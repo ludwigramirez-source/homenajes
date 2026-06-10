@@ -67,8 +67,14 @@ const LocationDetailsForm = ({ formData, errors, updateFormData }) => {
     () => locations.map(l => ({ value: l.id, label: `${l.name} (${l.city})` })),
     [locations]
   );
+  const roomTypeLabel = (t) => ({
+    ejecutiva: 'Ejecutiva', presidencial: 'Presidencial', vip: 'VIP'
+  }[t] || '');
   const roomOptions = useMemo(
-    () => rooms.map(r => ({ value: r.id, label: `${r.name} (${r.code})` })),
+    () => rooms.map(r => {
+      const tipo = r.room_type ? ` · ${roomTypeLabel(r.room_type)}` : '';
+      return { value: r.id, label: `${r.name}${tipo}` };
+    }),
     [rooms]
   );
   const exequiasOptions = useMemo(

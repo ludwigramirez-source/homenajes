@@ -13,6 +13,7 @@ import OperationsControlCenter from './pages/operations-control-center';
 import TributeCreationStudio from './pages/tribute-creation-studio';
 import MemorialsPage from './pages/memorials';
 import MemorialDetail from './pages/memorial-detail';
+import RoomsManagement from './pages/rooms-management';
 import DigitalDisplayScreen from './pages/digital-display-screen';
 import MemorialForm from './pages/memorial-form';
 
@@ -39,6 +40,7 @@ const Routes = () => {
             <Route path="/tribute-creation-studio/:memorialId" element={<ProtectedRoute><TributeCreationStudio /></ProtectedRoute>} />
             <Route path="/memorials" element={<ProtectedRoute><MemorialsPage /></ProtectedRoute>} />
             <Route path="/memorials/:id" element={<ProtectedRoute><MemorialDetail /></ProtectedRoute>} />
+            <Route path="/salas" element={<ProtectedRoute><RoomsManagement /></ProtectedRoute>} />
 
             <Route path="*" element={<NotFound />} />
           </RouterRoutes>

@@ -105,6 +105,24 @@ const createTables = async () => {
     `);
     console.log('[MIGRATE] Columnas exequias/destino final agregadas a "memorials"');
 
+    // ========== ALTER: rooms: tipo de sala (Ejecutiva/Presidencial/Vip) ==========
+    await client.query(`
+      ALTER TABLE rooms
+        ADD COLUMN IF NOT EXISTS room_type VARCHAR(20)
+    `);
+    console.log('[MIGRATE] Columna room_type agregada a "rooms"');
+
+    // Indice unico en locations.name para evitar sedes duplicadas (bug previo:
+    // el seed insertaba duplicados en cada reinicio). Guardado en try/catch
+    // porque si todavia hay duplicados (antes de la limpieza) fallaria; en ese
+    // caso se omite y se reintenta en el proximo arranque tras la limpieza.
+    try {
+      await client.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_locations_name_unique ON locations(name)`);
+      console.log('[MIGRATE] Indice unico locations(name) OK');
+    } catch (e) {
+      console.warn('[MIGRATE] No se pudo crear indice unico locations(name) (hay duplicados?):', e.message);
+    }
+
     // ========== ALTER: memorials: horario diario de la sala + datos del titular ==========
     // - daily_hours_start/end: horario que la sala esta habilitada cada dia (footer del display).
     //   Distinto de schedule_start/end (ingreso/salida del cuerpo, fechas+horas).

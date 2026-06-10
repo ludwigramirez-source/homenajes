@@ -40,6 +40,12 @@ const Header = () => {
       description: 'Listado de homenajes creados'
     },
     {
+      label: 'Salas',
+      path: '/salas',
+      icon: 'LayoutGrid',
+      description: 'Gestión de sedes y salas'
+    },
+    {
       label: 'Crear Tributo',
       path: '/tribute-creation-studio',
       icon: 'Heart',
