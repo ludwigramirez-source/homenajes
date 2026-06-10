@@ -40,6 +40,20 @@ const RoomsTab = ({ registerCreate }) => {
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState(null);
+  const [copiedId, setCopiedId] = useState(null);
+
+  // Copia la URL del display (con codigo de sala amigable) al portapapeles.
+  const copyDisplayUrl = async (room) => {
+    const ref = room.code || room.id;
+    const url = `${window.location.origin}/digital-display-screen/${ref}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopiedId(room.id);
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch {
+      window.prompt('Copia la URL del display:', url);
+    }
+  };
 
   const load = async () => {
     try {
@@ -277,6 +291,9 @@ const RoomsTab = ({ registerCreate }) => {
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center justify-end gap-1">
+                    <button onClick={() => copyDisplayUrl(room)} className={cn("p-2 rounded-md hover:bg-muted transition-colors", copiedId === room.id ? "text-green-600" : "text-foreground")} title="Copiar URL del display">
+                      <Icon name={copiedId === room.id ? 'Check' : 'Link'} size={16} />
+                    </button>
                     <button onClick={() => openEdit(room)} className="p-2 rounded-md hover:bg-muted transition-colors text-primary" title="Editar">
                       <Icon name="Edit3" size={16} />
                     </button>

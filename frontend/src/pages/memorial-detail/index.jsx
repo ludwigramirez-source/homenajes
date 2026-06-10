@@ -122,7 +122,7 @@ const MemorialDetail = () => {
                 {memorial?.room_id && (
                   <>
                     <a
-                      href={`/digital-display-screen/${memorial.room_id}`}
+                      href={`/digital-display-screen/${memorial.room_code || memorial.room_id}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-2 px-3 py-2 rounded-lg font-heading font-medium text-sm
@@ -132,7 +132,7 @@ const MemorialDetail = () => {
                       Ver display
                     </a>
                     <a
-                      href={`/memorial-form/${memorial.room_id}`}
+                      href={`/memorial-form/${memorial.room_code || memorial.room_id}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-2 px-3 py-2 rounded-lg font-heading font-medium text-sm

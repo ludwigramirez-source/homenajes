@@ -173,8 +173,10 @@ const TributesList = () => {
               </tr>
             ) : null}
             {filteredTributes.map(t => {
-              const displayUrl = `${window.location.origin}/digital-display-screen/${t.room_id}`;
-              const formUrl = `${window.location.origin}/memorial-form/${t.room_id}`;
+              // Usamos el codigo de sala (amigable) en la URL en vez del UUID.
+              const roomRef = t.room_code || t.room_id;
+              const displayUrl = `${window.location.origin}/digital-display-screen/${roomRef}`;
+              const formUrl = `${window.location.origin}/memorial-form/${roomRef}`;
               return (
                 <tr key={t.id} className="border-t border-border hover:bg-muted/20 transition-colors">
                   <td className="px-4 py-3">

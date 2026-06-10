@@ -89,7 +89,7 @@ const getActiveMemorial = async (req, res, next) => {
       JOIN locations l ON r.location_id = l.id
       LEFT JOIN ceremony_venues ev ON m.exequias_venue_id = ev.id
       LEFT JOIN ceremony_venues fd ON m.final_destination_venue_id = fd.id
-      WHERE r.id = $1
+      WHERE (r.code = UPPER($1) OR r.id::text = $1)
         AND m.active = true
         AND CURRENT_TIMESTAMP BETWEEN m.schedule_start AND m.schedule_end
       LIMIT 1

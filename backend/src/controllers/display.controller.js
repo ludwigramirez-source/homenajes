@@ -63,7 +63,7 @@ const getDisplay = async (req, res, next) => {
       JOIN locations l ON r.location_id = l.id
       LEFT JOIN ceremony_venues ev ON m.exequias_venue_id = ev.id
       LEFT JOIN ceremony_venues fd ON m.final_destination_venue_id = fd.id
-      WHERE r.id = $1
+      WHERE (r.code = UPPER($1) OR r.id::text = $1)
         AND m.active = true
         AND CURRENT_TIMESTAMP BETWEEN m.schedule_start AND m.schedule_end
       LIMIT 1
@@ -109,7 +109,10 @@ const getDisplay = async (req, res, next) => {
     }));
 
     // 4) Generar QR como SVG inline (cero JS cliente, escala bien en cualquier resolucion).
-    const qrTarget = baseUrl + '/memorial-form/' + encodeURIComponent(roomId);
+    // Usamos el codigo de sala (amigable) en vez del UUID para que la URL del
+    // formulario sea legible.
+    const friendlyId = m.room_code || roomId;
+    const qrTarget = baseUrl + '/memorial-form/' + encodeURIComponent(friendlyId);
     const qrSvg = await QRCode.toString(qrTarget, {
       type: 'svg',
       errorCorrectionLevel: 'H',
@@ -152,7 +155,7 @@ const getDisplay = async (req, res, next) => {
       page: effectivePage,
       totalPages: totalPages,
       screen: screenParam,
-      roomId: roomId,
+      roomId: friendlyId,
       baseUrl: baseUrl,
       qrSvg: qrSvg,
       preview: isPreview
