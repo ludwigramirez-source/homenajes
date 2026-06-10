@@ -130,6 +130,7 @@ export const analyticsService = {
   executive: (params = {}) => api.get('/analytics/executive', { params }).then(r => r.data),
   byLocation: () => api.get('/analytics/by-location').then(r => r.data),
   operations: () => api.get('/analytics/operations').then(r => r.data),
+  detailed: (params = {}) => api.get('/analytics/detailed', { params }).then(r => r.data),
   health: () => api.get('/analytics/health').then(r => r.data)
 };
 

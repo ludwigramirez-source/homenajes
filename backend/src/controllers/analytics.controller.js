@@ -98,35 +98,37 @@ const executive = async (req, res, next) => {
   }
 };
 
-// Performance por ubicacion
+// Performance por ubicacion (con ocupacion de salas). El operador solo ve su sede.
 const byLocation = async (req, res, next) => {
   try {
+    const locationId = resolveLocationScope(req);
     const result = await db.query(`
-      SELECT 
+      SELECT
         l.id,
         l.name,
         l.city,
         COUNT(DISTINCT r.id) as total_rooms,
+        COUNT(DISTINCT r.id) FILTER (
+          WHERE EXISTS (
+            SELECT 1 FROM memorials mm
+            WHERE mm.room_id = r.id AND mm.active = true
+              AND CURRENT_TIMESTAMP BETWEEN mm.schedule_start AND mm.schedule_end
+          )
+        ) as occupied_rooms,
         COUNT(DISTINCT m.id) as total_memorials,
         COUNT(DISTINCT m.id) FILTER (
-          WHERE m.active = true 
+          WHERE m.active = true
           AND CURRENT_TIMESTAMP BETWEEN m.schedule_start AND m.schedule_end
         ) as active_memorials,
-        COUNT(c.id) as total_condolences,
-        ROUND(AVG(condolence_counts.count), 2) as avg_condolences_per_memorial
+        COUNT(c.id) as total_condolences
       FROM locations l
       LEFT JOIN rooms r ON l.id = r.location_id
       LEFT JOIN memorials m ON r.id = m.room_id
       LEFT JOIN condolences c ON m.id = c.memorial_id
-      LEFT JOIN (
-        SELECT memorial_id, COUNT(*) as count
-        FROM condolences
-        GROUP BY memorial_id
-      ) condolence_counts ON m.id = condolence_counts.memorial_id
-      WHERE l.active = true
+      WHERE l.active = true AND ($1::uuid IS NULL OR l.id = $1)
       GROUP BY l.id
-      ORDER BY total_condolences DESC
-    `);
+      ORDER BY total_condolences DESC, l.name
+    `, [locationId]);
 
     res.json({ success: true, data: result.rows });
   } catch (error) {
@@ -134,19 +136,16 @@ const byLocation = async (req, res, next) => {
   }
 };
 
-// Centro de control operativo
+// Centro de control operativo (tiempo real). El operador solo ve su sede.
 const operations = async (req, res, next) => {
   try {
+    const locationId = resolveLocationScope(req);
+
     const activeMemorials = await db.query(`
-      SELECT 
-        m.id,
-        m.deceased_name,
-        m.schedule_start,
-        m.schedule_end,
-        r.name as room_name,
-        r.code as room_code,
-        l.name as location_name,
-        l.city,
+      SELECT
+        m.id, m.deceased_name, m.schedule_start, m.schedule_end,
+        r.name as room_name, r.code as room_code,
+        l.name as location_name, l.city,
         (SELECT COUNT(*) FROM condolences WHERE memorial_id = m.id) as condolence_count,
         (SELECT COUNT(*) FROM memorial_views WHERE memorial_id = m.id AND view_type = 'display') as display_views
       FROM memorials m
@@ -154,45 +153,44 @@ const operations = async (req, res, next) => {
       JOIN locations l ON r.location_id = l.id
       WHERE m.active = true
         AND CURRENT_TIMESTAMP BETWEEN m.schedule_start AND m.schedule_end
+        AND ($1::uuid IS NULL OR r.location_id = $1)
       ORDER BY m.schedule_start ASC
-    `);
+    `, [locationId]);
 
     const upcomingMemorials = await db.query(`
-      SELECT 
-        m.id,
-        m.deceased_name,
-        m.schedule_start,
-        m.schedule_end,
-        r.name as room_name,
-        l.name as location_name,
-        l.city
+      SELECT
+        m.id, m.deceased_name, m.schedule_start, m.schedule_end,
+        r.name as room_name, l.name as location_name, l.city
       FROM memorials m
       JOIN rooms r ON m.room_id = r.id
       JOIN locations l ON r.location_id = l.id
       WHERE m.active = true
         AND m.schedule_start > CURRENT_TIMESTAMP
         AND m.schedule_start <= CURRENT_TIMESTAMP + INTERVAL '3 days'
+        AND ($1::uuid IS NULL OR r.location_id = $1)
       ORDER BY m.schedule_start ASC
-    `);
+    `, [locationId]);
 
     const recentCondolences = await db.query(`
-      SELECT 
+      SELECT
         c.id, c.sender_name, c.message, c.created_at,
         m.deceased_name, r.name as room_name, l.name as location_name
       FROM condolences c
       JOIN memorials m ON c.memorial_id = m.id
       JOIN rooms r ON m.room_id = r.id
       JOIN locations l ON r.location_id = l.id
+      WHERE ($1::uuid IS NULL OR r.location_id = $1)
       ORDER BY c.created_at DESC
       LIMIT 20
-    `);
+    `, [locationId]);
 
     res.json({
       success: true,
       data: {
         active_memorials: activeMemorials.rows,
         upcoming_memorials: upcomingMemorials.rows,
-        recent_condolences: recentCondolences.rows
+        recent_condolences: recentCondolences.rows,
+        scoped_to_location: !!locationId
       }
     });
   } catch (error) {
@@ -200,18 +198,126 @@ const operations = async (req, res, next) => {
   }
 };
 
-// Estado del sistema
+// Analisis detallado: embudo de interaccion + distribuciones. Scope por sede.
+const detailed = async (req, res, next) => {
+  try {
+    const locationId = resolveLocationScope(req);
+    const { fromStr, toStr } = resolveRange(req);
+
+    const [funnel, byType, photos, consent, trend] = await Promise.all([
+      // Embudo: eventos de memorial_views + mensajes enviados, en rango y scope.
+      db.query(`
+        SELECT
+          COUNT(*) FILTER (WHERE mv.view_type = 'display') AS display_views,
+          COUNT(*) FILTER (WHERE mv.view_type = 'qr_scan') AS qr_scans,
+          COUNT(*) FILTER (WHERE mv.view_type = 'form_open') AS form_opens
+        FROM memorial_views mv
+        JOIN memorials m ON mv.memorial_id = m.id
+        JOIN rooms r ON m.room_id = r.id
+        WHERE mv.created_at BETWEEN $1 AND $2 AND ($3::uuid IS NULL OR r.location_id = $3)
+      `, [fromStr, toStr, locationId]),
+      // Homenajes y mensajes por tipo de sala.
+      db.query(`
+        SELECT COALESCE(r.room_type, 'sin_tipo') AS room_type,
+               COUNT(DISTINCT m.id) AS memorials,
+               COUNT(c.id) AS messages
+        FROM rooms r
+        LEFT JOIN memorials m ON m.room_id = r.id AND m.created_at BETWEEN $1 AND $2
+        LEFT JOIN condolences c ON c.memorial_id = m.id
+        WHERE ($3::uuid IS NULL OR r.location_id = $3)
+        GROUP BY COALESCE(r.room_type, 'sin_tipo')
+        ORDER BY messages DESC
+      `, [fromStr, toStr, locationId]),
+      // Mensajes con / sin foto adjunta.
+      db.query(`
+        SELECT
+          COUNT(*) FILTER (WHERE c.file1_url IS NOT NULL OR c.file2_url IS NOT NULL) AS with_photo,
+          COUNT(*) FILTER (WHERE c.file1_url IS NULL AND c.file2_url IS NULL) AS without_photo
+        FROM condolences c
+        JOIN memorials m ON c.memorial_id = m.id
+        JOIN rooms r ON m.room_id = r.id
+        WHERE c.created_at BETWEEN $1 AND $2 AND ($3::uuid IS NULL OR r.location_id = $3)
+      `, [fromStr, toStr, locationId]),
+      // Consentimiento de marketing en los mensajes.
+      db.query(`
+        SELECT
+          COUNT(*) FILTER (WHERE c.marketing_consent = true) AS yes,
+          COUNT(*) FILTER (WHERE c.marketing_consent = false) AS no
+        FROM condolences c
+        JOIN memorials m ON c.memorial_id = m.id
+        JOIN rooms r ON m.room_id = r.id
+        WHERE c.created_at BETWEEN $1 AND $2 AND ($3::uuid IS NULL OR r.location_id = $3)
+      `, [fromStr, toStr, locationId]),
+      // Tendencia de mensajes por dia (para grafico).
+      db.query(`
+        SELECT TO_CHAR(DATE(c.created_at), 'YYYY-MM-DD') AS date, COUNT(*) AS count
+        FROM condolences c
+        JOIN memorials m ON c.memorial_id = m.id
+        JOIN rooms r ON m.room_id = r.id
+        WHERE c.created_at BETWEEN $1 AND $2 AND ($3::uuid IS NULL OR r.location_id = $3)
+        GROUP BY DATE(c.created_at) ORDER BY date ASC
+      `, [fromStr, toStr, locationId])
+    ]);
+
+    const f = funnel.rows[0];
+    const submitted = trend.rows.reduce((acc, r) => acc + parseInt(r.count), 0);
+
+    res.json({
+      success: true,
+      data: {
+        funnel: {
+          display_views: parseInt(f.display_views) || 0,
+          qr_scans: parseInt(f.qr_scans) || 0,
+          form_opens: parseInt(f.form_opens) || 0,
+          submitted
+        },
+        by_room_type: byType.rows.map(r => ({
+          room_type: r.room_type,
+          memorials: parseInt(r.memorials) || 0,
+          messages: parseInt(r.messages) || 0
+        })),
+        photos: {
+          with_photo: parseInt(photos.rows[0].with_photo) || 0,
+          without_photo: parseInt(photos.rows[0].without_photo) || 0
+        },
+        consent: {
+          yes: parseInt(consent.rows[0].yes) || 0,
+          no: parseInt(consent.rows[0].no) || 0
+        },
+        trend: trend.rows.map(r => ({ date: r.date, count: parseInt(r.count) })),
+        range: { from: fromStr.slice(0, 10), to: toStr.slice(0, 10) },
+        scoped_to_location: !!locationId
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Estado del sistema (monitoreo tecnico).
 const systemHealth = async (req, res, next) => {
   try {
     const dbCheck = await db.query('SELECT NOW() as time');
-    
+
     const stats = await db.query(`
       SELECT
         (SELECT COUNT(*) FROM locations) as locations,
         (SELECT COUNT(*) FROM rooms) as rooms,
         (SELECT COUNT(*) FROM memorials) as memorials,
         (SELECT COUNT(*) FROM condolences) as condolences,
-        (SELECT COUNT(*) FROM users) as users
+        (SELECT COUNT(*) FROM memorial_views) as memorial_views,
+        (SELECT COUNT(*) FROM users WHERE active = true) as users
+    `);
+
+    const usersByRole = await db.query(`
+      SELECT role, COUNT(*) AS count FROM users WHERE active = true GROUP BY role ORDER BY role
+    `);
+
+    const lastActivity = await db.query(`
+      SELECT
+        (SELECT MAX(created_at) FROM memorials) as last_memorial,
+        (SELECT MAX(created_at) FROM condolences) as last_condolence,
+        (SELECT MAX(last_login) FROM users) as last_login
     `);
 
     res.json({
@@ -221,6 +327,8 @@ const systemHealth = async (req, res, next) => {
         database: 'connected',
         server_time: dbCheck.rows[0].time,
         statistics: stats.rows[0],
+        users_by_role: usersByRole.rows,
+        last_activity: lastActivity.rows[0],
         uptime_seconds: Math.floor(process.uptime())
       }
     });
@@ -232,4 +340,4 @@ const systemHealth = async (req, res, next) => {
   }
 };
 
-module.exports = { executive, byLocation, operations, systemHealth };
+module.exports = { executive, byLocation, operations, detailed, systemHealth };
