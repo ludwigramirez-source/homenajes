@@ -98,25 +98,25 @@ const LocationsTab = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="py-12 text-center text-muted-foreground">
-        <Icon name="Loader" size={28} className="animate-spin mx-auto mb-2" />
-        Cargando sedes...
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-4">
+      {/* Toolbar SIEMPRE visible (no depende del estado de carga) */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
           <h3 className="text-lg font-semibold text-foreground">Sedes / Funerarias</h3>
           <p className="text-sm text-muted-foreground">
-            {locations.length} {locations.length === 1 ? 'sede registrada' : 'sedes registradas'}
+            {loading ? 'Cargando...' : `${locations.length} ${locations.length === 1 ? 'sede registrada' : 'sedes registradas'}`}
           </p>
         </div>
-        <Button iconName="Plus" onClick={openCreate}>Nueva sede</Button>
+        <button
+          type="button"
+          onClick={openCreate}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-semibold text-white transition-colors"
+          style={{ background: '#1a7472' }}
+        >
+          <Icon name="Plus" size={16} color="#ffffff" />
+          Nueva sede
+        </button>
       </div>
 
       {error && (
@@ -125,6 +125,14 @@ const LocationsTab = () => {
         </div>
       )}
 
+      {loading && (
+        <div className="py-12 text-center text-muted-foreground">
+          <Icon name="Loader" size={28} className="animate-spin mx-auto mb-2" />
+          Cargando sedes...
+        </div>
+      )}
+
+      {!loading && (
       <div className="overflow-x-auto border border-border rounded-lg">
         <table className="w-full text-sm">
           <thead className="bg-muted/40 text-muted-foreground">
@@ -182,6 +190,7 @@ const LocationsTab = () => {
           </tbody>
         </table>
       </div>
+      )}
 
       <Modal
         open={modalOpen}

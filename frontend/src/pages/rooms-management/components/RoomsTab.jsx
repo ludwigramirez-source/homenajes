@@ -180,22 +180,14 @@ const RoomsTab = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="py-12 text-center text-muted-foreground">
-        <Icon name="Loader" size={28} className="animate-spin mx-auto mb-2" />
-        Cargando salas...
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-4">
+      {/* Toolbar SIEMPRE visible (no depende del estado de carga) */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
           <h3 className="text-lg font-semibold text-foreground">Salas de velación</h3>
           <p className="text-sm text-muted-foreground">
-            {filtered.length} de {rooms.length} {rooms.length === 1 ? 'sala' : 'salas'}
+            {loading ? 'Cargando...' : `${filtered.length} de ${rooms.length} ${rooms.length === 1 ? 'sala' : 'salas'}`}
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -215,7 +207,15 @@ const RoomsTab = () => {
             <option value="">Todos los tipos</option>
             {ROOM_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
           </select>
-          <Button iconName="Plus" onClick={openCreate}>Nueva sala</Button>
+          <button
+            type="button"
+            onClick={openCreate}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-semibold text-white transition-colors"
+            style={{ background: '#1a7472' }}
+          >
+            <Icon name="Plus" size={16} color="#ffffff" />
+            Nueva sala
+          </button>
         </div>
       </div>
 
@@ -225,6 +225,14 @@ const RoomsTab = () => {
         </div>
       )}
 
+      {loading && (
+        <div className="py-12 text-center text-muted-foreground">
+          <Icon name="Loader" size={28} className="animate-spin mx-auto mb-2" />
+          Cargando salas...
+        </div>
+      )}
+
+      {!loading && (
       <div className="overflow-x-auto border border-border rounded-lg">
         <table className="w-full text-sm">
           <thead className="bg-muted/40 text-muted-foreground">
@@ -280,6 +288,7 @@ const RoomsTab = () => {
           </tbody>
         </table>
       </div>
+      )}
 
       <Modal
         open={modalOpen}
