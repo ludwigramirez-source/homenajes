@@ -54,14 +54,16 @@ const Sidebar = ({ mobileOpen, onClose }) => {
         )}
         style={{ background: '#1a7472' }}
       >
-        {/* Marca */}
+        {/* Marca: logo de los displays + titulo */}
         <div className="px-5 py-5 flex items-center gap-3 border-b border-white/15">
-          <div className="w-10 h-10 rounded-full flex items-center justify-center border-2 border-white/30 flex-shrink-0"
-            style={{ background: 'rgba(255,255,255,0.15)' }}>
-            <Icon name="Heart" size={20} color="#ffffff" />
-          </div>
+          <img
+            src="/logo-los-olivos-blanco.png"
+            alt="Los Olivos"
+            className="flex-shrink-0 w-auto"
+            style={{ height: '38px', maxWidth: '96px', objectFit: 'contain' }}
+          />
           <div className="min-w-0">
-            <h1 className="text-lg font-heading font-semibold text-white leading-none truncate">Los Olivos</h1>
+            <h1 className="text-2xl font-heading font-semibold text-white leading-none truncate">Los Olivos</h1>
             <p className="text-xs text-white/65 mt-1 font-body">Homenajes digitales</p>
           </div>
         </div>
