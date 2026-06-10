@@ -6,6 +6,16 @@ import Select from '../../../components/ui/Select';
 import Button from '../../../components/ui/Button';
 import { cn } from '../../../utils/cn';
 import Modal from './Modal';
+import { useTableSort, SortTh } from '../../../components/ui/sortable';
+
+const ROOM_SORT_ACCESSORS = {
+  name: (r) => r.name,
+  room_type: (r) => r.room_type || '',
+  location_name: (r) => r.location_name,
+  code: (r) => r.code,
+  capacity: (r) => Number(r.capacity) || 0,
+  active: (r) => (r.active ? 1 : 0)
+};
 
 const ROOM_TYPES = [
   { value: 'ejecutiva', label: 'Ejecutiva', abbr: 'EJE' },
@@ -86,6 +96,9 @@ const RoomsTab = ({ registerCreate }) => {
       return true;
     });
   }, [rooms, filterSede, filterType]);
+
+  // Ordenamiento por columna sobre la lista filtrada.
+  const { sorted, sort, toggle } = useTableSort(filtered, ROOM_SORT_ACCESSORS);
 
   // Sugiere un codigo unico: <SLUG>-<ABBR>-<NN> contando las salas existentes
   // de esa sede y tipo.
@@ -256,20 +269,20 @@ const RoomsTab = ({ registerCreate }) => {
         <table className="w-full text-sm">
           <thead className="bg-muted/40 text-muted-foreground">
             <tr>
-              <th className="text-left font-medium px-4 py-3">Sala</th>
-              <th className="text-left font-medium px-4 py-3">Tipo</th>
-              <th className="text-left font-medium px-4 py-3">Sede</th>
-              <th className="text-left font-medium px-4 py-3">Código</th>
-              <th className="text-left font-medium px-4 py-3">Cap.</th>
-              <th className="text-left font-medium px-4 py-3">Estado</th>
+              <SortTh label="Sala" sortKey="name" sort={sort} onSort={toggle} />
+              <SortTh label="Tipo" sortKey="room_type" sort={sort} onSort={toggle} />
+              <SortTh label="Sede" sortKey="location_name" sort={sort} onSort={toggle} />
+              <SortTh label="Código" sortKey="code" sort={sort} onSort={toggle} />
+              <SortTh label="Cap." sortKey="capacity" sort={sort} onSort={toggle} />
+              <SortTh label="Estado" sortKey="active" sort={sort} onSort={toggle} />
               <th className="text-right font-medium px-4 py-3">Acciones</th>
             </tr>
           </thead>
           <tbody>
-            {filtered.length === 0 && (
+            {sorted.length === 0 && (
               <tr><td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">No hay salas que coincidan.</td></tr>
             )}
-            {filtered.map(room => (
+            {sorted.map(room => (
               <tr key={room.id} className="border-t border-border hover:bg-muted/20 transition-colors">
                 <td className="px-4 py-3 font-medium text-foreground">{room.name}</td>
                 <td className="px-4 py-3">

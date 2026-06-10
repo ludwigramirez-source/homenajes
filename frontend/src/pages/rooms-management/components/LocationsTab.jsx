@@ -1,17 +1,27 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { locationsService } from '../../../services/api';
 import Icon from '../../../components/AppIcon';
 import Input from '../../../components/ui/Input';
 import Button from '../../../components/ui/Button';
 import { cn } from '../../../utils/cn';
 import Modal from './Modal';
+import { useTableSort, SortTh } from '../../../components/ui/sortable';
 
 const emptyForm = { name: '', city: '', address: '', phone: '' };
+
+const LOC_SORT_ACCESSORS = {
+  name: (l) => l.name,
+  city: (l) => l.city,
+  address: (l) => l.address || '',
+  room_count: (l) => Number(l.room_count) || 0,
+  active: (l) => (l.active ? 1 : 0)
+};
 
 const LocationsTab = ({ registerCreate }) => {
   const [locations, setLocations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [query, setQuery] = useState('');
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null); // null = crear, objeto = editar
@@ -103,6 +113,18 @@ const LocationsTab = ({ registerCreate }) => {
     }
   };
 
+  // Filtro por texto (nombre, ciudad o direccion) + ordenamiento por columna.
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return locations;
+    return locations.filter(l =>
+      (l.name || '').toLowerCase().includes(q) ||
+      (l.city || '').toLowerCase().includes(q) ||
+      (l.address || '').toLowerCase().includes(q)
+    );
+  }, [locations, query]);
+  const { sorted, sort, toggle } = useTableSort(filtered, LOC_SORT_ACCESSORS);
+
   return (
     <div className="space-y-4">
       {/* Toolbar SIEMPRE visible (no depende del estado de carga) */}
@@ -110,18 +132,30 @@ const LocationsTab = ({ registerCreate }) => {
         <div>
           <h3 className="text-lg font-semibold text-foreground">Sedes / Funerarias</h3>
           <p className="text-sm text-muted-foreground">
-            {loading ? 'Cargando...' : `${locations.length} ${locations.length === 1 ? 'sede registrada' : 'sedes registradas'}`}
+            {loading ? 'Cargando...' : `${filtered.length} de ${locations.length} ${locations.length === 1 ? 'sede' : 'sedes'}`}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={openCreate}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-semibold text-white transition-colors"
-          style={{ background: '#1a7472' }}
-        >
-          <Icon name="Plus" size={16} color="#ffffff" />
-          Nueva sede
-        </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="relative">
+            <Icon name="Search" size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Buscar sede o ciudad..."
+              className="pl-9 pr-3 py-2 rounded-md border border-border bg-background text-sm w-60 focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={openCreate}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-semibold text-white transition-colors"
+            style={{ background: '#1a7472' }}
+          >
+            <Icon name="Plus" size={16} color="#ffffff" />
+            Nueva sede
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -142,19 +176,21 @@ const LocationsTab = ({ registerCreate }) => {
         <table className="w-full text-sm">
           <thead className="bg-muted/40 text-muted-foreground">
             <tr>
-              <th className="text-left font-medium px-4 py-3">Sede</th>
-              <th className="text-left font-medium px-4 py-3">Ciudad</th>
-              <th className="text-left font-medium px-4 py-3">Dirección</th>
-              <th className="text-left font-medium px-4 py-3">Salas</th>
-              <th className="text-left font-medium px-4 py-3">Estado</th>
+              <SortTh label="Sede" sortKey="name" sort={sort} onSort={toggle} />
+              <SortTh label="Ciudad" sortKey="city" sort={sort} onSort={toggle} />
+              <SortTh label="Dirección" sortKey="address" sort={sort} onSort={toggle} />
+              <SortTh label="Salas" sortKey="room_count" sort={sort} onSort={toggle} />
+              <SortTh label="Estado" sortKey="active" sort={sort} onSort={toggle} />
               <th className="text-right font-medium px-4 py-3">Acciones</th>
             </tr>
           </thead>
           <tbody>
-            {locations.length === 0 && (
-              <tr><td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">No hay sedes. Crea la primera.</td></tr>
+            {sorted.length === 0 && (
+              <tr><td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
+                {locations.length === 0 ? 'No hay sedes. Crea la primera.' : 'No hay sedes que coincidan.'}
+              </td></tr>
             )}
-            {locations.map(loc => (
+            {sorted.map(loc => (
               <tr key={loc.id} className="border-t border-border hover:bg-muted/20 transition-colors">
                 <td className="px-4 py-3">
                   <div className="font-medium text-foreground">{loc.name}</div>

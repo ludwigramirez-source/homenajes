@@ -3,6 +3,17 @@ import { Link } from 'react-router-dom';
 import { memorialsService } from '../../../services/api';
 import Icon from '../../../components/AppIcon';
 import { cn } from '../../../utils/cn';
+import { useTableSort, SortTh } from '../../../components/ui/sortable';
+
+// Accesores para ordenar (numericos devuelven Number; el resto texto).
+const SORT_ACCESSORS = {
+  deceased_name: (r) => r.deceased_name,
+  location_name: (r) => r.location_name,
+  schedule_start: (r) => (r.schedule_start ? new Date(r.schedule_start).getTime() : 0),
+  schedule_end: (r) => (r.schedule_end ? new Date(r.schedule_end).getTime() : 0),
+  condolence_count: (r) => Number(r.condolence_count) || 0,
+  active: (r) => (r.active ? 1 : 0)
+};
 
 // Formatea fechas legibles en español: "20 May 2026, 14:00"
 const formatDate = (iso) => {
@@ -45,6 +56,8 @@ const TributesList = () => {
     if (filter === 'inactive') return !t.active;
     return true;
   });
+  // Ordenamiento por columna (sobre la lista ya filtrada).
+  const { sorted: sortedTributes, sort, toggle } = useTableSort(filteredTributes, SORT_ACCESSORS);
   const activeCount = tributes.filter(t => t.active).length;
   const inactiveCount = tributes.length - activeCount;
 
@@ -155,24 +168,24 @@ const TributesList = () => {
         <table className="w-full text-sm">
           <thead className="bg-muted/40 text-muted-foreground">
             <tr>
-              <th className="text-left font-medium px-4 py-3">Difunto</th>
-              <th className="text-left font-medium px-4 py-3">Sede / Sala</th>
-              <th className="text-left font-medium px-4 py-3">Ingreso</th>
-              <th className="text-left font-medium px-4 py-3">Salida</th>
-              <th className="text-left font-medium px-4 py-3">Mensajes</th>
-              <th className="text-left font-medium px-4 py-3">Estado</th>
+              <SortTh label="Difunto" sortKey="deceased_name" sort={sort} onSort={toggle} />
+              <SortTh label="Sede / Sala" sortKey="location_name" sort={sort} onSort={toggle} />
+              <SortTh label="Ingreso" sortKey="schedule_start" sort={sort} onSort={toggle} />
+              <SortTh label="Salida" sortKey="schedule_end" sort={sort} onSort={toggle} />
+              <SortTh label="Mensajes" sortKey="condolence_count" sort={sort} onSort={toggle} />
+              <SortTh label="Estado" sortKey="active" sort={sort} onSort={toggle} />
               <th className="text-right font-medium px-4 py-3">Acciones</th>
             </tr>
           </thead>
           <tbody>
-            {filteredTributes.length === 0 ? (
+            {sortedTributes.length === 0 ? (
               <tr>
                 <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground text-sm">
                   No hay homenajes que coincidan con el filtro seleccionado.
                 </td>
               </tr>
             ) : null}
-            {filteredTributes.map(t => {
+            {sortedTributes.map(t => {
               // Usamos el codigo de sala (amigable) en la URL en vez del UUID.
               const roomRef = t.room_code || t.room_id;
               const displayUrl = `${window.location.origin}/digital-display-screen/${roomRef}`;
