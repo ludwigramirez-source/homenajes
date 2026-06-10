@@ -1,7 +1,6 @@
-@import url('https://fonts.googleapis.com/css2?family=Comfortaa:wght@300;400;500;600;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Hind+Vadodara:wght@300;400;500;600;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Raleway:wght@300;400;500;600;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Spectral:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -111,13 +110,13 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: 'Hind Vadodara', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-size: 16px;
     line-height: 1.6;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Comfortaa', cursive;
+    font-family: 'Spectral', Georgia, serif;
     font-weight: 600;
   }
 
@@ -147,14 +146,14 @@
   }
 
   .caption {
-    font-family: 'Raleway', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-size: 0.875rem;
     line-height: 1.4;
     letter-spacing: 0.025em;
   }
 
   .data-text {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'IBM Plex Mono', monospace;
     font-feature-settings: 'tnum' on, 'lnum' on;
   }
 

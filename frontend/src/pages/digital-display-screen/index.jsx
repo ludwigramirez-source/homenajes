@@ -222,12 +222,12 @@ const DigitalDisplayScreen = () => {
                 "relative z-10 text-center mt-8 transition-all duration-700 delay-400",
                 showElements ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
               )}>
-                  <h1 className="text-[2.6rem] font-bold leading-tight text-white" style={{ fontFamily: 'Comfortaa, cursive', textShadow: '0 2px 12px rgba(0,0,0,0.2)' }}>
+                  <h1 className="text-[2.6rem] font-bold leading-tight text-white" style={{ fontFamily: 'Spectral, serif', textShadow: '0 2px 12px rgba(0,0,0,0.2)' }}>
                     {memorialData?.name}
                   </h1>
                   <div className="flex items-center justify-center gap-3 mt-3">
                     <div className="h-[1px] w-10 bg-white opacity-50"></div>
-                    <p className="text-[1.3rem] text-white opacity-80" style={{ fontFamily: 'Hind Vadodara, sans-serif', fontWeight: 300 }}>
+                    <p className="text-[1.3rem] text-white opacity-80" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}>
                       {memorialData?.birthYear} — {memorialData?.deathYear}
                     </p>
                     <div className="h-[1px] w-10 bg-white opacity-50"></div>
@@ -242,13 +242,13 @@ const DigitalDisplayScreen = () => {
                 "transition-all duration-700 delay-100",
                 showElements ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
               )}>
-                  <p className="text-[1.4rem] font-light text-white opacity-80 mb-1" style={{ fontFamily: 'Comfortaa, cursive' }}>
+                  <p className="text-[1.4rem] font-light text-white opacity-80 mb-1" style={{ fontFamily: 'Spectral, serif' }}>
                     En memoria de
                   </p>
-                  <h2 className="text-[4.5rem] font-bold text-white leading-none mb-2" style={{ fontFamily: 'Comfortaa, cursive', textShadow: '0 4px 20px rgba(0,0,0,0.15)' }}>
+                  <h2 className="text-[4.5rem] font-bold text-white leading-none mb-2" style={{ fontFamily: 'Spectral, serif', textShadow: '0 4px 20px rgba(0,0,0,0.15)' }}>
                     {memorialData?.name?.split(' ')?.[0]}
                   </h2>
-                  <p className="text-[1.6rem] font-light text-white opacity-90 mb-10" style={{ fontFamily: 'Comfortaa, cursive' }}>
+                  <p className="text-[1.6rem] font-light text-white opacity-90 mb-10" style={{ fontFamily: 'Spectral, serif' }}>
                     siempre en nuestro corazón
                   </p>
                 </div>
@@ -264,7 +264,7 @@ const DigitalDisplayScreen = () => {
                 "transition-all duration-700 delay-500",
                 showElements ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
               )}>
-                  <p className="text-[1.45rem] leading-[1.9] text-white opacity-90" style={{ fontFamily: 'Hind Vadodara, sans-serif', fontWeight: 300 }}>
+                  <p className="text-[1.45rem] leading-[1.9] text-white opacity-90" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}>
                     {memorialData?.message}
                   </p>
                 </div>
@@ -290,15 +290,15 @@ const DigitalDisplayScreen = () => {
                 "text-center mb-8 transition-all duration-700 delay-100",
                 showElements ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
               )}>
-                <p className="text-[1.1rem] font-light text-white opacity-75 mb-1" style={{ fontFamily: 'Comfortaa, cursive' }}>
+                <p className="text-[1.1rem] font-light text-white opacity-75 mb-1" style={{ fontFamily: 'Spectral, serif' }}>
                   Mensajes para
                 </p>
-                <h2 className="text-[2.6rem] font-bold text-white leading-tight" style={{ fontFamily: 'Comfortaa, cursive', textShadow: '0 2px 12px rgba(0,0,0,0.15)' }}>
+                <h2 className="text-[2.6rem] font-bold text-white leading-tight" style={{ fontFamily: 'Spectral, serif', textShadow: '0 2px 12px rgba(0,0,0,0.15)' }}>
                   {memorialData?.name}
                 </h2>
                 <div className="flex items-center justify-center gap-3 mt-2">
                   <div className="h-[1px] w-12 bg-white opacity-40"></div>
-                  <p className="text-[0.95rem] text-white opacity-70" style={{ fontFamily: 'Hind Vadodara, sans-serif', fontWeight: 300 }}>
+                  <p className="text-[0.95rem] text-white opacity-70" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}>
                     {messages.length === 0
                       ? 'Aún no hay mensajes'
                       : `${messages.length} ${messages.length === 1 ? 'mensaje recibido' : 'mensajes recibidos'}`}
@@ -317,10 +317,10 @@ const DigitalDisplayScreen = () => {
                     <svg className="w-20 h-20 mx-auto mb-6 text-white opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                     </svg>
-                    <p className="text-[1.5rem] text-white opacity-85 font-light mb-3" style={{ fontFamily: 'Comfortaa, cursive' }}>
+                    <p className="text-[1.5rem] text-white opacity-85 font-light mb-3" style={{ fontFamily: 'Spectral, serif' }}>
                       Sé el primero en dejar un mensaje
                     </p>
-                    <p className="text-[1.05rem] text-white opacity-60" style={{ fontFamily: 'Hind Vadodara, sans-serif', fontWeight: 300 }}>
+                    <p className="text-[1.05rem] text-white opacity-60" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}>
                       Escanea el código QR de la siguiente pantalla y comparte un recuerdo con la familia.
                     </p>
                   </div>
@@ -360,7 +360,7 @@ const DigitalDisplayScreen = () => {
                               {photoUrl ? (
                                 <img src={photoUrl} alt={msg.sender_name} className="w-full h-full object-cover" />
                               ) : (
-                                <span className="text-xl font-bold" style={{ fontFamily: 'Comfortaa, cursive' }}>
+                                <span className="text-xl font-bold" style={{ fontFamily: 'Spectral, serif' }}>
                                   {initial}
                                 </span>
                               )}
@@ -371,7 +371,7 @@ const DigitalDisplayScreen = () => {
                           <div className="flex-1 min-w-0 flex flex-col">
                             <p
                               className="text-white text-[0.95rem] font-semibold truncate"
-                              style={{ fontFamily: 'Comfortaa, cursive' }}
+                              style={{ fontFamily: 'Spectral, serif' }}
                               title={msg.sender_name}
                             >
                               {msg.sender_name}
@@ -379,7 +379,7 @@ const DigitalDisplayScreen = () => {
                             <p
                               className="text-white opacity-85 text-[0.92rem] leading-[1.55] mt-2 overflow-hidden"
                               style={{
-                                fontFamily: 'Hind Vadodara, sans-serif',
+                                fontFamily: 'Inter, sans-serif',
                                 fontWeight: 300,
                                 display: '-webkit-box',
                                 WebkitLineClamp: 6,
@@ -452,7 +452,7 @@ const DigitalDisplayScreen = () => {
                 )}>
                   <h2
                     className="text-[4rem] font-bold text-white leading-none"
-                    style={{ fontFamily: 'Comfortaa, cursive', textShadow: '0 4px 20px rgba(0,0,0,0.18)' }}
+                    style={{ fontFamily: 'Spectral, serif', textShadow: '0 4px 20px rgba(0,0,0,0.18)' }}
                   >
                     {memorialData?.name}
                   </h2>
@@ -460,7 +460,7 @@ const DigitalDisplayScreen = () => {
                     <div className="h-[1px] w-16 bg-white opacity-50"></div>
                     <p
                       className="text-[1.4rem] text-white opacity-85"
-                      style={{ fontFamily: 'Hind Vadodara, sans-serif', fontWeight: 300 }}
+                      style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}
                     >
                       {memorialData?.birthYear} — {memorialData?.deathYear}
                     </p>
@@ -475,7 +475,7 @@ const DigitalDisplayScreen = () => {
                 )}>
                   <p
                     className="text-[1.3rem] leading-[1.7] text-white opacity-90"
-                    style={{ fontFamily: 'Hind Vadodara, sans-serif', fontWeight: 300 }}
+                    style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}
                   >
                     Hoy nos reunimos para honrar una vida inolvidable.
                     <br />
@@ -557,7 +557,7 @@ const DigitalDisplayScreen = () => {
                 "relative z-10 text-center mt-8 transition-all duration-700 delay-400",
                 showElements ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
               )}>
-                  <p className="text-[1.2rem] font-medium text-white opacity-80" style={{ fontFamily: 'Comfortaa, cursive' }}>
+                  <p className="text-[1.2rem] font-medium text-white opacity-80" style={{ fontFamily: 'Spectral, serif' }}>
                     Escanea el código QR
                   </p>
                 </div>
@@ -568,13 +568,13 @@ const DigitalDisplayScreen = () => {
                 "transition-all duration-700 delay-100",
                 showElements ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
               )}>
-                  <p className="text-[1.4rem] font-light text-white opacity-80 mb-1" style={{ fontFamily: 'Comfortaa, cursive' }}>
+                  <p className="text-[1.4rem] font-light text-white opacity-80 mb-1" style={{ fontFamily: 'Spectral, serif' }}>
                     En memoria de
                   </p>
-                  <h2 className="text-[4rem] font-bold text-white leading-none mb-2" style={{ fontFamily: 'Comfortaa, cursive', textShadow: '0 4px 20px rgba(0,0,0,0.15)' }}>
+                  <h2 className="text-[4rem] font-bold text-white leading-none mb-2" style={{ fontFamily: 'Spectral, serif', textShadow: '0 4px 20px rgba(0,0,0,0.15)' }}>
                     {memorialData?.name?.split(' ')?.[0]}
                   </h2>
-                  <p className="text-[1.5rem] font-light text-white opacity-90 mb-10" style={{ fontFamily: 'Comfortaa, cursive' }}>
+                  <p className="text-[1.5rem] font-light text-white opacity-90 mb-10" style={{ fontFamily: 'Spectral, serif' }}>
                     estamos a su lado
                   </p>
                 </div>
@@ -585,10 +585,10 @@ const DigitalDisplayScreen = () => {
                 "transition-all duration-700 delay-500",
                 showElements ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
               )}>
-                  <p className="text-[1.5rem] leading-[1.85] text-white opacity-90 font-semibold mb-4" style={{ fontFamily: 'Hind Vadodara, sans-serif' }}>
+                  <p className="text-[1.5rem] leading-[1.85] text-white opacity-90 font-semibold mb-4" style={{ fontFamily: 'Inter, sans-serif' }}>
                     Hazte presente dejando un mensaje
                   </p>
-                  <p className="text-[1.3rem] leading-[1.85] text-white opacity-75" style={{ fontFamily: 'Hind Vadodara, sans-serif', fontWeight: 300 }}>
+                  <p className="text-[1.3rem] leading-[1.85] text-white opacity-75" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}>
                     que proviene desde todo el amor que hay al recordar con el corazón
                   </p>
                 </div>
@@ -599,14 +599,14 @@ const DigitalDisplayScreen = () => {
 
         {/* Footer bar */}
         <div className="absolute bottom-0 left-0 right-0 py-4 px-10 flex items-center justify-between" style={{ background: 'rgba(0,0,0,0.2)', backdropFilter: 'blur(8px)' }}>
-          <p className="text-white opacity-70 text-[0.9rem]" style={{ fontFamily: 'Hind Vadodara, sans-serif' }}>
+          <p className="text-white opacity-70 text-[0.9rem]" style={{ fontFamily: 'Inter, sans-serif' }}>
             Salas habilitadas de <span className="font-semibold opacity-100">08:00 a.m</span> a <span className="font-semibold opacity-100">11:00 p.m</span>
           </p>
           <div className="text-center">
-            <p className="text-white font-bold text-[0.95rem] tracking-wider" style={{ fontFamily: 'Comfortaa, cursive' }}>
+            <p className="text-white font-bold text-[0.95rem] tracking-wider" style={{ fontFamily: 'Spectral, serif' }}>
               FUNERARIA LOS OLIVOS
             </p>
-            <p className="text-white opacity-60 text-[0.8rem]" style={{ fontFamily: 'Hind Vadodara, sans-serif' }}>
+            <p className="text-white opacity-60 text-[0.8rem]" style={{ fontFamily: 'Inter, sans-serif' }}>
               Un homenaje al amor · SERCOFUN LTDA
             </p>
           </div>
@@ -696,7 +696,7 @@ const ServiceEventCard = ({ label, icon, placeName, datetime, delay = 0, visible
       <div className="flex-1 min-w-0">
         <p
           className="text-white opacity-75 text-[0.8rem] uppercase tracking-wider"
-          style={{ fontFamily: 'Comfortaa, cursive', letterSpacing: '0.1em' }}
+          style={{ fontFamily: 'Spectral, serif', letterSpacing: '0.1em' }}
         >
           {label}
         </p>
@@ -705,7 +705,7 @@ const ServiceEventCard = ({ label, icon, placeName, datetime, delay = 0, visible
             "text-white font-bold text-[1.3rem] leading-tight mt-1 truncate",
             accentMissing ? 'opacity-65 italic font-medium' : ''
           )}
-          style={{ fontFamily: 'Comfortaa, cursive' }}
+          style={{ fontFamily: 'Spectral, serif' }}
           title={placeName}
         >
           {placeName || 'Por confirmar'}
@@ -713,7 +713,7 @@ const ServiceEventCard = ({ label, icon, placeName, datetime, delay = 0, visible
         {date !== 'Por confirmar' && (
           <p
             className="text-white opacity-85 text-[1rem] mt-1.5"
-            style={{ fontFamily: 'Hind Vadodara, sans-serif', fontWeight: 300 }}
+            style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}
           >
             {date}{time ? ` · ${time}` : ''}
           </p>

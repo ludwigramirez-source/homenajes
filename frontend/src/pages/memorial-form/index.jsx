@@ -176,10 +176,10 @@ const MemorialForm = () => {
               </svg>
             </div>
 
-            <h2 className="text-3xl font-bold mb-4 text-white" style={{ fontFamily: 'Comfortaa, cursive' }}>
+            <h2 className="text-3xl font-bold mb-4 text-white" style={{ fontFamily: 'Spectral, serif' }}>
               Mensaje enviado
             </h2>
-            <p className="text-lg leading-relaxed text-white opacity-85" style={{ fontFamily: 'Hind Vadodara, sans-serif', fontWeight: 300 }}>
+            <p className="text-lg leading-relaxed text-white opacity-85" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}>
               Gracias por compartir tus recuerdos. Tu mensaje y fotos serán incluidos en el libro de homenaje para la familia.
             </p>
 
@@ -197,7 +197,7 @@ const MemorialForm = () => {
                 alt="Los Olivos"
                 style={{ display: 'inline-block', width: '160px', height: 'auto', opacity: 0.55 }}
               />
-              <p className="text-white opacity-75 text-[0.75rem] mt-2" style={{ fontFamily: 'Hind Vadodara, sans-serif' }}>
+              <p className="text-white opacity-75 text-[0.75rem] mt-2" style={{ fontFamily: 'Inter, sans-serif' }}>
                 Un homenaje al amor
               </p>
             </div>
@@ -236,15 +236,15 @@ const MemorialForm = () => {
               "transition-all duration-700 delay-100",
               showElements ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
             )}>
-              <p className="text-[1.1rem] font-light text-white opacity-80 mb-1" style={{ fontFamily: 'Comfortaa, cursive' }}>
+              <p className="text-[1.1rem] font-light text-white opacity-80 mb-1" style={{ fontFamily: 'Spectral, serif' }}>
                 En memoria de
               </p>
-              <h1 className="text-[2.4rem] font-bold text-white leading-tight" style={{ fontFamily: 'Comfortaa, cursive', textShadow: '0 2px 12px rgba(0,0,0,0.15)' }}>
+              <h1 className="text-[2.4rem] font-bold text-white leading-tight" style={{ fontFamily: 'Spectral, serif', textShadow: '0 2px 12px rgba(0,0,0,0.15)' }}>
                 {memorialData?.name}
               </h1>
               <div className="flex items-center justify-center gap-3 mt-2">
                 <div className="h-[1px] w-8 bg-white opacity-40"></div>
-                <p className="text-[1.1rem] text-white opacity-70" style={{ fontFamily: 'Hind Vadodara, sans-serif', fontWeight: 300 }}>
+                <p className="text-[1.1rem] text-white opacity-70" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}>
                   {memorialData?.birthYear} — {memorialData?.deathYear}
                 </p>
                 <div className="h-[1px] w-8 bg-white opacity-40"></div>
@@ -261,7 +261,7 @@ const MemorialForm = () => {
                 "transition-all duration-700 delay-200",
                 showElements ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
               )}>
-                <label htmlFor="name" className="block text-sm font-semibold mb-2 text-white opacity-90" style={{ fontFamily: 'Hind Vadodara, sans-serif' }}>
+                <label htmlFor="name" className="block text-sm font-semibold mb-2 text-white opacity-90" style={{ fontFamily: 'Inter, sans-serif' }}>
                   Nombre completo *
                 </label>
                 <input
@@ -277,7 +277,7 @@ const MemorialForm = () => {
                   )}
                   style={{
                     fontSize: '16px',
-                    fontFamily: 'Hind Vadodara, sans-serif',
+                    fontFamily: 'Inter, sans-serif',
                     background: 'rgba(255,255,255,0.92)',
                     color: '#1a4a48',
                     border: 'none',
@@ -286,7 +286,7 @@ const MemorialForm = () => {
                   onFocus={e => { e.target.style.background = '#fff'; e.target.style.boxShadow = '0 0 0 3px rgba(240,192,64,0.5), 0 2px 8px rgba(0,0,0,0.1)'; }}
                   onBlur={e => { e.target.style.background = 'rgba(255,255,255,0.92)'; e.target.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)'; }}
                 />
-                {errors?.name && <p className="text-yellow-300 text-sm mt-1.5" style={{ fontFamily: 'Hind Vadodara, sans-serif' }}>{errors?.name}</p>}
+                {errors?.name && <p className="text-yellow-300 text-sm mt-1.5" style={{ fontFamily: 'Inter, sans-serif' }}>{errors?.name}</p>}
               </div>
 
               {/* Correo */}
@@ -294,7 +294,7 @@ const MemorialForm = () => {
                 "transition-all duration-700 delay-300",
                 showElements ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
               )}>
-                <label htmlFor="email" className="block text-sm font-semibold mb-2 text-white opacity-90" style={{ fontFamily: 'Hind Vadodara, sans-serif' }}>
+                <label htmlFor="email" className="block text-sm font-semibold mb-2 text-white opacity-90" style={{ fontFamily: 'Inter, sans-serif' }}>
                   Correo electrónico *
                 </label>
                 <input
@@ -310,7 +310,7 @@ const MemorialForm = () => {
                   )}
                   style={{
                     fontSize: '16px',
-                    fontFamily: 'Hind Vadodara, sans-serif',
+                    fontFamily: 'Inter, sans-serif',
                     background: 'rgba(255,255,255,0.92)',
                     color: '#1a4a48',
                     border: 'none',
@@ -319,7 +319,7 @@ const MemorialForm = () => {
                   onFocus={e => { e.target.style.background = '#fff'; e.target.style.boxShadow = '0 0 0 3px rgba(240,192,64,0.5), 0 2px 8px rgba(0,0,0,0.1)'; }}
                   onBlur={e => { e.target.style.background = 'rgba(255,255,255,0.92)'; e.target.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)'; }}
                 />
-                {errors?.email && <p className="text-yellow-300 text-sm mt-1.5" style={{ fontFamily: 'Hind Vadodara, sans-serif' }}>{errors?.email}</p>}
+                {errors?.email && <p className="text-yellow-300 text-sm mt-1.5" style={{ fontFamily: 'Inter, sans-serif' }}>{errors?.email}</p>}
               </div>
 
               {/* Número */}
@@ -327,7 +327,7 @@ const MemorialForm = () => {
                 "transition-all duration-700 delay-[400ms]",
                 showElements ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
               )}>
-                <label htmlFor="phone" className="block text-sm font-semibold mb-2 text-white opacity-90" style={{ fontFamily: 'Hind Vadodara, sans-serif' }}>
+                <label htmlFor="phone" className="block text-sm font-semibold mb-2 text-white opacity-90" style={{ fontFamily: 'Inter, sans-serif' }}>
                   Número de contacto
                 </label>
                 <input
@@ -340,7 +340,7 @@ const MemorialForm = () => {
                   className="w-full px-4 py-3.5 rounded-xl transition-all duration-300 focus:outline-none"
                   style={{
                     fontSize: '16px',
-                    fontFamily: 'Hind Vadodara, sans-serif',
+                    fontFamily: 'Inter, sans-serif',
                     background: 'rgba(255,255,255,0.92)',
                     color: '#1a4a48',
                     border: 'none',
@@ -356,7 +356,7 @@ const MemorialForm = () => {
                 "transition-all duration-700 delay-[500ms]",
                 showElements ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
               )}>
-                <label htmlFor="message" className="block text-sm font-semibold mb-2 text-white opacity-90" style={{ fontFamily: 'Hind Vadodara, sans-serif' }}>
+                <label htmlFor="message" className="block text-sm font-semibold mb-2 text-white opacity-90" style={{ fontFamily: 'Inter, sans-serif' }}>
                   Tu mensaje *
                 </label>
                 <textarea
@@ -374,7 +374,7 @@ const MemorialForm = () => {
                   style={{
                     fontSize: '16px',
                     minHeight: '130px',
-                    fontFamily: 'Hind Vadodara, sans-serif',
+                    fontFamily: 'Inter, sans-serif',
                     background: 'rgba(255,255,255,0.92)',
                     color: '#1a4a48',
                     border: 'none',
@@ -385,13 +385,13 @@ const MemorialForm = () => {
                 />
                 {/* Contador de caracteres + error en una sola fila */}
                 <div className="flex items-start justify-between mt-1.5 gap-2">
-                  <p className="text-yellow-300 text-sm" style={{ fontFamily: 'Hind Vadodara, sans-serif' }}>
+                  <p className="text-yellow-300 text-sm" style={{ fontFamily: 'Inter, sans-serif' }}>
                     {errors?.message || ''}
                   </p>
                   <p
                     className="text-xs flex-shrink-0 ml-auto"
                     style={{
-                      fontFamily: 'Hind Vadodara, sans-serif',
+                      fontFamily: 'Inter, sans-serif',
                       color: (formData?.message?.length || 0) >= MESSAGE_MAX_LENGTH
                         ? '#fde68a'
                         : 'rgba(255,255,255,0.6)'
@@ -407,7 +407,7 @@ const MemorialForm = () => {
                 "transition-all duration-700 delay-[600ms]",
                 showElements ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
               )}>
-                <label className="block text-sm font-semibold mb-2 text-white opacity-90" style={{ fontFamily: 'Hind Vadodara, sans-serif' }}>
+                <label className="block text-sm font-semibold mb-2 text-white opacity-90" style={{ fontFamily: 'Inter, sans-serif' }}>
                   Adjuntar fotos o recuerdos
                 </label>
                 <div
@@ -435,10 +435,10 @@ const MemorialForm = () => {
                   <svg className="w-9 h-9 mx-auto mb-2 text-white opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                   </svg>
-                  <p className="text-white font-medium opacity-85 text-sm" style={{ fontFamily: 'Hind Vadodara, sans-serif' }}>
+                  <p className="text-white font-medium opacity-85 text-sm" style={{ fontFamily: 'Inter, sans-serif' }}>
                     {files?.length >= 2 ? 'Máximo alcanzado (2 archivos)' : 'Arrastra archivos aquí'}
                   </p>
-                  <p className="text-white opacity-55 text-xs mt-1" style={{ fontFamily: 'Hind Vadodara, sans-serif' }}>
+                  <p className="text-white opacity-55 text-xs mt-1" style={{ fontFamily: 'Inter, sans-serif' }}>
                     o haz clic para seleccionar (máx. 2)
                   </p>
                 </div>
@@ -451,7 +451,7 @@ const MemorialForm = () => {
                           <svg className="w-5 h-5 flex-shrink-0 text-white opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                           </svg>
-                          <span className="text-sm truncate text-white opacity-85" style={{ fontFamily: 'Hind Vadodara, sans-serif' }}>{file?.name}</span>
+                          <span className="text-sm truncate text-white opacity-85" style={{ fontFamily: 'Inter, sans-serif' }}>{file?.name}</span>
                         </div>
                         <button
                           type="button"
@@ -497,11 +497,11 @@ const MemorialForm = () => {
                       )}
                     </div>
                   </div>
-                  <span className="text-sm leading-relaxed text-white opacity-80" style={{ fontFamily: 'Hind Vadodara, sans-serif' }}>
+                  <span className="text-sm leading-relaxed text-white opacity-80" style={{ fontFamily: 'Inter, sans-serif' }}>
                     Autorizo el manejo de mis datos personales para ser incluidos en el libro de homenaje y compartidos con la familia del difunto.
                   </span>
                 </label>
-                {errors?.authorized && <p className="text-yellow-300 text-sm mt-1.5 ml-8" style={{ fontFamily: 'Hind Vadodara, sans-serif' }}>{errors?.authorized}</p>}
+                {errors?.authorized && <p className="text-yellow-300 text-sm mt-1.5 ml-8" style={{ fontFamily: 'Inter, sans-serif' }}>{errors?.authorized}</p>}
               </div>
 
               {/* Botón de envío */}
@@ -512,7 +512,7 @@ const MemorialForm = () => {
                 <button
                   type="submit"
                   className="w-full py-4 font-bold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
-                  style={{ fontFamily: 'Comfortaa, cursive', fontSize: '16px', background: '#f0c040', color: '#1a4a48', boxShadow: '0 4px 20px rgba(240,192,64,0.4)' }}
+                  style={{ fontFamily: 'Spectral, serif', fontSize: '16px', background: '#f0c040', color: '#1a4a48', boxShadow: '0 4px 20px rgba(240,192,64,0.4)' }}
                 >
                   Enviar mensaje de homenaje
                 </button>
@@ -526,7 +526,7 @@ const MemorialForm = () => {
                 alt="Los Olivos"
                 style={{ display: 'inline-block', width: '140px', height: 'auto', opacity: 0.55 }}
               />
-              <p className="text-white opacity-70 text-[0.7rem] mt-2" style={{ fontFamily: 'Hind Vadodara, sans-serif' }}>
+              <p className="text-white opacity-70 text-[0.7rem] mt-2" style={{ fontFamily: 'Inter, sans-serif' }}>
                 Un homenaje al amor
               </p>
             </div>

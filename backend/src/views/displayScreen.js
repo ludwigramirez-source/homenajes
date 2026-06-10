@@ -73,8 +73,8 @@ function commonCss() {
     '  background-image: -webkit-gradient(linear, left top, right bottom, ',
     '    from(#1a9490), color-stop(0.35, #1a7472), color-stop(0.7, #155f5d), to(#0f4a48)); ',
     '  background-image: linear-gradient(160deg, #1a9490 0%, #1a7472 35%, #155f5d 70%, #0f4a48 100%); ',
-    '  color: #ffffff; font-family: "Hind Vadodara", Arial, Helvetica, sans-serif; }',
-    '.font-title { font-family: "Comfortaa", "Trebuchet MS", Arial, sans-serif; font-weight: bold; }',
+    '  color: #ffffff; font-family: "Inter", Arial, Helvetica, sans-serif; }',
+    '.font-title { font-family: "Spectral", Georgia, "Times New Roman", serif; font-weight: bold; }',
     '.layout { width: 100%; height: 100%; }',
     '.layout-table { width: 100%; height: 100%; border-collapse: collapse; }',
     '.col-left, .col-right { vertical-align: middle; padding: 30px 30px; }',
@@ -109,9 +109,9 @@ function commonCss() {
     '  border: 1px solid rgba(255,255,255,0.18); border-radius: 12px; padding: 16px 20px; ',
     '  vertical-align: top; }',
     '.card-label { font-size: 16px; letter-spacing: 2px; text-transform: uppercase; opacity: 0.78; ',
-    '  font-family: "Comfortaa", "Trebuchet MS", Arial, sans-serif; }',
+    '  font-family: "Spectral", Georgia, "Times New Roman", serif; }',
     '.card-value { font-size: 26px; font-weight: bold; line-height: 1.2; margin-top: 6px; ',
-    '  font-family: "Comfortaa", "Trebuchet MS", Arial, sans-serif; ',
+    '  font-family: "Spectral", Georgia, "Times New Roman", serif; ',
     '  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }',
     '.card-value.missing { opacity: 0.6; font-style: italic; font-weight: normal; }',
     '.card-date { font-size: 19px; opacity: 0.88; margin-top: 8px; font-weight: 300; }',
@@ -130,7 +130,7 @@ function commonCss() {
     '  font-size: 26px; font-weight: bold; vertical-align: middle; margin-right: 12px; }',
     '.msg-avatar img { width: 100%; height: 100%; border-radius: 50%; display: block; }',
     '.msg-name { display: inline-block; vertical-align: middle; font-weight: bold; font-size: 20px; ',
-    '  font-family: "Comfortaa", "Trebuchet MS", Arial, sans-serif; }',
+    '  font-family: "Spectral", Georgia, "Times New Roman", serif; }',
     '.msg-text { margin-top: 14px; font-size: 19px; line-height: 1.5; opacity: 0.92; ',
     '  font-weight: 300; }',
     '.msg-empty { text-align: center; padding: 80px 30px; opacity: 0.7; font-size: 26px; ',
@@ -152,7 +152,7 @@ function commonCss() {
     '.footer-left { width: 33%; font-size: 19px; opacity: 0.78; text-align: left; }',
     '.footer-center { width: 34%; text-align: center; }',
     '.footer-center .brand { font-weight: bold; font-size: 18px; letter-spacing: 3px; ',
-    '  font-family: "Comfortaa", "Trebuchet MS", Arial, sans-serif; }',
+    '  font-family: "Spectral", Georgia, "Times New Roman", serif; }',
     // Tagline 2px mas pequena y explicitamente centrada bajo el logo.
     '.footer-center .tagline { font-size: 13px; opacity: 0.75; margin-top: 4px; ',
     '  text-align: center; }',
@@ -200,6 +200,10 @@ function renderShell(opts) {
     '<meta http-equiv="expires" content="0">\n' +
     refresh + '\n' +
     '<title>' + escapeHtml(opts.title) + '</title>\n' +
+    // Fuentes de marca: Spectral (titulos) + Inter (cuerpo). Los navegadores
+    // antiguos de las LG que no las soporten caen al fallback serif/sans-serif.
+    '<link rel="preconnect" href="https://fonts.googleapis.com">\n' +
+    '<link href="https://fonts.googleapis.com/css2?family=Spectral:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">\n' +
     '<style type="text/css">\n' + commonCss() + '\n</style>\n' +
     '</head>\n' +
     '<body>\n' +
