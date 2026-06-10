@@ -108,6 +108,15 @@ export const condolencesService = {
   remove: (id) => api.delete(`/condolences/${id}`).then(r => r.data)
 };
 
+// ============ USERS (gestion de usuarios - solo superadmin) ============
+export const usersService = {
+  getAll: (params = {}) => api.get('/users', { params }).then(r => r.data),
+  getById: (id) => api.get(`/users/${id}`).then(r => r.data),
+  create: (data) => api.post('/users', data).then(r => r.data),
+  update: (id, data) => api.put(`/users/${id}`, data).then(r => r.data),
+  remove: (id) => api.delete(`/users/${id}`).then(r => r.data)
+};
+
 // ============ CEREMONY VENUES (lugares de exequias y destino final) ============
 export const ceremonyVenuesService = {
   // params: { kind?: 'exequias'|'destino_final', location_id?: uuid }

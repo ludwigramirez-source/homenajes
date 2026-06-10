@@ -105,6 +105,25 @@ const createTables = async () => {
     `);
     console.log('[MIGRATE] Columnas exequias/destino final agregadas a "memorials"');
 
+    // ========== ALTER: users: rol auditor + sede asignada ==========
+    // Ampliar los roles permitidos para incluir 'auditor'. Se recrea el CHECK.
+    try {
+      await client.query(`ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check`);
+      await client.query(`
+        ALTER TABLE users ADD CONSTRAINT users_role_check
+        CHECK (role IN ('admin', 'supervisor', 'operator', 'auditor'))
+      `);
+      console.log('[MIGRATE] Constraint de roles de usuario actualizado (+auditor)');
+    } catch (e) {
+      console.warn('[MIGRATE] No se pudo actualizar el constraint de roles:', e.message);
+    }
+    // Sede asignada (para operadores de sede). NULL = sin sede / todas.
+    await client.query(`
+      ALTER TABLE users
+        ADD COLUMN IF NOT EXISTS location_id UUID REFERENCES locations(id) ON DELETE SET NULL
+    `);
+    console.log('[MIGRATE] Columna location_id agregada a "users"');
+
     // ========== ALTER: rooms: tipo de sala (Ejecutiva/Presidencial/Vip) ==========
     await client.query(`
       ALTER TABLE rooms

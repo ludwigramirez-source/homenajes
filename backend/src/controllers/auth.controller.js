@@ -42,7 +42,8 @@ const login = async (req, res, next) => {
       id: user.id,
       username: user.username,
       role: user.role,
-      full_name: user.full_name
+      full_name: user.full_name,
+      location_id: user.location_id || null
     });
 
     res.json({
@@ -54,7 +55,8 @@ const login = async (req, res, next) => {
           username: user.username,
           email: user.email,
           full_name: user.full_name,
-          role: user.role
+          role: user.role,
+          location_id: user.location_id || null
         }
       }
     });
@@ -66,7 +68,7 @@ const login = async (req, res, next) => {
 const me = async (req, res, next) => {
   try {
     const result = await db.query(
-      'SELECT id, username, email, full_name, role, last_login, created_at FROM users WHERE id = $1',
+      'SELECT id, username, email, full_name, role, location_id, last_login, created_at FROM users WHERE id = $1',
       [req.user.id]
     );
 

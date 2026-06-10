@@ -4,14 +4,15 @@ import Icon from '../AppIcon';
 import { useAuth } from '../../context/AuthContext';
 import { cn } from '../../utils/cn';
 
-// Navegacion lateral. Agrupada por dominio: Operacion (uso diario) y Analisis.
+// Navegacion lateral. Cada grupo/item puede declarar `roles` para limitar su
+// visibilidad. Sin `roles` = visible para todos los autenticados.
 const NAV_GROUPS = [
   {
     title: 'Operación',
     items: [
       { label: 'Homenajes', path: '/memorials', icon: 'BookOpen', match: ['/memorials'] },
-      { label: 'Salas y sedes', path: '/salas', icon: 'LayoutGrid', match: ['/salas'] },
-      { label: 'Crear tributo', path: '/tribute-creation-studio', icon: 'Heart', match: ['/tribute-creation-studio'] }
+      { label: 'Salas y sedes', path: '/salas', icon: 'LayoutGrid', match: ['/salas'], roles: ['admin'] },
+      { label: 'Crear tributo', path: '/tribute-creation-studio', icon: 'Heart', match: ['/tribute-creation-studio'], roles: ['admin', 'operator'] }
     ]
   },
   {
@@ -21,7 +22,14 @@ const NAV_GROUPS = [
       { label: 'Centro de operaciones', path: '/operations-control-center', icon: 'Activity', match: ['/operations-control-center'] },
       { label: 'Análisis detallado', path: '/analytics-hub', icon: 'BarChart3', match: ['/analytics-hub'] },
       { label: 'Rendimiento por sede', path: '/location-performance', icon: 'MapPin', match: ['/location-performance'] },
-      { label: 'Monitoreo técnico', path: '/system-health-monitor', icon: 'Server', match: ['/system-health-monitor'] }
+      { label: 'Monitoreo técnico', path: '/system-health-monitor', icon: 'Server', match: ['/system-health-monitor'], roles: ['admin'] }
+    ]
+  },
+  {
+    title: 'Sistema',
+    roles: ['admin'],
+    items: [
+      { label: 'Usuarios', path: '/usuarios', icon: 'Users', match: ['/usuarios'], roles: ['admin'] }
     ]
   }
 ];
@@ -29,6 +37,14 @@ const NAV_GROUPS = [
 const Sidebar = ({ mobileOpen, onClose }) => {
   const location = useLocation();
   const { user, logout } = useAuth();
+
+  // Filtra items/grupos segun el rol del usuario actual.
+  const role = user?.role;
+  const canSee = (entry) => !entry.roles || entry.roles.includes(role);
+  const visibleGroups = NAV_GROUPS
+    .filter(canSee)
+    .map(g => ({ ...g, items: g.items.filter(canSee) }))
+    .filter(g => g.items.length > 0);
 
   const isActive = (item) =>
     item.match.some(p => location.pathname === p || location.pathname.startsWith(p + '/'));
@@ -67,7 +83,7 @@ const Sidebar = ({ mobileOpen, onClose }) => {
 
         {/* Navegacion */}
         <nav className="flex-1 overflow-y-auto py-4">
-          {NAV_GROUPS.map(group => (
+          {visibleGroups.map(group => (
             <div key={group.title} className="mb-5">
               <p className="px-5 mb-1.5 text-[0.7rem] font-semibold uppercase tracking-wider text-white/45">
                 {group.title}

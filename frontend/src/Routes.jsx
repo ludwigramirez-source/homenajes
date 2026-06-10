@@ -15,6 +15,7 @@ import TributeCreationStudio from './pages/tribute-creation-studio';
 import MemorialsPage from './pages/memorials';
 import MemorialDetail from './pages/memorial-detail';
 import RoomsManagement from './pages/rooms-management';
+import UsersPage from './pages/users';
 import DigitalDisplayScreen from './pages/digital-display-screen';
 import MemorialForm from './pages/memorial-form';
 
@@ -38,11 +39,13 @@ const Routes = () => {
               <Route path="/system-health-monitor" element={<SystemHealthMonitor />} />
               <Route path="/location-performance" element={<LocationPerformance />} />
               <Route path="/operations-control-center" element={<OperationsControlCenter />} />
-              <Route path="/tribute-creation-studio" element={<TributeCreationStudio />} />
-              <Route path="/tribute-creation-studio/:memorialId" element={<TributeCreationStudio />} />
+              <Route path="/tribute-creation-studio" element={<ProtectedRoute roles={['admin', 'operator']}><TributeCreationStudio /></ProtectedRoute>} />
+              <Route path="/tribute-creation-studio/:memorialId" element={<ProtectedRoute roles={['admin', 'operator']}><TributeCreationStudio /></ProtectedRoute>} />
               <Route path="/memorials" element={<MemorialsPage />} />
               <Route path="/memorials/:id" element={<MemorialDetail />} />
-              <Route path="/salas" element={<RoomsManagement />} />
+              <Route path="/salas" element={<ProtectedRoute roles={['admin']}><RoomsManagement /></ProtectedRoute>} />
+              {/* Sistema: solo superadministrador */}
+              <Route path="/usuarios" element={<ProtectedRoute roles={['admin']}><UsersPage /></ProtectedRoute>} />
             </Route>
 
             <Route path="*" element={<NotFound />} />
