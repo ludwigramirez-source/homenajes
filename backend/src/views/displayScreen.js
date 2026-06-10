@@ -101,7 +101,7 @@ function commonCss() {
     '.dates { font-size: 32px; opacity: 0.85; margin-top: 10px; font-weight: 300; }',
     '.divider { display: inline-block; width: 50px; height: 1px; background: #ffffff; opacity: 0.5; vertical-align: middle; margin: 0 12px; }',
     '.intro { font-size: 32px; line-height: 1.55; opacity: 0.92; margin-top: 32px; margin-bottom: 34px; font-weight: 300; }',
-    '.emotional-message { font-size: 28px; line-height: 1.7; opacity: 0.92; font-weight: 300; }',
+    '.emotional-message { font-size: 36px; line-height: 1.7; opacity: 0.92; font-weight: 300; }',
     '.subtitle { font-size: 30px; opacity: 0.8; font-weight: 300; }',
     '.section-title { font-size: 32px; font-weight: 300; opacity: 0.75; margin-bottom: 6px; }',
     // Cards (servicio y mensajes). Sin backdrop-filter; fondo solido translucido.
@@ -124,24 +124,24 @@ function commonCss() {
     '.msg-grid { width: 100%; border-collapse: separate; border-spacing: 16px; }',
     '.msg-grid td { width: 33.33%; vertical-align: top; }',
     '.msg-card { background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.22); ',
-    '  border-radius: 14px; padding: 18px; min-height: 230px; }',
-    '.msg-avatar { display: inline-block; width: 54px; height: 54px; border-radius: 50%; ',
-    '  background: #f0c040; color: #1a4a48; text-align: center; line-height: 54px; ',
-    '  font-size: 26px; font-weight: bold; vertical-align: middle; margin-right: 12px; }',
+    '  border-radius: 14px; padding: 22px; min-height: 250px; }',
+    '.msg-avatar { display: inline-block; width: 64px; height: 64px; border-radius: 50%; ',
+    '  background: #f0c040; color: #1a4a48; text-align: center; line-height: 64px; ',
+    '  font-size: 30px; font-weight: bold; vertical-align: middle; margin-right: 14px; }',
     '.msg-avatar img { width: 100%; height: 100%; border-radius: 50%; display: block; }',
-    '.msg-name { display: inline-block; vertical-align: middle; font-weight: bold; font-size: 20px; ',
+    '.msg-name { display: inline-block; vertical-align: middle; font-weight: bold; font-size: 26px; ',
     '  font-family: "Spectral", Georgia, "Times New Roman", serif; }',
-    '.msg-text { margin-top: 14px; font-size: 19px; line-height: 1.5; opacity: 0.92; ',
+    '.msg-text { margin-top: 16px; font-size: 24px; line-height: 1.5; opacity: 0.92; ',
     '  font-weight: 300; }',
-    '.msg-empty { text-align: center; padding: 80px 30px; opacity: 0.7; font-size: 26px; ',
+    '.msg-empty { text-align: center; padding: 80px 30px; opacity: 0.7; font-size: 34px; ',
     '  font-weight: 300; }',
     // QR mas grande
     '.qr-box { display: inline-block; padding: 22px; background: #ffffff; border-radius: 28px; ',
     '  border: 6px solid rgba(255,255,255,0.30); }',
-    '.qr-box svg { display: block; width: 360px; height: 360px; }',
+    '.qr-box svg { display: block; width: 420px; height: 420px; }',
     // Header centrado pantalla mensajes
     '.header-center { text-align: center; padding: 40px 40px 24px; }',
-    '.header-center .name-md { font-size: 42px; }',
+    '.header-center .name-md { font-size: 54px; }',
     // Footer fijo. Altura 100px: aloja el logo (180x~62), la tagline debajo y
     // deja respiro vertical para el texto del horario a la izquierda.
     '.footer { position: absolute; left: 0; right: 0; bottom: 0; ',
@@ -294,12 +294,12 @@ function renderScreenEmotional(m) {
     '<tr>' +
       '<td class="col-left">' +
         '<div class="photo-frame"' + photoStyle + '></div>' +
-        '<div class="font-title" style="font-size:42px;margin-top:22px;">' + escapeHtml(m.name) + '</div>' +
+        '<div class="font-title" style="font-size:52px;margin-top:24px;">' + escapeHtml(m.name) + '</div>' +
         '<div class="dates">' + escapeHtml(m.birthYear) + ' &mdash; ' + escapeHtml(m.deathYear) + '</div>' +
       '</td>' +
       '<td class="col-right">' +
         '<div class="subtitle">En memoria de</div>' +
-        '<div class="font-title" style="font-size:80px;line-height:1;margin:8px 0;">' +
+        '<div class="font-title" style="font-size:100px;line-height:1;margin:8px 0;">' +
            escapeHtml(firstName) +
         '</div>' +
         '<div class="subtitle" style="margin-bottom:32px;">siempre en nuestro coraz&oacute;n</div>' +
@@ -364,7 +364,7 @@ function renderScreenMessages(m, condolences, totalCount, page, totalPages) {
   return '<div class="header-center">' +
     '<div class="subtitle">Mensajes para</div>' +
     '<div class="font-title name-md" style="margin-top:6px;">' + escapeHtml(m.name) + '</div>' +
-    '<div class="subtitle" style="margin-top:4px;font-size:18px;">' +
+    '<div class="subtitle" style="margin-top:6px;font-size:22px;">' +
       count + ' ' + (count === 1 ? 'mensaje recibido' : 'mensajes recibidos') +
       (totalPages > 1 ? ' &middot; P&aacute;gina ' + (page + 1) + ' de ' + totalPages : '') +
     '</div>' +
@@ -382,17 +382,17 @@ function renderScreenQr(m, qrSvg) {
     '<tr>' +
       '<td class="col-left">' +
         '<div class="qr-box">' + (qrSvg || '') + '</div>' +
-        '<div style="margin-top:26px;font-size:24px;font-weight:bold;">' +
+        '<div style="margin-top:30px;font-size:30px;font-weight:bold;">' +
         'Escanea el c&oacute;digo QR</div>' +
       '</td>' +
       '<td class="col-right">' +
         '<div class="subtitle">En memoria de</div>' +
-        '<div class="font-title" style="font-size:72px;line-height:1;margin:8px 0;">' +
+        '<div class="font-title" style="font-size:92px;line-height:1;margin:8px 0;">' +
         escapeHtml(firstName) + '</div>' +
         '<div class="subtitle" style="margin-bottom:32px;">estamos a su lado</div>' +
-        '<div style="font-size:28px;font-weight:600;line-height:1.5;">' +
+        '<div style="font-size:36px;font-weight:600;line-height:1.5;">' +
         'Hazte presente dejando un mensaje</div>' +
-        '<div style="font-size:22px;opacity:0.85;margin-top:14px;font-weight:300;line-height:1.5;">' +
+        '<div style="font-size:28px;opacity:0.85;margin-top:16px;font-weight:300;line-height:1.5;">' +
         'que proviene desde todo el amor que hay al recordar con el coraz&oacute;n</div>' +
       '</td>' +
     '</tr></table>';
