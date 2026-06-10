@@ -126,7 +126,7 @@ const create = async (req, res, next) => {
         family_contact_name, family_contact_phone, family_contact_email, billing_address
       )
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, true, $11, $12, $13, $14, $15,
-              COALESCE($16, '08:00'), COALESCE($17, '23:00'),
+              COALESCE($16::time, '08:00'::time), COALESCE($17::time, '23:00'::time),
               $18, $19, $20, $21)
       RETURNING *
     `, [
@@ -179,8 +179,8 @@ const update = async (req, res, next) => {
           exequias_datetime = COALESCE($12, exequias_datetime),
           final_destination_venue_id = COALESCE($13, final_destination_venue_id),
           final_destination_datetime = COALESCE($14, final_destination_datetime),
-          daily_hours_start = COALESCE($15, daily_hours_start),
-          daily_hours_end = COALESCE($16, daily_hours_end),
+          daily_hours_start = COALESCE($15::time, daily_hours_start),
+          daily_hours_end = COALESCE($16::time, daily_hours_end),
           family_contact_name = COALESCE($17, family_contact_name),
           family_contact_phone = COALESCE($18, family_contact_phone),
           family_contact_email = COALESCE($19, family_contact_email),
