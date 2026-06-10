@@ -1,11 +1,46 @@
 const db = require('../config/database');
 
+// Resuelve el alcance de sede del usuario:
+// - operador: SIEMPRE su sede (no puede ver otras).
+// - admin/auditor: la sede del query (location_id) o todas (null).
+function resolveLocationScope(req) {
+  if (req.user && req.user.role === 'operator') {
+    return req.user.location_id || '00000000-0000-0000-0000-000000000000';
+  }
+  return req.query.location_id || null;
+}
+
+// Normaliza el rango de fechas. Default: ultimos 30 dias.
+function resolveRange(req) {
+  const to = req.query.to ? new Date(req.query.to) : new Date();
+  let from;
+  if (req.query.from) {
+    from = new Date(req.query.from);
+  } else {
+    from = new Date(to);
+    from.setDate(from.getDate() - 30);
+  }
+  // Normalizar a limites de dia.
+  const fromStr = from.toISOString().slice(0, 10) + ' 00:00:00';
+  const toStr = to.toISOString().slice(0, 10) + ' 23:59:59';
+  return { fromStr, toStr };
+}
+
 // KPIs ejecutivos para el dashboard principal
 const executive = async (req, res, next) => {
   try {
-    const { from, to } = req.query;
-    
-    const dateFilter = from && to ? `AND created_at BETWEEN '${from}' AND '${to}'` : '';
+    const locationId = resolveLocationScope(req);
+    const { fromStr, toStr } = resolveRange(req);
+
+    // memorials con scope opcional de sede (via rooms) + rango por created_at.
+    const memJoin = locationId ? 'JOIN rooms r ON m.room_id = r.id' : '';
+    const memLoc = locationId ? 'AND r.location_id = $3' : '';
+    const memParams = locationId ? [fromStr, toStr, locationId] : [fromStr, toStr];
+
+    // condolences con scope (via memorials->rooms) + rango por created_at.
+    const condJoin = locationId ? 'JOIN memorials m ON c.memorial_id = m.id JOIN rooms r ON m.room_id = r.id' : '';
+    const condLoc = locationId ? 'AND r.location_id = $3' : '';
+    const condParams = locationId ? [fromStr, toStr, locationId] : [fromStr, toStr];
 
     const [
       totalMemorials,
@@ -16,38 +51,46 @@ const executive = async (req, res, next) => {
       totalRooms,
       condolencesPerDay
     ] = await Promise.all([
-      db.query(`SELECT COUNT(*) as count FROM memorials WHERE 1=1 ${dateFilter}`),
+      db.query(`SELECT COUNT(*) AS count FROM memorials m ${memJoin}
+                WHERE m.created_at BETWEEN $1 AND $2 ${memLoc}`, memParams),
+      db.query(`SELECT COUNT(*) AS count FROM memorials m ${locationId ? 'JOIN rooms r ON m.room_id=r.id' : ''}
+                WHERE m.active = true AND CURRENT_TIMESTAMP BETWEEN m.schedule_start AND m.schedule_end
+                ${locationId ? 'AND r.location_id = $1' : ''}`, locationId ? [locationId] : []),
+      db.query(`SELECT COUNT(*) AS count FROM condolences c ${condJoin}
+                WHERE c.created_at BETWEEN $1 AND $2 ${condLoc}`, condParams),
+      db.query(`SELECT COUNT(DISTINCT c.sender_email) AS count FROM condolences c ${condJoin}
+                WHERE c.marketing_consent = true AND c.created_at BETWEEN $1 AND $2 ${condLoc}`, condParams),
+      db.query(locationId
+        ? `SELECT COUNT(*) AS count FROM locations WHERE active = true AND id = $1`
+        : `SELECT COUNT(*) AS count FROM locations WHERE active = true`, locationId ? [locationId] : []),
+      db.query(locationId
+        ? `SELECT COUNT(*) AS count FROM rooms WHERE active = true AND location_id = $1`
+        : `SELECT COUNT(*) AS count FROM rooms WHERE active = true`, locationId ? [locationId] : []),
       db.query(`
-        SELECT COUNT(*) as count FROM memorials 
-        WHERE active = true 
-          AND CURRENT_TIMESTAMP BETWEEN schedule_start AND schedule_end
-      `),
-      db.query(`SELECT COUNT(*) as count FROM condolences WHERE 1=1 ${dateFilter}`),
-      db.query(`SELECT COUNT(DISTINCT sender_email) as count FROM condolences WHERE marketing_consent = true`),
-      db.query('SELECT COUNT(*) as count FROM locations WHERE active = true'),
-      db.query('SELECT COUNT(*) as count FROM rooms WHERE active = true'),
-      db.query(`
-        SELECT DATE(created_at) as date, COUNT(*) as count
-        FROM condolences
-        WHERE created_at >= CURRENT_DATE - INTERVAL '30 days'
-        GROUP BY DATE(created_at)
-        ORDER BY date DESC
-      `)
+        SELECT TO_CHAR(DATE(c.created_at), 'YYYY-MM-DD') AS date, COUNT(*) AS count
+        FROM condolences c ${condJoin}
+        WHERE c.created_at BETWEEN $1 AND $2 ${condLoc}
+        GROUP BY DATE(c.created_at)
+        ORDER BY date ASC
+      `, condParams)
     ]);
+
+    const totMem = parseInt(totalMemorials.rows[0].count);
+    const totCond = parseInt(totalCondolences.rows[0].count);
 
     res.json({
       success: true,
       data: {
-        total_memorials: parseInt(totalMemorials.rows[0].count),
+        total_memorials: totMem,
         active_memorials: parseInt(activeMemorials.rows[0].count),
-        total_condolences: parseInt(totalCondolences.rows[0].count),
+        total_condolences: totCond,
         marketing_contacts: parseInt(totalContacts.rows[0].count),
         total_locations: parseInt(totalLocations.rows[0].count),
         total_rooms: parseInt(totalRooms.rows[0].count),
-        condolences_last_30_days: condolencesPerDay.rows,
-        avg_condolences_per_memorial: totalMemorials.rows[0].count > 0
-          ? (parseInt(totalCondolences.rows[0].count) / parseInt(totalMemorials.rows[0].count)).toFixed(2)
-          : 0
+        condolences_trend: condolencesPerDay.rows.map(r => ({ date: r.date, count: parseInt(r.count) })),
+        avg_condolences_per_memorial: totMem > 0 ? (totCond / totMem).toFixed(1) : '0',
+        range: { from: fromStr.slice(0, 10), to: toStr.slice(0, 10) },
+        scoped_to_location: !!locationId
       }
     });
   } catch (error) {
