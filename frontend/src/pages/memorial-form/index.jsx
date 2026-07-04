@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import { cn } from '../../utils/cn';
 import { roomsService, condolencesService } from '../../services/api';
+import { getTheme } from './themes';
 
 // Limite alineado con el backend (condolences.controller.js -> MESSAGE_MAX_LENGTH).
 // Asegura que cada mensaje sea legible como card en la pantalla del display.
@@ -27,7 +28,8 @@ const MemorialForm = () => {
     name: '',
     birthYear: '',
     deathYear: '',
-    id: null
+    id: null,
+    templateId: 'default'
   });
   const [loadingMemorial, setLoadingMemorial] = useState(true);
 
@@ -41,7 +43,8 @@ const MemorialForm = () => {
             name: response.data.deceased_name,
             birthYear: response.data.birth_year?.toString() || '',
             deathYear: response.data.death_year?.toString() || '',
-            id: response.data.id
+            id: response.data.id,
+            templateId: response.data.template_id || 'default'
           });
         }
       } catch (err) {
@@ -156,6 +159,10 @@ const MemorialForm = () => {
     }
   };
 
+  // Tema visual segun la plantilla del homenaje (template_id).
+  const theme = getTheme(memorialData?.templateId);
+  const isDefaultTheme = !memorialData?.templateId || memorialData?.templateId === 'default';
+
   if (isSubmitted) {
     return (
       <>
@@ -163,15 +170,24 @@ const MemorialForm = () => {
           <title>Mensaje Enviado - Memorial {memorialData?.name}</title>
         </Helmet>
 
-        <div className="min-h-screen w-full relative overflow-hidden flex items-center justify-center p-4" style={{ background: 'linear-gradient(160deg, #1a9490 0%, #1a7472 35%, #155f5d 70%, #0f4a48 100%)' }}>
-          {/* Decorative circles */}
-          <div className="absolute -top-24 -right-24 w-[380px] h-[380px] rounded-full opacity-15" style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.4) 0%, transparent 70%)' }}></div>
-          <div className="absolute -bottom-32 -left-16 w-[320px] h-[320px] rounded-full opacity-10" style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%)' }}></div>
-          <div className="absolute top-12 left-1/4 w-12 h-12 rounded-full opacity-30" style={{ background: '#f0c040' }}></div>
+        <div className="min-h-screen w-full relative overflow-hidden flex items-center justify-center p-4" style={{ background: theme.background }}>
+          {/* Decorative circles: completos solo en el tema clasico; sutiles en el resto */}
+          {isDefaultTheme ? (
+            <>
+              <div className="absolute -top-24 -right-24 w-[380px] h-[380px] rounded-full opacity-15" style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.4) 0%, transparent 70%)' }}></div>
+              <div className="absolute -bottom-32 -left-16 w-[320px] h-[320px] rounded-full opacity-10" style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%)' }}></div>
+              <div className="absolute top-12 left-1/4 w-12 h-12 rounded-full opacity-30" style={{ background: '#f0c040' }}></div>
+            </>
+          ) : (
+            <>
+              <div className="absolute -top-24 -right-24 w-[380px] h-[380px] rounded-full opacity-10" style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.35) 0%, transparent 70%)' }}></div>
+              <div className="absolute -bottom-32 -left-16 w-[320px] h-[320px] rounded-full opacity-[0.07]" style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%)' }}></div>
+            </>
+          )}
 
-          <div className="relative w-full max-w-md rounded-3xl p-12 text-center" style={{ background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.25)', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
-            <div className="w-24 h-24 mx-auto mb-8 rounded-full flex items-center justify-center" style={{ background: '#f0c040', boxShadow: '0 8px 24px rgba(0,0,0,0.2)' }}>
-              <svg className="w-14 h-14" style={{ color: '#1a7472' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+          <div className="relative w-full max-w-md rounded-3xl p-12 text-center" style={{ background: theme.cardBg, backdropFilter: 'blur(20px)', border: theme.cardBorder, boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
+            <div className="w-24 h-24 mx-auto mb-8 rounded-full flex items-center justify-center" style={{ background: theme.accent, boxShadow: '0 8px 24px rgba(0,0,0,0.2)' }}>
+              <svg className="w-14 h-14" style={{ color: theme.accentText }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
               </svg>
             </div>
@@ -213,19 +229,28 @@ const MemorialForm = () => {
         <title>Dejar Mensaje - Memorial {memorialData?.name}</title>
       </Helmet>
 
-      <div className="min-h-screen w-full relative overflow-hidden flex items-center justify-center py-8 px-4" style={{ background: 'linear-gradient(160deg, #1a9490 0%, #1a7472 35%, #155f5d 70%, #0f4a48 100%)' }}>
+      <div className="min-h-screen w-full relative overflow-hidden flex items-center justify-center py-8 px-4" style={{ background: theme.background }}>
 
-        {/* Decorative circles - Los Olivos brand style */}
-        <div className="absolute -top-28 -right-28 w-[460px] h-[460px] rounded-full opacity-15" style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.4) 0%, transparent 70%)' }}></div>
-        <div className="absolute -bottom-40 -left-20 w-[400px] h-[400px] rounded-full opacity-10" style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%)' }}></div>
-        <div className="absolute top-1/2 -translate-y-1/2 -right-12 w-[260px] h-[260px] rounded-full opacity-8" style={{ background: 'rgba(255,255,255,0.15)' }}></div>
-        {/* Yellow accent dots */}
-        <div className="absolute top-14 left-1/4 w-14 h-14 rounded-full opacity-35" style={{ background: '#f0c040' }}></div>
-        <div className="absolute bottom-20 right-1/3 w-8 h-8 rounded-full opacity-25" style={{ background: '#f0c040' }}></div>
-        <div className="absolute top-1/3 left-12 w-5 h-5 rounded-full opacity-20" style={{ background: 'rgba(255,255,255,0.8)' }}></div>
+        {/* Decorative circles: estilo completo Los Olivos solo en el tema clasico */}
+        {isDefaultTheme ? (
+          <>
+            <div className="absolute -top-28 -right-28 w-[460px] h-[460px] rounded-full opacity-15" style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.4) 0%, transparent 70%)' }}></div>
+            <div className="absolute -bottom-40 -left-20 w-[400px] h-[400px] rounded-full opacity-10" style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%)' }}></div>
+            <div className="absolute top-1/2 -translate-y-1/2 -right-12 w-[260px] h-[260px] rounded-full opacity-8" style={{ background: 'rgba(255,255,255,0.15)' }}></div>
+            {/* Yellow accent dots */}
+            <div className="absolute top-14 left-1/4 w-14 h-14 rounded-full opacity-35" style={{ background: '#f0c040' }}></div>
+            <div className="absolute bottom-20 right-1/3 w-8 h-8 rounded-full opacity-25" style={{ background: '#f0c040' }}></div>
+            <div className="absolute top-1/3 left-12 w-5 h-5 rounded-full opacity-20" style={{ background: 'rgba(255,255,255,0.8)' }}></div>
+          </>
+        ) : (
+          <>
+            <div className="absolute -top-28 -right-28 w-[460px] h-[460px] rounded-full opacity-10" style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.35) 0%, transparent 70%)' }}></div>
+            <div className="absolute -bottom-40 -left-20 w-[400px] h-[400px] rounded-full opacity-[0.07]" style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%)' }}></div>
+          </>
+        )}
 
         {/* Main card */}
-        <div className="relative w-full max-w-[520px] rounded-3xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.10)', backdropFilter: 'blur(24px)', border: '1px solid rgba(255,255,255,0.22)', boxShadow: '0 24px 64px rgba(0,0,0,0.22)' }}>
+        <div className="relative w-full max-w-[520px] rounded-3xl overflow-hidden" style={{ background: theme.cardBg, backdropFilter: 'blur(24px)', border: theme.cardBorder, boxShadow: '0 24px 64px rgba(0,0,0,0.22)' }}>
 
           {/* Header section - solid teal accent */}
           <div className="relative px-8 pt-10 pb-8 text-center overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)', borderBottom: '1px solid rgba(255,255,255,0.15)' }}>
@@ -283,7 +308,7 @@ const MemorialForm = () => {
                     border: 'none',
                     boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                   }}
-                  onFocus={e => { e.target.style.background = '#fff'; e.target.style.boxShadow = '0 0 0 3px rgba(240,192,64,0.5), 0 2px 8px rgba(0,0,0,0.1)'; }}
+                  onFocus={e => { e.target.style.background = '#fff'; e.target.style.boxShadow = `0 0 0 3px ${theme.focusRing}, 0 2px 8px rgba(0,0,0,0.1)`; }}
                   onBlur={e => { e.target.style.background = 'rgba(255,255,255,0.92)'; e.target.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)'; }}
                 />
                 {errors?.name && <p className="text-yellow-300 text-sm mt-1.5" style={{ fontFamily: 'Inter, sans-serif' }}>{errors?.name}</p>}
@@ -316,7 +341,7 @@ const MemorialForm = () => {
                     border: 'none',
                     boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                   }}
-                  onFocus={e => { e.target.style.background = '#fff'; e.target.style.boxShadow = '0 0 0 3px rgba(240,192,64,0.5), 0 2px 8px rgba(0,0,0,0.1)'; }}
+                  onFocus={e => { e.target.style.background = '#fff'; e.target.style.boxShadow = `0 0 0 3px ${theme.focusRing}, 0 2px 8px rgba(0,0,0,0.1)`; }}
                   onBlur={e => { e.target.style.background = 'rgba(255,255,255,0.92)'; e.target.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)'; }}
                 />
                 {errors?.email && <p className="text-yellow-300 text-sm mt-1.5" style={{ fontFamily: 'Inter, sans-serif' }}>{errors?.email}</p>}
@@ -346,7 +371,7 @@ const MemorialForm = () => {
                     border: 'none',
                     boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                   }}
-                  onFocus={e => { e.target.style.background = '#fff'; e.target.style.boxShadow = '0 0 0 3px rgba(240,192,64,0.5), 0 2px 8px rgba(0,0,0,0.1)'; }}
+                  onFocus={e => { e.target.style.background = '#fff'; e.target.style.boxShadow = `0 0 0 3px ${theme.focusRing}, 0 2px 8px rgba(0,0,0,0.1)`; }}
                   onBlur={e => { e.target.style.background = 'rgba(255,255,255,0.92)'; e.target.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)'; }}
                 />
               </div>
@@ -380,7 +405,7 @@ const MemorialForm = () => {
                     border: 'none',
                     boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                   }}
-                  onFocus={e => { e.target.style.background = '#fff'; e.target.style.boxShadow = '0 0 0 3px rgba(240,192,64,0.5), 0 2px 8px rgba(0,0,0,0.1)'; }}
+                  onFocus={e => { e.target.style.background = '#fff'; e.target.style.boxShadow = `0 0 0 3px ${theme.focusRing}, 0 2px 8px rgba(0,0,0,0.1)`; }}
                   onBlur={e => { e.target.style.background = 'rgba(255,255,255,0.92)'; e.target.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)'; }}
                 />
                 {/* Contador de caracteres + error en una sola fila */}
@@ -419,8 +444,8 @@ const MemorialForm = () => {
                     files?.length >= 2 && "opacity-50 cursor-not-allowed"
                   )}
                   style={{
-                    borderColor: isDragging ? '#f0c040' : 'rgba(255,255,255,0.35)',
-                    background: isDragging ? 'rgba(240,192,64,0.1)' : 'rgba(255,255,255,0.08)',
+                    borderColor: isDragging ? theme.accent : 'rgba(255,255,255,0.35)',
+                    background: isDragging ? theme.dragBg : 'rgba(255,255,255,0.08)',
                   }}
                   onClick={() => files?.length < 2 && document.getElementById('file-input')?.click()}
                 >
@@ -489,9 +514,9 @@ const MemorialForm = () => {
                     <div className={cn(
                       "w-5 h-5 border-2 rounded transition-all duration-200",
                       errors?.authorized ? "border-red-400" : "border-white/50"
-                    )} style={authorized ? { background: '#f0c040', borderColor: '#f0c040' } : { background: 'rgba(255,255,255,0.15)' }}>
+                    )} style={authorized ? { background: theme.accent, borderColor: theme.accent } : { background: 'rgba(255,255,255,0.15)' }}>
                       {authorized && (
-                        <svg className="w-full h-full p-0.5" style={{ color: '#1a4a48' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                        <svg className="w-full h-full p-0.5" style={{ color: theme.accentText }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                         </svg>
                       )}
@@ -512,7 +537,7 @@ const MemorialForm = () => {
                 <button
                   type="submit"
                   className="w-full py-4 font-bold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
-                  style={{ fontFamily: 'Spectral, serif', fontSize: '16px', background: '#f0c040', color: '#1a4a48', boxShadow: '0 4px 20px rgba(240,192,64,0.4)' }}
+                  style={{ fontFamily: 'Spectral, serif', fontSize: '16px', background: theme.accent, color: theme.accentText, boxShadow: `0 4px 20px ${theme.accentShadow}` }}
                 >
                   Enviar mensaje de homenaje
                 </button>

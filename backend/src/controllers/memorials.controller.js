@@ -1,5 +1,8 @@
 const db = require('../config/database');
 
+// Plantillas visuales validas para el display (misma whitelist que el view).
+const VALID_TEMPLATE_IDS = ['default', 'nino', 'nina', 'agua', 'aire', 'fuego', 'tierra', 'bosque'];
+
 const getAll = async (req, res, next) => {
   try {
     const { active, location_id, room_id } = req.query;
@@ -115,6 +118,13 @@ const create = async (req, res, next) => {
       });
     }
 
+    if (template_id && VALID_TEMPLATE_IDS.indexOf(template_id) === -1) {
+      return res.status(400).json({
+        success: false,
+        error: 'template_id invalido. Valores permitidos: ' + VALID_TEMPLATE_IDS.join(', ')
+      });
+    }
+
     const result = await db.query(`
       INSERT INTO memorials (
         room_id, deceased_name, birth_year, death_year, photo_url,
@@ -162,6 +172,14 @@ const update = async (req, res, next) => {
       daily_hours_start, daily_hours_end,
       family_contact_name, family_contact_phone, family_contact_email, billing_address
     } = req.body;
+
+    if (template_id !== undefined && template_id !== null &&
+        VALID_TEMPLATE_IDS.indexOf(template_id) === -1) {
+      return res.status(400).json({
+        success: false,
+        error: 'template_id invalido. Valores permitidos: ' + VALID_TEMPLATE_IDS.join(', ')
+      });
+    }
 
     const result = await db.query(`
       UPDATE memorials

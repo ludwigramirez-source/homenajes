@@ -2,6 +2,19 @@
 // WebKit/Chromium antiguos (pre-2015). Nada de flexbox, grid, css variables,
 // backdrop-filter, transitions complejas, ni JS moderno.
 // Layout con <table> + vertical-align. CSS con float donde corresponda.
+//
+// PLANTILLAS: ademas del diseno teal original ('default'), este modulo soporta
+// 7 plantillas tematicas (agua, aire, fuego, tierra, bosque, nino, nina)
+// definidas en el objeto TEMPLATES. Cualquier template_id desconocido cae al
+// camino legacy para no romper homenajes existentes.
+//
+// COMPATIBILIDAD del HTML emitido (TVs LG WebKit pre-2015):
+// - JS solo ES5 (var, function, concatenacion).
+// - CSS sin variables, sin inset, sin mix-blend-mode, sin backdrop-filter,
+//   sin flex/grid estructural, sin clamp(), sin filter:blur().
+// - Gradientes con fallback de color solido + version -webkit- prefijada.
+// - Animaciones con @keyframes duplicadas como @-webkit-keyframes y
+//   transform siempre acompanado de -webkit-transform.
 
 var fs = require('fs');
 var path = require('path');
@@ -64,7 +77,18 @@ function formatDateTime(iso) {
   return { date: date, time: hour + ':' + minute + ' ' + ampm };
 }
 
-// CSS comun. Sin flexbox, sin variables, sin grid. Usa table y absolute positioning.
+// Formato de la guia de estilo: "Sabado 03 de Enero de 2026" (dia con cero).
+function formatDateLong(iso) {
+  if (!iso) return '';
+  var d = new Date(iso);
+  if (isNaN(d.getTime())) return '';
+  var day = d.getDate();
+  if (day < 10) day = '0' + day;
+  return SPANISH_DAYS[d.getDay()] + ' ' + day + ' de ' +
+         SPANISH_MONTHS[d.getMonth()] + ' de ' + d.getFullYear();
+}
+
+// CSS comun (diseno teal legacy). Sin flexbox, sin variables, sin grid.
 function commonCss() {
   return [
     '* { box-sizing: border-box; margin: 0; padding: 0; }',
@@ -176,11 +200,6 @@ function commonCss() {
 
 function renderShell(opts) {
   // opts: { title, screen, nextUrl, body, totalScreens }
-  var dots = '';
-  for (var i = 1; i <= opts.totalScreens; i++) {
-    dots += '<span class="dot-indicator' + (i === opts.screen ? ' active' : '') + '"></span>';
-  }
-
   var refresh = '';
   // En modo preview (iframe del studio) NO emitimos meta refresh: el usuario
   // navega manualmente con botones avanzar/retroceder, y la rotacion automatica
@@ -236,7 +255,7 @@ function renderFooter(currentScreen, totalScreens, scheduleStart, scheduleEnd) {
     '</div>';
 }
 
-// =========== SCREEN 1: Info del servicio ===========
+// =========== SCREEN 1 (legacy): Info del servicio ===========
 function renderScreenService(m) {
   var photo = m.photoUrl || '';
   var ingreso = formatDateTime(m.scheduleStart);
@@ -285,7 +304,7 @@ function renderScreenService(m) {
   return body;
 }
 
-// =========== SCREEN 2: Foto + mensaje emocional ===========
+// =========== SCREEN 2 (legacy): Foto + mensaje emocional ===========
 function renderScreenEmotional(m) {
   var photo = m.photoUrl || '';
   var firstName = (m.name || '').split(' ')[0] || '';
@@ -308,7 +327,7 @@ function renderScreenEmotional(m) {
     '</tr></table>';
 }
 
-// =========== SCREEN 3: Mensajes recibidos (grid 3x2 con paginacion) ===========
+// =========== SCREEN 3 (legacy): Mensajes recibidos (grid 3x2 con paginacion) ===========
 // condolences viene ya pre-paginado desde el controller (LIMIT 6 OFFSET page*6).
 // page/totalPages se reciben para mostrar indicador "Pagina X de Y".
 function renderScreenMessages(m, condolences, totalCount, page, totalPages) {
@@ -375,7 +394,7 @@ function renderScreenMessages(m, condolences, totalCount, page, totalPages) {
     '</div>';
 }
 
-// =========== SCREEN 4: QR ===========
+// =========== SCREEN 4 (legacy): QR ===========
 function renderScreenQr(m, qrSvg) {
   var firstName = (m.name || '').split(' ')[0] || '';
   return '<table class="layout-table">' +
@@ -399,6 +418,7 @@ function renderScreenQr(m, qrSvg) {
 }
 
 // =========== Sala disponible (sin homenaje activo) ===========
+// Se mantiene siempre con el diseno teal, independiente de las plantillas.
 function renderEmptyRoom(message) {
   return '<!DOCTYPE html>\n<html lang="es"><head>' +
     '<meta http-equiv="content-type" content="text/html; charset=utf-8">' +
@@ -415,11 +435,853 @@ function renderEmptyRoom(message) {
     '</div></body></html>';
 }
 
-// =========== Render principal ===========
-// Devuelve el HTML de la vista solicitada.
-function render(opts) {
-  // opts: { memorial, condolences, totalMessages, screen (1..4), page,
-  //         totalPages, roomId, baseUrl, qrSvg }
+// ====================================================================
+// ===================== SISTEMA DE PLANTILLAS ========================
+// ====================================================================
+
+// Whitelist compartida con los controllers (validacion de template_id).
+var TEMPLATE_IDS = ['default', 'nino', 'nina', 'agua', 'aire', 'fuego', 'tierra', 'bosque'];
+
+// --- Helpers de CSS animado compatible (duplica @keyframes con prefijo) ---
+function kfDual(name, frames) {
+  return '@-webkit-keyframes ' + name + ' { ' + frames + ' }\n' +
+         '@keyframes ' + name + ' { ' + frames + ' }';
+}
+
+// Destellos genericos (twinkle). color: centro del radial.
+function sparkleCss(color) {
+  return '.fx-sparkle { position:absolute; width:5px; height:5px; border-radius:50%; opacity:0; ' +
+    'background: ' + color + '; ' +
+    'background: -webkit-radial-gradient(center, circle, ' + color + ', rgba(255,255,255,0)); ' +
+    'background: radial-gradient(circle, ' + color + ', rgba(255,255,255,0)); ' +
+    '-webkit-animation: fxTwinkle 7s ease-in-out infinite; animation: fxTwinkle 7s ease-in-out infinite; }\n' +
+    kfDual('fxTwinkle',
+      '0%,100% { opacity:0; -webkit-transform:scale(0.5); transform:scale(0.5); } ' +
+      '50% { opacity:0.8; -webkit-transform:scale(1); transform:scale(1); }');
+}
+
+function sparkleJs(count) {
+  return 'fxSpawn("fx-sparkle", ' + count + ', function (d) {' +
+    'd.style.left = (Math.random() * 100) + "%";' +
+    'd.style.top = (Math.random() * 100) + "%";' +
+    'fxAnim(d, 5 + Math.random() * 4, -Math.random() * 8);' +
+    '});';
+}
+
+// Helpers ES5 emitidos una sola vez por pagina para generar particulas.
+var FX_HELPERS_JS =
+  'function fxSpawn(cls, n, fn) {' +
+    'var layer = document.getElementById("fxLayer");' +
+    'if (!layer) return;' +
+    'for (var i = 0; i < n; i++) {' +
+      'var d = document.createElement("div");' +
+      'd.className = cls;' +
+      'if (fn) fn(d, i);' +
+      'layer.appendChild(d);' +
+    '}' +
+  '}\n' +
+  'function fxAnim(el, dur, delay) {' +
+    'el.style.webkitAnimationDuration = dur + "s";' +
+    'el.style.animationDuration = dur + "s";' +
+    'el.style.webkitAnimationDelay = delay + "s";' +
+    'el.style.animationDelay = delay + "s";' +
+  '}';
+
+// Hojas cayendo (compartido por tierra y bosque; cambian los colores en el JS).
+var LEAF_FX_CSS =
+  '.fx-leaf { position:absolute; top:-60px; width:22px; height:18px; opacity:0; ' +
+  '-webkit-animation: fxLeafFall 32s linear infinite; animation: fxLeafFall 32s linear infinite; }\n' +
+  '.fx-leaf svg { width:100%; height:100%; display:block; }\n' +
+  kfDual('fxLeafFall',
+    '0% { -webkit-transform:translate(0,0) rotate(0deg); transform:translate(0,0) rotate(0deg); opacity:0; } ' +
+    '8% { opacity:0.9; } 92% { opacity:0.85; } ' +
+    '100% { -webkit-transform:translate(-90px,1250px) rotate(380deg); transform:translate(-90px,1250px) rotate(380deg); opacity:0.1; }');
+
+// Funcion emitida que genera el SVG de una hoja (colores por parametro).
+var FX_LEAF_FN =
+  "function fxLeafSvg(c) {" +
+  " return '<svg viewBox=\"0 0 40 32\" xmlns=\"http://www.w3.org/2000/svg\">' +" +
+  " '<path d=\"M2 16 C 12 2, 30 2, 38 16 C 30 30, 12 30, 2 16 Z\" fill=\"' + c[0] + '\" stroke=\"' + c[1] + '\" stroke-width=\"1\"/>' +" +
+  " '<path d=\"M5 16 L 35 16\" stroke=\"' + c[1] + '\" stroke-width=\"1\" fill=\"none\"/>' +" +
+  " '</svg>';" +
+  "}";
+
+function leafJs(count, colorsLiteral) {
+  return 'var fxLeafCols = ' + colorsLiteral + ';' +
+    FX_LEAF_FN +
+    'fxSpawn("fx-leaf", ' + count + ', function (d, i) {' +
+    'd.innerHTML = fxLeafSvg(fxLeafCols[i % fxLeafCols.length]);' +
+    'd.style.left = (Math.random() * 100) + "%";' +
+    'var s = 14 + Math.random() * 14;' +
+    'd.style.width = s + "px"; d.style.height = (s * 0.8) + "px";' +
+    'fxAnim(d, 26 + Math.random() * 16, -Math.random() * 40);' +
+    '});';
+}
+
+// --- SVG estaticos generados en Node (una vez por proceso) ---
+
+// Diente de leon: tallo + corona radial de semillas. partial=true deja un
+// hueco (semillas que ya volaron), como en la escena de referencia.
+function buildDandelionSvg(stemPath, cx, cy, count, radius, partial) {
+  var lines = '';
+  for (var i = 0; i < count; i++) {
+    var ang = (i / count) * Math.PI * 2;
+    if (partial && ang > 5.9) continue;
+    if (partial && ang < 1.4) continue;
+    var len = radius * (0.85 + Math.random() * 0.3);
+    var x2 = Math.round((cx + Math.cos(ang) * len) * 10) / 10;
+    var y2 = Math.round((cy + Math.sin(ang) * len) * 10) / 10;
+    lines += '<line x1="' + cx + '" y1="' + cy + '" x2="' + x2 + '" y2="' + y2 + '"/>' +
+             '<circle cx="' + x2 + '" cy="' + y2 + '" r="2.2" fill="#cdd9e0" stroke="none"/>';
+  }
+  return '<svg viewBox="0 0 200 520" xmlns="http://www.w3.org/2000/svg">' +
+    '<path d="' + stemPath + '" stroke="#6f8a99" stroke-width="3" fill="none" stroke-linecap="round"/>' +
+    '<g stroke="#7c97a6" stroke-width="1.3">' + lines + '</g>' +
+    '<circle cx="' + cx + '" cy="' + cy + '" r="3" fill="#6f8a99"/>' +
+    '</svg>';
+}
+
+var DANDELION_SVG_A = buildDandelionSvg('M100 520 C 88 400, 96 300, 100 212', 100, 208, 34, 34, false);
+var DANDELION_SVG_B = buildDandelionSvg('M100 520 C 92 410, 100 320, 104 246', 104, 242, 30, 30, true);
+
+// Rama de cerezo de nina.html (estatica; el "bloom" animado del original usa
+// transform-box sobre <g>, no fiable en WebKit antiguo, se omite).
+var NINA_BRANCH_SVG =
+  '<svg viewBox="0 0 400 800" xmlns="http://www.w3.org/2000/svg">' +
+  '<g stroke="#9a7d72" fill="none" stroke-linecap="round">' +
+  '<path d="M400 40 C 320 120, 300 240, 250 380 C 220 470, 210 560, 240 700" stroke-width="7"/>' +
+  '<path d="M300 200 C 240 250, 210 330, 180 430" stroke-width="5"/>' +
+  '<path d="M260 360 C 210 400, 190 470, 175 560" stroke-width="5"/>' +
+  '<path d="M330 300 C 300 380, 300 470, 320 600" stroke-width="5"/>' +
+  '<path d="M250 380 C 300 420, 340 470, 360 560" stroke-width="4"/>' +
+  '</g>' +
+  '<g fill="#f3b9c6" stroke="#e89bb0" stroke-width="1">' +
+  '<g><circle cx="250" cy="380" r="9"/><circle cx="262" cy="372" r="7"/>' +
+  '<circle cx="240" cy="372" r="7"/><circle cx="256" cy="392" r="7"/>' +
+  '<circle cx="244" cy="392" r="7"/><circle cx="251" cy="380" r="3" fill="#fff5d6"/></g>' +
+  '<g><circle cx="180" cy="430" r="8"/><circle cx="191" cy="423" r="6"/>' +
+  '<circle cx="170" cy="423" r="6"/><circle cx="186" cy="441" r="6"/>' +
+  '<circle cx="174" cy="441" r="6"/></g>' +
+  '<g><circle cx="320" cy="500" r="9"/><circle cx="332" cy="492" r="7"/>' +
+  '<circle cx="308" cy="492" r="7"/><circle cx="326" cy="513" r="7"/>' +
+  '<circle cx="314" cy="513" r="7"/><circle cx="321" cy="500" r="3" fill="#fff5d6"/></g>' +
+  '<g><circle cx="175" cy="560" r="8"/><circle cx="186" cy="553" r="6"/>' +
+  '<circle cx="165" cy="553" r="6"/><circle cx="181" cy="571" r="6"/>' +
+  '<circle cx="169" cy="571" r="6"/></g>' +
+  '<g><circle cx="360" cy="560" r="8"/><circle cx="371" cy="553" r="6"/>' +
+  '<circle cx="350" cy="553" r="6"/><circle cx="366" cy="571" r="6"/>' +
+  '<circle cx="354" cy="571" r="6"/></g>' +
+  '<g><circle cx="300" cy="180" r="8"/><circle cx="311" cy="173" r="6"/>' +
+  '<circle cx="290" cy="173" r="6"/><circle cx="306" cy="191" r="6"/>' +
+  '<circle cx="294" cy="191" r="6"/></g>' +
+  '</g></svg>';
+
+// Mariposa: un solo SVG; el aleteo se hace con scaleX sobre el contenedor
+// (rotateY no es confiable en WebKit antiguo).
+function butterflySvg(fill) {
+  return '<svg viewBox="0 0 120 100" xmlns="http://www.w3.org/2000/svg">' +
+    '<path d="M60 50 C 10 0, 0 60, 55 60 C 40 80, 50 95, 60 70 Z" fill="' + fill + '" stroke="#b98e92" stroke-width="1.5"/>' +
+    '<path d="M60 50 C 110 0, 120 60, 65 60 C 80 80, 70 95, 60 70 Z" fill="' + fill + '" stroke="#b98e92" stroke-width="1.5"/>' +
+    '<line x1="60" y1="40" x2="60" y2="78" stroke="#9a7d72" stroke-width="2"/>' +
+    '</svg>';
+}
+
+// --- CSS y JS de particulas por tema ---
+
+var AGUA_FX_CSS =
+  '.fx-bubble { position:absolute; bottom:-60px; border-radius:50%; ' +
+  'border:1px solid rgba(255,255,255,0.4); opacity:0; ' +
+  'background: rgba(255,255,255,0.35); ' +
+  'background: -webkit-radial-gradient(35% 30%, circle, rgba(255,255,255,0.9), rgba(255,255,255,0.15) 55%, rgba(255,255,255,0.05) 100%); ' +
+  'background: radial-gradient(circle at 35% 30%, rgba(255,255,255,0.9), rgba(255,255,255,0.15) 55%, rgba(255,255,255,0.05) 100%); ' +
+  '-webkit-animation: fxRise 18s linear infinite; animation: fxRise 18s linear infinite; }\n' +
+  kfDual('fxRise',
+    '0% { -webkit-transform:translate(0,0); transform:translate(0,0); opacity:0; } ' +
+    '10% { opacity:0.85; } 85% { opacity:0.7; } ' +
+    '100% { -webkit-transform:translate(40px,-1250px); transform:translate(40px,-1250px); opacity:0; }') + '\n' +
+  sparkleCss('#ffffff');
+
+var AGUA_FX_JS =
+  'fxSpawn("fx-bubble", 16, function (d) {' +
+  'var s = 6 + Math.random() * 20;' +
+  'd.style.width = s + "px"; d.style.height = s + "px";' +
+  'd.style.left = (Math.random() * 100) + "%";' +
+  'fxAnim(d, 14 + Math.random() * 12, -Math.random() * 24);' +
+  '});' +
+  sparkleJs(12);
+
+var AIRE_FX_CSS =
+  '.fx-cloud { position:absolute; left:-640px; opacity:0; ' +
+  '-webkit-animation: fxCross 60s linear infinite; animation: fxCross 60s linear infinite; }\n' +
+  kfDual('fxCross',
+    '0% { -webkit-transform:translateX(0); transform:translateX(0); opacity:0; } ' +
+    '12% { opacity:0.8; } 88% { opacity:0.8; } ' +
+    '100% { -webkit-transform:translateX(2750px); transform:translateX(2750px); opacity:0; }') + '\n' +
+  '.fx-feather { position:absolute; top:-80px; width:30px; height:48px; opacity:0; ' +
+  '-webkit-animation: fxFeatherFall 30s linear infinite; animation: fxFeatherFall 30s linear infinite; }\n' +
+  '.fx-feather svg { width:100%; height:100%; display:block; }\n' +
+  kfDual('fxFeatherFall',
+    '0% { -webkit-transform:translate(0,0) rotate(-10deg); transform:translate(0,0) rotate(-10deg); opacity:0; } ' +
+    '10% { opacity:0.9; } 90% { opacity:0.85; } ' +
+    '100% { -webkit-transform:translate(140px,1250px) rotate(40deg); transform:translate(140px,1250px) rotate(40deg); opacity:0.1; }') + '\n' +
+  '.fx-gust { position:absolute; height:2px; border-radius:2px; opacity:0; ' +
+  'background: rgba(255,255,255,0.6); ' +
+  'background: -webkit-linear-gradient(left, rgba(255,255,255,0), rgba(255,255,255,0.8), rgba(255,255,255,0)); ' +
+  'background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,0.8), rgba(255,255,255,0)); ' +
+  '-webkit-animation: fxGust 16s linear infinite; animation: fxGust 16s linear infinite; }\n' +
+  kfDual('fxGust',
+    '0% { -webkit-transform:translateX(-420px) scaleX(0.6); transform:translateX(-420px) scaleX(0.6); opacity:0; } ' +
+    '30% { opacity:0.7; } 70% { opacity:0.7; } ' +
+    '100% { -webkit-transform:translateX(1300px) scaleX(1.2); transform:translateX(1300px) scaleX(1.2); opacity:0; }');
+
+var FX_CLOUD_FN =
+  "function fxCloudSvg(w) {" +
+  " return '<svg width=\"' + Math.round(w) + '\" height=\"' + Math.round(w * 0.5) + '\" viewBox=\"0 0 200 100\" xmlns=\"http://www.w3.org/2000/svg\">' +" +
+  " '<g fill=\"#ffffff\" opacity=\"0.85\">' +" +
+  " '<ellipse cx=\"60\" cy=\"65\" rx=\"55\" ry=\"30\"/><ellipse cx=\"110\" cy=\"55\" rx=\"50\" ry=\"35\"/>' +" +
+  " '<ellipse cx=\"150\" cy=\"68\" rx=\"45\" ry=\"26\"/><ellipse cx=\"95\" cy=\"72\" rx=\"60\" ry=\"24\"/>' +" +
+  " '</g></svg>';" +
+  "}";
+
+var FX_FEATHER_FN =
+  "function fxFeatherSvg(t) {" +
+  " return '<svg viewBox=\"0 0 40 64\" xmlns=\"http://www.w3.org/2000/svg\">' +" +
+  " '<path d=\"M20 2 C 33 18, 33 44, 22 62 C 21 50, 21 30, 20 2 Z\" fill=\"' + t + '\" stroke=\"#a9c0d2\" stroke-width=\"1\"/>' +" +
+  " '<path d=\"M20 2 C 7 18, 7 44, 18 62 C 19 50, 19 30, 20 2 Z\" fill=\"' + t + '\" stroke=\"#a9c0d2\" stroke-width=\"1\"/>' +" +
+  " '<line x1=\"20\" y1=\"4\" x2=\"20\" y2=\"60\" stroke=\"#9bb4c8\" stroke-width=\"1.4\"/>' +" +
+  " '</svg>';" +
+  "}";
+
+var AIRE_FX_JS =
+  FX_CLOUD_FN + FX_FEATHER_FN +
+  'fxSpawn("fx-cloud", 4, function (d) {' +
+  'var w = 220 + Math.random() * 200;' +
+  'd.innerHTML = fxCloudSvg(w);' +
+  'd.style.top = (5 + Math.random() * 55) + "%";' +
+  'fxAnim(d, 48 + Math.random() * 30, -Math.random() * 70);' +
+  '});' +
+  'var fxTints = ["#ffffff", "#eaf2f8", "#dcebf4"];' +
+  'fxSpawn("fx-feather", 6, function (d, i) {' +
+  'd.innerHTML = fxFeatherSvg(fxTints[i % 3]);' +
+  'd.style.left = (Math.random() * 90) + "%";' +
+  'var s = 20 + Math.random() * 14;' +
+  'd.style.width = s + "px"; d.style.height = (s * 1.6) + "px";' +
+  'fxAnim(d, 24 + Math.random() * 14, -Math.random() * 34);' +
+  '});' +
+  'fxSpawn("fx-gust", 4, function (d) {' +
+  'd.style.top = (10 + Math.random() * 75) + "%";' +
+  'd.style.left = (Math.random() * 30) + "%";' +
+  'd.style.width = (140 + Math.random() * 200) + "px";' +
+  'fxAnim(d, 15 + Math.random() * 9, -Math.random() * 20);' +
+  '});';
+
+var FUEGO_FX_CSS =
+  // Resplandor inferior pulsante: solo anima opacity (sin blur, barato en TV).
+  '.fx-glow { position:absolute; left:0; right:0; bottom:0; height:50%; opacity:0.7; ' +
+  'background: rgba(255,150,50,0.18); ' +
+  'background: -webkit-radial-gradient(50% 100%, ellipse, rgba(255,170,60,0.5), rgba(255,120,40,0.16) 45%, rgba(255,120,40,0) 70%); ' +
+  'background: radial-gradient(ellipse at 50% 100%, rgba(255,170,60,0.5), rgba(255,120,40,0.16) 45%, rgba(255,120,40,0) 70%); ' +
+  '-webkit-animation: fxPulse 7s ease-in-out infinite; animation: fxPulse 7s ease-in-out infinite; }\n' +
+  kfDual('fxPulse', '0%,100% { opacity:0.55; } 50% { opacity:0.95; }') + '\n' +
+  '.fx-ember { position:absolute; bottom:-40px; width:7px; height:7px; border-radius:50%; opacity:0; ' +
+  'background: #ff8a2e; ' +
+  'background: -webkit-radial-gradient(center, circle, #ffe7a8, #ff8a2e 60%, rgba(255,90,30,0) 100%); ' +
+  'background: radial-gradient(circle, #ffe7a8, #ff8a2e 60%, rgba(255,90,30,0) 100%); ' +
+  '-webkit-animation: fxEmberRise 20s linear infinite; animation: fxEmberRise 20s linear infinite; }\n' +
+  kfDual('fxEmberRise',
+    '0% { -webkit-transform:translate(0,0); transform:translate(0,0); opacity:0; } ' +
+    '10% { opacity:1; } 80% { opacity:0.9; } ' +
+    '100% { -webkit-transform:translate(60px,-1250px); transform:translate(60px,-1250px); opacity:0; }');
+
+var FUEGO_FX_JS =
+  'fxSpawn("fx-ember", 24, function (d) {' +
+  'var s = 4 + Math.random() * 5;' +
+  'd.style.width = s + "px"; d.style.height = s + "px";' +
+  'd.style.left = (Math.random() * 100) + "%";' +
+  'fxAnim(d, 14 + Math.random() * 12, -Math.random() * 26);' +
+  '});';
+
+var TIERRA_FX_CSS = LEAF_FX_CSS + '\n' + sparkleCss('#fff6da');
+
+var TIERRA_FX_JS =
+  leafJs(12, '[["#7d9b58","#5e7a3e"],["#a8b566","#86994a"],["#c79a4e","#a87b35"],["#9cba73","#7a9550"],["#b6884a","#946a2f"]]') +
+  sparkleJs(10);
+
+var BOSQUE_FX_CSS =
+  LEAF_FX_CSS + '\n' +
+  // Rayos de luz: linear-gradient rotado, solo anima opacity (sin blur ni
+  // mix-blend-mode; la suavidad la da el propio gradiente).
+  '.fx-ray { position:absolute; top:-20%; width:12%; height:150%; opacity:0.35; ' +
+  '-webkit-transform-origin:50% 0; transform-origin:50% 0; ' +
+  'background: rgba(255,240,190,0.2); ' +
+  'background: -webkit-linear-gradient(top, rgba(255,240,190,0.4), rgba(255,235,180,0.1) 55%, rgba(255,235,180,0) 85%); ' +
+  'background: linear-gradient(180deg, rgba(255,240,190,0.4), rgba(255,235,180,0.1) 55%, rgba(255,235,180,0) 85%); ' +
+  '-webkit-animation: fxRayPulse 10s ease-in-out infinite; animation: fxRayPulse 10s ease-in-out infinite; }\n' +
+  kfDual('fxRayPulse', '0%,100% { opacity:0.22; } 50% { opacity:0.5; }') + '\n' +
+  '.fx-bmote { position:absolute; width:6px; height:6px; border-radius:50%; opacity:0; ' +
+  'background: rgba(255,245,210,0.9); ' +
+  'background: -webkit-radial-gradient(center, circle, rgba(255,245,210,0.95), rgba(255,235,180,0) 70%); ' +
+  'background: radial-gradient(circle, rgba(255,245,210,0.95), rgba(255,235,180,0) 70%); ' +
+  '-webkit-animation: fxMoteUp 22s linear infinite; animation: fxMoteUp 22s linear infinite; }\n' +
+  kfDual('fxMoteUp',
+    '0% { -webkit-transform:translate(0,0); transform:translate(0,0); opacity:0; } ' +
+    '15% { opacity:0.9; } 85% { opacity:0.7; } ' +
+    '100% { -webkit-transform:translate(40px,-750px); transform:translate(40px,-750px); opacity:0; }');
+
+var BOSQUE_FX_HTML =
+  '<div class="fx-ray" style="left:52%; -webkit-transform:rotate(15deg); transform:rotate(15deg); -webkit-animation-duration:10s; animation-duration:10s;"></div>' +
+  '<div class="fx-ray" style="left:68%; -webkit-transform:rotate(18deg); transform:rotate(18deg); -webkit-animation-duration:13s; animation-duration:13s; -webkit-animation-delay:-4s; animation-delay:-4s;"></div>' +
+  '<div class="fx-ray" style="left:84%; -webkit-transform:rotate(21deg); transform:rotate(21deg); -webkit-animation-duration:11s; animation-duration:11s; -webkit-animation-delay:-7s; animation-delay:-7s;"></div>';
+
+var BOSQUE_FX_JS =
+  leafJs(10, '[["#c79a4e","#a87b35"],["#b6884a","#946a2f"],["#a87a3a","#865e26"],["#cf9d52","#a8782f"],["#9c7a3c","#7a5c28"]]') +
+  'fxSpawn("fx-bmote", 18, function (d) {' +
+  'd.style.left = (35 + Math.random() * 60) + "%";' +
+  'd.style.top = (15 + Math.random() * 70) + "%";' +
+  'fxAnim(d, 16 + Math.random() * 14, -Math.random() * 28);' +
+  '});';
+
+var NINO_FX_CSS =
+  // El vaiven se aplica al contenedor HTML (no al <g> del SVG) porque los
+  // transforms CSS sobre elementos SVG no son fiables en WebKit antiguo.
+  '.fx-dande { position:absolute; bottom:-10px; left:2%; width:190px; height:500px; ' +
+  '-webkit-transform-origin:50% 100%; transform-origin:50% 100%; ' +
+  '-webkit-animation: fxSway 9s ease-in-out infinite; animation: fxSway 9s ease-in-out infinite; }\n' +
+  '.fx-dande svg { width:100%; height:100%; display:block; }\n' +
+  '.fx-dande-b { left:9%; width:170px; height:460px; ' +
+  '-webkit-animation-duration:11s; animation-duration:11s; ' +
+  '-webkit-animation-delay:-2s; animation-delay:-2s; }\n' +
+  kfDual('fxSway',
+    '0%,100% { -webkit-transform:rotate(-2deg); transform:rotate(-2deg); } ' +
+    '50% { -webkit-transform:rotate(2.5deg); transform:rotate(2.5deg); }') + '\n' +
+  '.fx-seed { position:absolute; width:26px; height:26px; opacity:0; ' +
+  '-webkit-animation: fxSeedFly 22s linear infinite; animation: fxSeedFly 22s linear infinite; }\n' +
+  '.fx-seed svg { width:100%; height:100%; display:block; }\n' +
+  kfDual('fxSeedFly',
+    '0% { -webkit-transform:translate(0,0) rotate(0deg); transform:translate(0,0) rotate(0deg); opacity:0; } ' +
+    '10% { opacity:0.85; } 90% { opacity:0.7; } ' +
+    '100% { -webkit-transform:translate(1150px,-480px) rotate(220deg); transform:translate(1150px,-480px) rotate(220deg); opacity:0; }') + '\n' +
+  sparkleCss('#ffffff');
+
+var NINO_FX_HTML =
+  '<div class="fx-dande">' + DANDELION_SVG_A + '</div>' +
+  '<div class="fx-dande fx-dande-b">' + DANDELION_SVG_B + '</div>';
+
+var FX_SEED_FN =
+  "function fxSeedSvg() {" +
+  " return '<svg viewBox=\"0 0 40 40\" xmlns=\"http://www.w3.org/2000/svg\">' +" +
+  " '<g stroke=\"#6f8a99\" stroke-width=\"1\" fill=\"none\" stroke-linecap=\"round\">' +" +
+  " '<line x1=\"20\" y1=\"40\" x2=\"20\" y2=\"18\"/><line x1=\"20\" y1=\"18\" x2=\"20\" y2=\"4\"/>' +" +
+  " '<line x1=\"20\" y1=\"18\" x2=\"8\" y2=\"6\"/><line x1=\"20\" y1=\"18\" x2=\"32\" y2=\"6\"/>' +" +
+  " '<line x1=\"20\" y1=\"18\" x2=\"11\" y2=\"2\"/><line x1=\"20\" y1=\"18\" x2=\"29\" y2=\"2\"/>' +" +
+  " '<line x1=\"20\" y1=\"18\" x2=\"3\" y2=\"14\"/><line x1=\"20\" y1=\"18\" x2=\"37\" y2=\"14\"/>' +" +
+  " '</g><ellipse cx=\"20\" cy=\"38\" rx=\"1.6\" ry=\"3\" fill=\"#6f8a99\"/></svg>';" +
+  "}";
+
+var NINO_FX_JS =
+  FX_SEED_FN +
+  'fxSpawn("fx-seed", 10, function (d) {' +
+  'd.innerHTML = fxSeedSvg();' +
+  'd.style.left = (3 + Math.random() * 12) + "%";' +
+  'd.style.top = (55 + Math.random() * 30) + "%";' +
+  'var s = 14 + Math.random() * 14;' +
+  'd.style.width = s + "px"; d.style.height = s + "px";' +
+  'fxAnim(d, 18 + Math.random() * 12, -Math.random() * 28);' +
+  '});' +
+  sparkleJs(10);
+
+var NINA_FX_CSS =
+  '.fx-branch { position:absolute; right:-2%; top:-2%; width:42%; height:104%; }\n' +
+  '.fx-branch svg { width:100%; height:100%; display:block; }\n' +
+  '.fx-petal { position:absolute; top:-40px; width:18px; height:14px; opacity:0; ' +
+  'background: #f0b7c6; ' +
+  'background: -webkit-radial-gradient(30% 30%, circle, #f7c9d4, #e89bb0); ' +
+  'background: radial-gradient(circle at 30% 30%, #f7c9d4, #e89bb0); ' +
+  'border-radius: 60% 0 60% 0; ' +
+  '-webkit-animation: fxPetalFall 18s linear infinite; animation: fxPetalFall 18s linear infinite; }\n' +
+  kfDual('fxPetalFall',
+    '0% { -webkit-transform:translate(0,0) rotate(0deg); transform:translate(0,0) rotate(0deg); opacity:0; } ' +
+    '8% { opacity:0.9; } ' +
+    '100% { -webkit-transform:translate(-60px,1250px) rotate(420deg); transform:translate(-60px,1250px) rotate(420deg); opacity:0.15; }') + '\n' +
+  // Mariposas: flotan (translate en el div externo) y aletean (scaleX en el
+  // div interno; rotateY no es confiable en estas TVs).
+  '.fx-bfly { position:absolute; }\n' +
+  '.fx-flap { width:100%; height:100%; ' +
+  '-webkit-animation: fxFlap 1.6s ease-in-out infinite; animation: fxFlap 1.6s ease-in-out infinite; }\n' +
+  '.fx-flap svg { width:100%; height:100%; display:block; }\n' +
+  kfDual('fxFlap',
+    '0%,100% { -webkit-transform:scaleX(1); transform:scaleX(1); } ' +
+    '50% { -webkit-transform:scaleX(0.3); transform:scaleX(0.3); }') + '\n' +
+  '.fx-float1 { -webkit-animation: fxFloat1 18s ease-in-out infinite; animation: fxFloat1 18s ease-in-out infinite; }\n' +
+  '.fx-float2 { -webkit-animation: fxFloat2 22s ease-in-out infinite; animation: fxFloat2 22s ease-in-out infinite; }\n' +
+  '.fx-float3 { -webkit-animation: fxFloat3 16s ease-in-out infinite; animation: fxFloat3 16s ease-in-out infinite; }\n' +
+  kfDual('fxFloat1',
+    '0%,100% { -webkit-transform:translate(0,0) rotate(-4deg); transform:translate(0,0) rotate(-4deg); } ' +
+    '50% { -webkit-transform:translate(14px,-18px) rotate(4deg); transform:translate(14px,-18px) rotate(4deg); }') + '\n' +
+  kfDual('fxFloat2',
+    '0%,100% { -webkit-transform:translate(0,0) rotate(3deg); transform:translate(0,0) rotate(3deg); } ' +
+    '50% { -webkit-transform:translate(-12px,-14px) rotate(-5deg); transform:translate(-12px,-14px) rotate(-5deg); }') + '\n' +
+  kfDual('fxFloat3',
+    '0%,100% { -webkit-transform:translate(0,0) rotate(0deg); transform:translate(0,0) rotate(0deg); } ' +
+    '50% { -webkit-transform:translate(8px,-22px) rotate(6deg); transform:translate(8px,-22px) rotate(6deg); }') + '\n' +
+  sparkleCss('#ffffff');
+
+var NINA_FX_HTML =
+  '<div class="fx-branch">' + NINA_BRANCH_SVG + '</div>' +
+  '<div class="fx-bfly fx-float1" style="left:16%; top:58%; width:110px; height:92px;">' +
+  '<div class="fx-flap">' + butterflySvg('#f7d4dc') + '</div></div>' +
+  '<div class="fx-bfly fx-float2" style="left:7%; top:70%; width:90px; height:75px;">' +
+  '<div class="fx-flap" style="-webkit-animation-delay:-0.4s; animation-delay:-0.4s;">' + butterflySvg('#f5c8d2') + '</div></div>' +
+  '<div class="fx-bfly fx-float3" style="left:30%; top:63%; width:64px; height:54px;">' +
+  '<div class="fx-flap" style="-webkit-animation-delay:-0.7s; animation-delay:-0.7s;">' + butterflySvg('#fae0e6') + '</div></div>';
+
+var NINA_FX_JS =
+  'fxSpawn("fx-petal", 12, function (d) {' +
+  'd.style.left = (Math.random() * 100) + "%";' +
+  'var s = 12 + Math.random() * 10;' +
+  'd.style.width = s + "px"; d.style.height = (s * 0.78) + "px";' +
+  'fxAnim(d, 14 + Math.random() * 10, -Math.random() * 18);' +
+  '});' +
+  sparkleJs(12);
+
+// --- Definicion de temas ---
+// Cada tema define fuentes, colores, fondo, logo de pantalla 1 y particulas.
+var RALEWAY_FONTS_HREF = 'https://fonts.googleapis.com/css2?family=Raleway:wght@500;600;700;800&display=swap';
+var NINA_FONTS_HREF = 'https://fonts.googleapis.com/css2?family=Raleway:wght@500;600;700;800&family=Tangerine:wght@400;700&family=Cormorant+Garamond:wght@400;500;600&display=swap';
+var RALEWAY_STACK = '"Raleway", Arial, Helvetica, sans-serif';
+
+var TEMPLATES = {
+  agua: {
+    id: 'agua',
+    fontsHref: RALEWAY_FONTS_HREF,
+    fontName: RALEWAY_STACK,
+    fontBody: RALEWAY_STACK,
+    nameWeight: 800, nameSize1: 186, nameUppercase: true, name2Size: 85, name2Weight: 600,
+    titulo: '#0a1c2e', texto: '#1f364d', eyebrow: '#1f364d',
+    divider: 'rgba(31,54,77,0.4)', titleShadow: false,
+    cardBg: 'rgba(255,255,255,0.55)', cardBorder: 'rgba(255,255,255,0.7)', cardText: '#1f364d',
+    avatarBg: '#1f364d', avatarText: '#ffffff',
+    fallback: '#4ea3bb', bgType: 'png',
+    logo1: 'infinito',
+    particlesCss: AGUA_FX_CSS, particlesHtml: '', particlesJs: AGUA_FX_JS
+  },
+  aire: {
+    id: 'aire',
+    fontsHref: RALEWAY_FONTS_HREF,
+    fontName: RALEWAY_STACK,
+    fontBody: RALEWAY_STACK,
+    nameWeight: 800, nameSize1: 186, nameUppercase: true, name2Size: 85, name2Weight: 600,
+    titulo: '#182939', texto: '#2e3a46', eyebrow: '#2e3a46',
+    divider: 'rgba(46,58,70,0.4)', titleShadow: false,
+    cardBg: 'rgba(255,255,255,0.55)', cardBorder: 'rgba(255,255,255,0.7)', cardText: '#2e3a46',
+    avatarBg: '#2e3a46', avatarText: '#ffffff',
+    fallback: '#d2e6f1', bgType: 'png',
+    logo1: 'infinito',
+    particlesCss: AIRE_FX_CSS, particlesHtml: '', particlesJs: AIRE_FX_JS
+  },
+  fuego: {
+    id: 'fuego',
+    fontsHref: RALEWAY_FONTS_HREF,
+    fontName: RALEWAY_STACK,
+    fontBody: RALEWAY_STACK,
+    nameWeight: 800, nameSize1: 186, nameUppercase: true, name2Size: 85, name2Weight: 600,
+    titulo: '#ffffff', texto: '#fdf5e6', eyebrow: '#fdf5e6',
+    divider: 'rgba(255,255,255,0.4)', titleShadow: true,
+    cardBg: 'rgba(0,0,0,0.28)', cardBorder: 'rgba(255,255,255,0.25)', cardText: '#fdf5e6',
+    avatarBg: '#ffffff', avatarText: '#94472a',
+    fallback: '#4a231d', bgType: 'png',
+    logo1: 'infinito',
+    particlesCss: FUEGO_FX_CSS, particlesHtml: '<div class="fx-glow"></div>', particlesJs: FUEGO_FX_JS
+  },
+  tierra: {
+    id: 'tierra',
+    fontsHref: RALEWAY_FONTS_HREF,
+    fontName: RALEWAY_STACK,
+    fontBody: RALEWAY_STACK,
+    nameWeight: 800, nameSize1: 186, nameUppercase: true, name2Size: 85, name2Weight: 600,
+    titulo: '#ffffff', texto: '#e8f0ea', eyebrow: '#e8f0ea',
+    divider: 'rgba(255,255,255,0.4)', titleShadow: true,
+    cardBg: 'rgba(0,0,0,0.28)', cardBorder: 'rgba(255,255,255,0.25)', cardText: '#e8f0ea',
+    avatarBg: '#ffffff', avatarText: '#5a6a48',
+    fallback: '#5c5340', bgType: 'png',
+    logo1: 'infinito',
+    particlesCss: TIERRA_FX_CSS, particlesHtml: '', particlesJs: TIERRA_FX_JS
+  },
+  bosque: {
+    id: 'bosque',
+    fontsHref: RALEWAY_FONTS_HREF,
+    fontName: RALEWAY_STACK,
+    fontBody: RALEWAY_STACK,
+    nameWeight: 800, nameSize1: 186, nameUppercase: true, name2Size: 85, name2Weight: 600,
+    // bosque no esta en la guia: se eligen blancos calidos coherentes con la
+    // escena dorada de referencia.
+    titulo: '#ffffff', texto: '#f3e8cf', eyebrow: '#f3e8cf',
+    divider: 'rgba(255,255,255,0.4)', titleShadow: true,
+    cardBg: 'rgba(0,0,0,0.28)', cardBorder: 'rgba(255,255,255,0.25)', cardText: '#f3e8cf',
+    avatarBg: '#ffffff', avatarText: '#7a5e30',
+    fallback: '#9c7838', bgType: 'css',
+    bgWebkit: '-webkit-radial-gradient(62% 30%, ellipse, rgba(255,236,180,0.9), rgba(255,236,180,0) 45%), ' +
+      '-webkit-radial-gradient(40% 70%, ellipse, rgba(120,95,50,0.5), rgba(120,95,50,0) 55%), ' +
+      '-webkit-linear-gradient(top, #7a5e30 0%, #a07d3e 25%, #c9a155 48%, #9c7838 72%, #5f4824 100%)',
+    bgStd: 'radial-gradient(ellipse at 62% 30%, rgba(255,236,180,0.9), rgba(255,236,180,0) 45%), ' +
+      'radial-gradient(ellipse at 40% 70%, rgba(120,95,50,0.5), rgba(120,95,50,0) 55%), ' +
+      'linear-gradient(170deg, #7a5e30 0%, #a07d3e 25%, #c9a155 48%, #9c7838 72%, #5f4824 100%)',
+    logo1: 'isotipo',
+    particlesCss: BOSQUE_FX_CSS, particlesHtml: BOSQUE_FX_HTML, particlesJs: BOSQUE_FX_JS
+  },
+  nino: {
+    id: 'nino',
+    fontsHref: RALEWAY_FONTS_HREF,
+    fontName: RALEWAY_STACK,
+    fontBody: RALEWAY_STACK,
+    nameWeight: 800, nameSize1: 186, nameUppercase: true, name2Size: 85, name2Weight: 600,
+    titulo: '#1f364d', texto: '#2e4a5c', eyebrow: '#2e4a5c',
+    divider: 'rgba(46,74,92,0.4)', titleShadow: false,
+    cardBg: 'rgba(255,255,255,0.55)', cardBorder: 'rgba(255,255,255,0.7)', cardText: '#2e4a5c',
+    avatarBg: '#2e4a5c', avatarText: '#ffffff',
+    fallback: '#cfe4ee', bgType: 'css',
+    bgWebkit: '-webkit-radial-gradient(45% 60%, ellipse, rgba(255,255,255,0.92), rgba(255,255,255,0) 48%), ' +
+      '-webkit-radial-gradient(75% 35%, ellipse, rgba(245,250,252,0.7), rgba(245,250,252,0) 55%), ' +
+      '-webkit-linear-gradient(top left, #a7cadd 0%, #cfe4ee 30%, #eef5f8 55%, #bcd8e6 80%, #a3c5d8 100%)',
+    bgStd: 'radial-gradient(ellipse at 45% 60%, rgba(255,255,255,0.92), rgba(255,255,255,0) 48%), ' +
+      'radial-gradient(ellipse at 75% 35%, rgba(245,250,252,0.7), rgba(245,250,252,0) 55%), ' +
+      'linear-gradient(135deg, #a7cadd 0%, #cfe4ee 30%, #eef5f8 55%, #bcd8e6 80%, #a3c5d8 100%)',
+    logo1: 'isotipo',
+    particlesCss: NINO_FX_CSS, particlesHtml: NINO_FX_HTML, particlesJs: NINO_FX_JS
+  },
+  nina: {
+    id: 'nina',
+    fontsHref: NINA_FONTS_HREF,
+    fontName: '"Tangerine", "Brush Script MT", cursive',
+    fontBody: '"Cormorant Garamond", Georgia, "Times New Roman", serif',
+    nameWeight: 700, nameSize1: 200, nameUppercase: false, name2Size: 110, name2Weight: 700,
+    titulo: '#6e4f52', texto: '#7a5a5c', eyebrow: '#a07e6e',
+    divider: 'rgba(160,126,110,0.5)', titleShadow: false,
+    cardBg: 'rgba(255,255,255,0.55)', cardBorder: 'rgba(255,255,255,0.7)', cardText: '#7a5a5c',
+    avatarBg: '#a07e6e', avatarText: '#ffffff',
+    fallback: '#ead7d6', bgType: 'css',
+    bgWebkit: '-webkit-radial-gradient(30% 55%, ellipse, rgba(255,252,250,0.9), rgba(255,252,250,0) 45%), ' +
+      '-webkit-radial-gradient(70% 30%, ellipse, rgba(245,228,228,0.8), rgba(245,228,228,0) 55%), ' +
+      '-webkit-linear-gradient(top left, #ead7d6 0%, #f2e6e0 35%, #ecd9d6 70%, #ddc4c4 100%)',
+    bgStd: 'radial-gradient(ellipse at 30% 55%, rgba(255,252,250,0.9), rgba(255,252,250,0) 45%), ' +
+      'radial-gradient(ellipse at 70% 30%, rgba(245,228,228,0.8), rgba(245,228,228,0) 55%), ' +
+      'linear-gradient(135deg, #ead7d6 0%, #f2e6e0 35%, #ecd9d6 70%, #ddc4c4 100%)',
+    logo1: 'isotipo',
+    particlesCss: NINA_FX_CSS, particlesHtml: NINA_FX_HTML, particlesJs: NINA_FX_JS
+  }
+};
+
+// Fondo del body segun tema y pantalla. Siempre con color solido de fallback.
+function themedBgCss(theme, screen, baseUrl) {
+  if (theme.bgType === 'png') {
+    var file = theme.id + '-' + (screen === 1 ? '1' : '2') + '.png';
+    return 'background-color: ' + theme.fallback + '; ' +
+      'background-image: url(' + baseUrl + '/api/template-assets/' + file + '); ' +
+      'background-repeat: no-repeat; background-position: center; ' +
+      '-webkit-background-size: cover; background-size: cover;';
+  }
+  return 'background-color: ' + theme.fallback + '; ' +
+    'background-image: ' + theme.bgWebkit + '; ' +
+    'background-image: ' + theme.bgStd + ';';
+}
+
+// CSS base de las plantillas tematicas (mismas restricciones que commonCss).
+function themedCss(theme, screen, baseUrl) {
+  var shadow = theme.titleShadow ? ' text-shadow: 0 3px 14px rgba(0,0,0,0.35);' : '';
+  return [
+    '* { box-sizing: border-box; margin: 0; padding: 0; }',
+    'html, body { width: 100%; height: 100%; overflow: hidden; ',
+    '  color: ' + theme.texto + '; font-family: ' + theme.fontBody + '; }',
+    'body { ' + themedBgCss(theme, screen, baseUrl) + ' }',
+    // Capa de particulas detras del contenido
+    '.fx-layer { position: absolute; left: 0; top: 0; width: 100%; height: 100%; overflow: hidden; z-index: 1; }',
+    '.viewport { position: relative; z-index: 2; width: 100%; height: 100%; padding-bottom: 100px; ',
+    '  -webkit-box-sizing: border-box; box-sizing: border-box; }',
+    '.layout-table { width: 100%; height: 100%; border-collapse: collapse; }',
+    // ---- Pantalla 1: servicio ----
+    '.t-center { vertical-align: middle; text-align: center; padding: 20px 80px 10px; }',
+    '.t-name1 { font-family: ' + theme.fontName + '; font-weight: ' + theme.nameWeight + '; ',
+    '  font-size: ' + theme.nameSize1 + 'px; line-height: 1.05; color: ' + theme.titulo + '; ',
+    '  ' + (theme.nameUppercase ? 'text-transform: uppercase; letter-spacing: 1px; ' : '') +
+    '  white-space: nowrap; overflow: hidden;' + shadow + ' }',
+    '.t-div1 { width: 520px; height: 1px; background: ' + theme.divider + '; margin: 26px auto 30px; }',
+    '.t-intro { font-weight: 600; font-size: 66px; line-height: 1.4; color: ' + theme.texto + '; }',
+    '.t-svc { width: 100%; border-collapse: collapse; margin-top: 44px; }',
+    '.t-svc td { width: 50%; padding: 16px 10px; text-align: center; }',
+    '.t-svc-line { font-size: 54px; font-weight: 600; color: ' + theme.texto + '; ',
+    '  white-space: nowrap; overflow: hidden; }',
+    '.t-lbl { font-weight: 700; color: ' + theme.titulo + '; }',
+    // ---- Logos de esquina ----
+    '.t-cinta { position: absolute; right: 0; bottom: 110px; z-index: 4; }',
+    '.t-cinta img { display: block; height: 96px; width: auto; }',
+    '.t-iso { position: absolute; right: 36px; bottom: 120px; width: 72px; height: 72px; ',
+    '  background: #ffffff; border-radius: 50%; text-align: center; line-height: 72px; z-index: 4; ',
+    '  -webkit-box-shadow: 0 2px 10px rgba(0,0,0,0.25); box-shadow: 0 2px 10px rgba(0,0,0,0.25); }',
+    '.t-iso img { max-width: 50px; max-height: 50px; vertical-align: middle; }',
+    // ---- Pantallas 2 y 4 ----
+    '.t-col-l { width: 44%; vertical-align: middle; text-align: center; padding: 30px; }',
+    '.t-col-r { width: 56%; vertical-align: middle; padding: 30px 90px 30px 20px; }',
+    // Foto rectangular con esquinas redondeadas (la guia abandona el ovalo teal)
+    '.t-photo { display: inline-block; width: 400px; height: 480px; border-radius: 18px; ',
+    '  border: 6px solid rgba(255,255,255,0.65); background-color: rgba(255,255,255,0.25); ',
+    '  background-position: center top; background-repeat: no-repeat; ',
+    '  -webkit-background-size: cover; background-size: cover; }',
+    '.t-name2 { font-family: ' + theme.fontName + '; font-weight: ' + theme.name2Weight + '; ',
+    '  font-size: ' + theme.name2Size + 'px; line-height: 1.1; margin-top: 26px; color: ' + theme.titulo + ';' + shadow + ' }',
+    '.t-years { font-weight: 500; font-size: 68px; margin-top: 8px; color: ' + theme.texto + '; }',
+    '.t-eyebrow { font-weight: 600; font-size: 85px; line-height: 1.15; color: ' + theme.eyebrow + '; margin-bottom: 28px; }',
+    '.t-emsg { font-weight: 600; font-size: 72px; line-height: 1.45; color: ' + theme.texto + '; ',
+    '  max-height: 640px; overflow: hidden; }',
+    '.t-qrtext { font-weight: 600; font-size: 72px; line-height: 1.45; color: ' + theme.texto + '; margin-top: 30px; }',
+    '.qr-box2 { display: inline-block; padding: 22px; background: #ffffff; border-radius: 28px; }',
+    '.qr-box2 svg { display: block; width: 420px; height: 420px; }',
+    '.t-scan { margin-top: 28px; font-size: 34px; font-weight: 700; color: ' + theme.titulo + '; }',
+    // ---- Pantalla 3: mensajes ----
+    '.t-msg-head { text-align: center; padding: 36px 40px 20px; }',
+    '.t-msg-eyebrow { font-size: 36px; font-weight: 600; color: ' + theme.eyebrow + '; }',
+    '.t-msg-title { font-weight: 700; font-size: 64px; margin-top: 6px; color: ' + theme.titulo + ';' + shadow + ' }',
+    '.t-msg-count { font-size: 26px; margin-top: 8px; color: ' + theme.texto + '; opacity: 0.85; }',
+    '.msg-grid { width: 100%; border-collapse: separate; border-spacing: 16px; }',
+    '.msg-grid td { width: 33.33%; vertical-align: top; }',
+    '.t-msg-card { background: ' + theme.cardBg + '; border: 1px solid ' + theme.cardBorder + '; ',
+    '  border-radius: 14px; padding: 22px; min-height: 250px; color: ' + theme.cardText + '; }',
+    '.t-msg-avatar { display: inline-block; width: 64px; height: 64px; border-radius: 50%; ',
+    '  background: ' + theme.avatarBg + '; color: ' + theme.avatarText + '; text-align: center; ',
+    '  line-height: 64px; font-size: 30px; font-weight: 700; vertical-align: middle; margin-right: 14px; }',
+    '.t-msg-avatar img { width: 100%; height: 100%; border-radius: 50%; display: block; }',
+    '.t-msg-name { display: inline-block; vertical-align: middle; font-weight: 700; font-size: 26px; }',
+    '.t-msg-text { margin-top: 16px; font-size: 24px; line-height: 1.5; }',
+    '.t-msg-empty { text-align: center; padding: 80px 30px; font-size: 34px; color: ' + theme.texto + '; opacity: 0.85; }',
+    '.page-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; ',
+    '  background: ' + theme.divider + '; margin: 0 4px; }',
+    '.page-dot.active { background: ' + theme.titulo + '; width: 22px; border-radius: 5px; }',
+    // ---- Footer (identico al legacy, banda oscura translucida) ----
+    '.footer { position: absolute; left: 0; right: 0; bottom: 0; ',
+    '  background: rgba(0,0,0,0.30); padding: 10px 36px; height: 100px; z-index: 5; }',
+    '.footer-table { width: 100%; height: 100%; border-collapse: collapse; }',
+    '.footer-table td { vertical-align: middle; color: #ffffff; }',
+    '.footer-left { width: 33%; font-size: 19px; opacity: 0.85; text-align: left; font-weight: 500; }',
+    '.footer-center { width: 34%; text-align: center; }',
+    '.footer-center .brand { font-weight: bold; font-size: 18px; letter-spacing: 3px; }',
+    '.footer-center .tagline { font-size: 13px; opacity: 0.8; margin-top: 4px; text-align: center; }',
+    '.footer-logo { display: inline-block; width: 180px; height: auto; opacity: 0.7; vertical-align: middle; }',
+    '.footer-right { width: 33%; text-align: right; }',
+    '.dot-indicator { display: inline-block; width: 12px; height: 12px; border-radius: 50%; ',
+    '  background: rgba(255,255,255,0.4); margin-left: 6px; vertical-align: middle; }',
+    '.dot-indicator.active { background: #f0c040; width: 26px; border-radius: 6px; }'
+  ].join('\n') + '\n' + theme.particlesCss;
+}
+
+// Logo de esquina inferior derecha segun tema/pantalla.
+function themedLogoHtml(theme, screen, baseUrl) {
+  if (screen === 1 && theme.logo1 === 'infinito') {
+    return '<div class="t-cinta"><img src="' + baseUrl + '/api/template-assets/infinito-' +
+      theme.id + '.png" alt="Los Olivos"></div>';
+  }
+  return '<div class="t-iso"><img src="' + baseUrl + '/api/template-assets/isotipo.png" alt="Los Olivos"></div>';
+}
+
+// =========== Pantalla 1 tematica: servicio ===========
+function renderThemedService(m, theme) {
+  var ingreso = formatDateLong(m.scheduleStart);
+  var salida = formatDateLong(m.scheduleEnd);
+  var exequias = formatDateLong(m.exequiasDatetime);
+  var destino = formatDateLong(m.finalDestinationDatetime);
+
+  // Valor de cada dato: fecha en formato guia; si no hay fecha cae al nombre
+  // del lugar y por ultimo a "Por confirmar".
+  function svcVal(dateStr, venue) {
+    if (dateStr) return escapeHtml(dateStr);
+    if (venue) return escapeHtml(venue);
+    return 'Por confirmar';
+  }
+
+  function svcCell(id, label, value) {
+    return '<div class="t-svc-line" id="' + id + '">' +
+      '<span class="t-lbl">' + label + ':</span> ' + value + '</div>';
+  }
+
+  return '<table class="layout-table"><tr><td class="t-center">' +
+    '<div class="t-name1" id="tName">' + escapeHtml(m.name) + '</div>' +
+    '<div class="t-div1"></div>' +
+    '<div class="t-intro">' +
+      'Hoy nos reunimos para honrar una vida inolvidable.<br>' +
+      'Conmemorando cada recuerdo como el m&aacute;s sincero homenaje de amor.' +
+    '</div>' +
+    '<table class="t-svc"><tr>' +
+      '<td>' + svcCell('tSvc1', 'Ingreso', svcVal(ingreso, m.roomName)) + '</td>' +
+      '<td>' + svcCell('tSvc2', 'Salida', svcVal(salida, m.roomName)) + '</td>' +
+    '</tr><tr>' +
+      '<td>' + svcCell('tSvc3', 'Exequias', svcVal(exequias, m.exequiasVenue)) + '</td>' +
+      '<td>' + svcCell('tSvc4', 'Destino Final', svcVal(destino, m.finalDestinationVenue)) + '</td>' +
+    '</tr></table>' +
+    '</td></tr></table>';
+}
+
+// =========== Pantalla 2 tematica: memorial (foto + mensaje) ===========
+function renderThemedEmotional(m, theme) {
+  var photo = m.photoUrl || '';
+  var photoStyle = photo ? ' style="background-image:url(\'' + escapeHtml(photo) + '\');"' : '';
+  return '<table class="layout-table"><tr>' +
+    '<td class="t-col-l">' +
+      '<div class="t-photo"' + photoStyle + '></div>' +
+      '<div class="t-name2">' + escapeHtml(m.name) + '</div>' +
+      '<div class="t-years">' + escapeHtml(m.birthYear || '') + ' &mdash; ' + escapeHtml(m.deathYear || '') + '</div>' +
+    '</td>' +
+    '<td class="t-col-r">' +
+      '<div class="t-eyebrow">En memoria de</div>' +
+      '<div class="t-emsg" id="tFitMsg">' + escapeHtml(m.emotionalMessage || '') + '</div>' +
+    '</td>' +
+    '</tr></table>';
+}
+
+// =========== Pantalla 3 tematica: mensajes del publico ===========
+function renderThemedMessages(m, theme, condolences, totalCount, page, totalPages) {
+  var count = (typeof totalCount === 'number') ? totalCount : condolences.length;
+  var head = '<div class="t-msg-head">' +
+    '<div class="t-msg-eyebrow">Mensajes para</div>' +
+    '<div class="t-msg-title">' + escapeHtml(m.name) + '</div>';
+
+  if (count === 0) {
+    return head + '</div>' +
+      '<div class="t-msg-empty">' +
+      'A&uacute;n no hay mensajes.<br>S&eacute; el primero en dejar un recuerdo.' +
+      '</div>';
+  }
+
+  head += '<div class="t-msg-count">' +
+    count + ' ' + (count === 1 ? 'mensaje recibido' : 'mensajes recibidos') +
+    (totalPages > 1 ? ' &middot; P&aacute;gina ' + (page + 1) + ' de ' + totalPages : '') +
+    '</div></div>';
+
+  var visible = condolences.slice(0, 6);
+  var rows = '';
+  for (var r = 0; r < 2; r++) {
+    var tr = '<tr>';
+    for (var c = 0; c < 3; c++) {
+      var idx = r * 3 + c;
+      var item = visible[idx];
+      tr += '<td>';
+      if (item) {
+        var initial = (item.sender_name || '?').charAt(0).toUpperCase();
+        var avatar = item.file1_url
+          ? '<span class="t-msg-avatar"><img src="' + escapeHtml(item.file1_url) + '" alt=""></span>'
+          : '<span class="t-msg-avatar">' + escapeHtml(initial) + '</span>';
+        tr += '<div class="t-msg-card">' +
+          avatar +
+          '<span class="t-msg-name">' + escapeHtml(item.sender_name) + '</span>' +
+          '<div class="t-msg-text">' + escapeHtml(item.message || '') + '</div>' +
+        '</div>';
+      }
+      tr += '</td>';
+    }
+    tr += '</tr>';
+    rows += tr;
+  }
+
+  var pageIndicator = '';
+  if (totalPages > 1) {
+    var dots = '';
+    for (var p = 0; p < totalPages; p++) {
+      dots += '<span class="page-dot' + (p === page ? ' active' : '') + '"></span>';
+    }
+    pageIndicator = '<div style="text-align:center;margin-top:18px;">' + dots + '</div>';
+  }
+
+  return head +
+    '<div style="padding:0 40px;">' +
+      '<table class="msg-grid">' + rows + '</table>' +
+      pageIndicator +
+    '</div>';
+}
+
+// =========== Pantalla 4 tematica: QR ===========
+function renderThemedQr(m, theme, qrSvg) {
+  return '<table class="layout-table"><tr>' +
+    '<td class="t-col-l">' +
+      '<div class="qr-box2">' + (qrSvg || '') + '</div>' +
+      '<div class="t-scan">Escanea el c&oacute;digo QR</div>' +
+    '</td>' +
+    '<td class="t-col-r">' +
+      '<div class="t-eyebrow">En memoria de</div>' +
+      '<div class="t-name2" style="margin-top:0;">' + escapeHtml(m.name) + '</div>' +
+      '<div class="t-years">' + escapeHtml(m.birthYear || '') + ' &mdash; ' + escapeHtml(m.deathYear || '') + '</div>' +
+      '<div class="t-qrtext">Hazte presente dejando un mensaje que proviene desde todo el amor ' +
+      'que hay al recordar con el coraz&oacute;n.</div>' +
+    '</td>' +
+    '</tr></table>';
+}
+
+// Script ES5 de auto-ajuste de textos: reduce font-size mientras el texto
+// desborda. fits: array de [id, sizeInicial, sizeMinimo, paso, modo('w'|'h')].
+function fitScriptJs(fits) {
+  if (!fits || !fits.length) return '';
+  return 'var FIT = ' + JSON.stringify(fits) + ';\n' +
+    'for (var fi = 0; fi < FIT.length; fi++) {\n' +
+    '  (function (cfg) {\n' +
+    '    var el = document.getElementById(cfg[0]);\n' +
+    '    if (!el) return;\n' +
+    '    var size = cfg[1];\n' +
+    '    var guard = 0;\n' +
+    '    if (cfg[4] === "w") {\n' +
+    '      while (el.scrollWidth > el.clientWidth && size > cfg[2] && guard < 80) {\n' +
+    '        size -= cfg[3]; guard++;\n' +
+    '        el.style.fontSize = size + "px";\n' +
+    '      }\n' +
+    '    } else {\n' +
+    '      while (el.scrollHeight > el.clientHeight && size > cfg[2] && guard < 80) {\n' +
+    '        size -= cfg[3]; guard++;\n' +
+    '        el.style.fontSize = size + "px";\n' +
+    '      }\n' +
+    '    }\n' +
+    '  })(FIT[fi]);\n' +
+    '}';
+}
+
+// Shell HTML de las plantillas tematicas. Mantiene meta refresh, footer,
+// preview y rotacion identicos al legacy.
+function renderThemedShell(opts) {
+  // opts: { title, screen, nextUrl, body, totalScreens, scheduleStart,
+  //         scheduleEnd, preview, theme, baseUrl, fits }
+  var theme = opts.theme;
+  var refresh = '';
+  if (opts.nextUrl && !opts.preview) {
+    refresh = '<meta http-equiv="refresh" content="25; url=' + escapeHtml(opts.nextUrl) + '">';
+  }
+
+  var script = FX_HELPERS_JS + '\n' +
+    '(function () {\n' + (theme.particlesJs || '') + '\n})();\n' +
+    fitScriptJs(opts.fits);
+
+  return '<!DOCTYPE html>\n' +
+    '<html lang="es">\n' +
+    '<head>\n' +
+    '<meta http-equiv="content-type" content="text/html; charset=utf-8">\n' +
+    '<meta http-equiv="X-UA-Compatible" content="IE=edge">\n' +
+    '<meta name="viewport" content="width=device-width, initial-scale=1">\n' +
+    '<meta http-equiv="cache-control" content="no-cache, no-store, must-revalidate">\n' +
+    '<meta http-equiv="pragma" content="no-cache">\n' +
+    '<meta http-equiv="expires" content="0">\n' +
+    refresh + '\n' +
+    '<title>' + escapeHtml(opts.title) + '</title>\n' +
+    '<link rel="preconnect" href="https://fonts.googleapis.com">\n' +
+    '<link href="' + theme.fontsHref + '" rel="stylesheet">\n' +
+    '<style type="text/css">\n' + themedCss(theme, opts.screen, opts.baseUrl) + '\n</style>\n' +
+    '</head>\n' +
+    '<body>\n' +
+    '<div class="fx-layer" id="fxLayer">' + (theme.particlesHtml || '') + '</div>\n' +
+    '<div class="viewport">\n' +
+    opts.body + '\n' +
+    themedLogoHtml(theme, opts.screen, opts.baseUrl) + '\n' +
+    '</div>\n' +
+    renderFooter(opts.screen, opts.totalScreens, opts.scheduleStart, opts.scheduleEnd) + '\n' +
+    '<script type="text/javascript">\n' + script + '\n</scr' + 'ipt>\n' +
+    '</body>\n' +
+    '</html>';
+}
+
+// =========== Rotacion de pantallas (compartida legacy/tematico) ===========
+function computeCycle(opts) {
   var TOTAL = 4;
   var screen = parseInt(opts.screen, 10);
   if (isNaN(screen) || screen < 1 || screen > TOTAL) screen = 1;
@@ -448,11 +1310,62 @@ function render(opts) {
   var qs = qsParts.length ? '?' + qsParts.join('&') : '';
   var nextUrl = '/digital-display-screen/' + encodeURIComponent(opts.roomId) + qs;
 
+  return { total: TOTAL, screen: screen, page: page, totalPages: totalPages, nextUrl: nextUrl };
+}
+
+// =========== Render tematico ===========
+function renderThemed(opts, theme) {
+  var cyc = computeCycle(opts);
+  var m = opts.memorial;
+  var baseUrl = opts.baseUrl || '';
+
+  var body;
+  var fits = [];
+  if (cyc.screen === 1) {
+    body = renderThemedService(m, theme);
+    // Auto-ajuste: nombre gigante y las 4 lineas de datos del servicio.
+    fits = [
+      ['tName', theme.nameSize1, 90, 6, 'w'],
+      ['tSvc1', 54, 34, 2, 'w'],
+      ['tSvc2', 54, 34, 2, 'w'],
+      ['tSvc3', 54, 34, 2, 'w'],
+      ['tSvc4', 54, 34, 2, 'w']
+    ];
+  } else if (cyc.screen === 2) {
+    body = renderThemedEmotional(m, theme);
+    fits = [['tFitMsg', 72, 40, 4, 'h']];
+  } else if (cyc.screen === 3) {
+    body = renderThemedMessages(m, theme, opts.condolences || [], opts.totalMessages, cyc.page, cyc.totalPages);
+  } else {
+    body = renderThemedQr(m, theme, opts.qrSvg);
+  }
+
+  var schedStart = format12h(m.dailyHoursStart || '08:00');
+  var schedEnd = format12h(m.dailyHoursEnd || '23:00');
+
+  return renderThemedShell({
+    title: 'Memorial Digital - ' + (m.name || ''),
+    screen: cyc.screen,
+    totalScreens: cyc.total,
+    nextUrl: cyc.nextUrl,
+    body: body,
+    scheduleStart: schedStart,
+    scheduleEnd: schedEnd,
+    preview: opts.preview,
+    theme: theme,
+    baseUrl: baseUrl,
+    fits: fits
+  });
+}
+
+// =========== Render legacy (diseno teal 'default') ===========
+function renderLegacy(opts) {
+  var cyc = computeCycle(opts);
   var m = opts.memorial;
   var body;
-  if (screen === 1) body = renderScreenService(m);
-  else if (screen === 2) body = renderScreenEmotional(m);
-  else if (screen === 3) body = renderScreenMessages(m, opts.condolences || [], opts.totalMessages, page, totalPages);
+  if (cyc.screen === 1) body = renderScreenService(m);
+  else if (cyc.screen === 2) body = renderScreenEmotional(m);
+  else if (cyc.screen === 3) body = renderScreenMessages(m, opts.condolences || [], opts.totalMessages, cyc.page, cyc.totalPages);
   else body = renderScreenQr(m, opts.qrSvg);
 
   // Horario diario que la sala esta habilitada (footer). Convertimos 24h a 12h
@@ -463,9 +1376,9 @@ function render(opts) {
 
   return renderShell({
     title: 'Memorial Digital - ' + (m.name || ''),
-    screen: screen,
-    totalScreens: TOTAL,
-    nextUrl: nextUrl,
+    screen: cyc.screen,
+    totalScreens: cyc.total,
+    nextUrl: cyc.nextUrl,
     body: body,
     scheduleStart: schedStart,
     scheduleEnd: schedEnd,
@@ -473,4 +1386,19 @@ function render(opts) {
   });
 }
 
-module.exports = { render: render, renderEmptyRoom: renderEmptyRoom };
+// =========== Render principal ===========
+// Devuelve el HTML de la vista solicitada. opts.templateId selecciona la
+// plantilla; 'default' o cualquier valor desconocido usa el diseno teal legacy.
+function render(opts) {
+  // opts: { memorial, condolences, totalMessages, screen (1..4), page,
+  //         totalPages, roomId, baseUrl, qrSvg, preview, templateId }
+  var theme = TEMPLATES[opts.templateId];
+  if (theme) return renderThemed(opts, theme);
+  return renderLegacy(opts);
+}
+
+module.exports = {
+  render: render,
+  renderEmptyRoom: renderEmptyRoom,
+  TEMPLATE_IDS: TEMPLATE_IDS
+};

@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Obituario</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    width: 100%; height: 100%;
+    background: #a9c7d6;
+  }
+
+  .stage-wrap {
+    position: fixed; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(circle at 50% 40%, #cfe2ec, #9dbfd0);
+  }
+  .stage {
+    position: relative;
+    width: 100vw;
+    height: 56.25vw;          /* 16:9 */
+    max-height: 100vh;
+    max-width: 177.78vh;
+    overflow: hidden;
+    background:
+      radial-gradient(ellipse at 45% 60%, rgba(255,255,255,0.92), rgba(255,255,255,0) 48%),
+      radial-gradient(ellipse at 75% 35%, rgba(245,250,252,0.7), rgba(245,250,252,0) 55%),
+      linear-gradient(135deg, #a7cadd 0%, #cfe4ee 30%, #eef5f8 55%, #bcd8e6 80%, #a3c5d8 100%);
+  }
+
+  /* Textura acuarela suave en lento movimiento */
+  .watercolor {
+    position: absolute; inset: -10%;
+    background:
+      radial-gradient(circle at 25% 35%, rgba(255,255,255,0.6) 0 9%, transparent 32%),
+      radial-gradient(circle at 60% 65%, rgba(255,255,255,0.5) 0 11%, transparent 36%),
+      radial-gradient(circle at 82% 25%, rgba(255,255,255,0.45) 0 12%, transparent 40%),
+      radial-gradient(circle at 40% 80%, rgba(230,242,248,0.55) 0 10%, transparent 38%);
+    filter: blur(9px);
+    animation: drift 26s ease-in-out infinite alternate;
+  }
+  @keyframes drift {
+    from { transform: translate(0,0) scale(1.02); }
+    to   { transform: translate(2%, 1.5%) scale(1.06); }
+  }
+
+  /* Destellos / partículas de luz */
+  .sparkle { position:absolute; width:4px; height:4px; border-radius:50%;
+    background: radial-gradient(circle, #fff, rgba(255,255,255,0)); opacity:0;
+    animation: twinkle 6s ease-in-out infinite; }
+  @keyframes twinkle { 0%,100%{opacity:0; transform:scale(.5);} 50%{opacity:.9; transform:scale(1);} }
+
+  /* Marcos */
+  .frame-outer {
+    position:absolute; inset:1.2%;
+    border: 4px solid #5d8298;
+    box-shadow: 0 0 16px rgba(70,110,130,.3);
+  }
+  .frame-inner {
+    position:absolute; inset:2.6%;
+    border: 2px solid #5d8298;
+    box-shadow: inset 0 0 6px rgba(70,110,130,.25);
+  }
+
+  /* Dientes de león (esquina inferior izquierda) */
+  .dandelion {
+    position:absolute; left:2%; bottom:0; width:22%; height:60%;
+    pointer-events:none;
+  }
+  .dandelion svg { width:100%; height:100%; overflow:visible; }
+  .sway { transform-box:fill-box; transform-origin: bottom center;
+          animation: sway 9s ease-in-out infinite; }
+  .sway.b { animation-duration: 11s; animation-delay:-2s; }
+  @keyframes sway { 0%,100%{transform:rotate(-2deg);} 50%{transform:rotate(2.5deg);} }
+
+  /* Semillas voladoras */
+  .seeds { position:absolute; inset:0; overflow:hidden; pointer-events:none; }
+  .seed {
+    position:absolute;
+    width:26px; height:26px;
+    opacity:0;
+    animation: flyseed linear infinite;
+  }
+  .seed svg { width:100%; height:100%; }
+  @keyframes flyseed {
+    0%   { transform: translate(0,0) rotate(0deg); opacity:0; }
+    10%  { opacity:.85; }
+    90%  { opacity:.7; }
+    100% { transform: translate(58vw, -42vh) rotate(220deg); opacity:0; }
+  }
+
+  /* TEXTO EDITABLE (oculto por defecto, dejar vacío)
+     Para usarlo, escribe dentro de .content */
+  .content { position:absolute; inset:0; }
+</style>
+</head>
+<body>
+<div class="stage-wrap">
+  <div class="stage" id="stage">
+
+    <div class="watercolor"></div>
+
+    <!-- Semillas voladoras -->
+    <div class="seeds" id="seeds"></div>
+
+    <!-- Dientes de león -->
+    <div class="dandelion">
+      <svg viewBox="0 0 300 500" xmlns="http://www.w3.org/2000/svg">
+        <!-- tallo 1 (completo) -->
+        <g class="sway">
+          <path d="M70 500 C 60 380, 70 280, 95 200" stroke="#6f8a99" stroke-width="3" fill="none" stroke-linecap="round"/>
+          <g stroke="#7c97a6" stroke-width="1.3">
+            <!-- semillas radiales -->
+            <g id="puff1"></g>
+          </g>
+          <circle cx="95" cy="200" r="3" fill="#6f8a99"/>
+        </g>
+        <!-- tallo 2 (medio deshecho) -->
+        <g class="sway b">
+          <path d="M150 500 C 140 390, 150 300, 170 235" stroke="#6f8a99" stroke-width="3" fill="none" stroke-linecap="round"/>
+          <g stroke="#7c97a6" stroke-width="1.3">
+            <g id="puff2"></g>
+          </g>
+          <circle cx="170" cy="235" r="3" fill="#6f8a99"/>
+        </g>
+      </svg>
+    </div>
+
+    <!-- Marcos -->
+    <div class="frame-outer"></div>
+    <div class="frame-inner"></div>
+
+    <!-- TEXTO: escribe aquí si lo necesitas -->
+    <div class="content"></div>
+
+  </div>
+</div>
+
+<script>
+  // --- construir los "puffs" radiales de los dientes de león ---
+  function buildPuff(groupId, cx, cy, count, radius, density){
+    const g = document.getElementById(groupId);
+    const ns = "http://www.w3.org/2000/svg";
+    for(let i=0;i<count;i++){
+      // hueco a la derecha para simular semillas que ya volaron
+      const ang = (i/count)*Math.PI*2;
+      if (density==='partial' && ang > -0.4 && ang < 1.4) continue;
+      const len = radius*(0.85+Math.random()*0.3);
+      const x2 = cx + Math.cos(ang)*len;
+      const y2 = cy + Math.sin(ang)*len;
+      const line = document.createElementNS(ns,'line');
+      line.setAttribute('x1',cx); line.setAttribute('y1',cy);
+      line.setAttribute('x2',x2); line.setAttribute('y2',y2);
+      g.appendChild(line);
+      // pelusa en la punta
+      const tip = document.createElementNS(ns,'circle');
+      tip.setAttribute('cx',x2); tip.setAttribute('cy',y2);
+      tip.setAttribute('r',2.2);
+      tip.setAttribute('fill','#cdd9e0');
+      tip.setAttribute('stroke','none');
+      g.appendChild(tip);
+    }
+  }
+  buildPuff('puff1', 95, 200, 34, 34, 'full');
+  buildPuff('puff2', 170, 235, 30, 30, 'partial');
+
+  // --- semilla voladora (SVG): tallo + corona de filamentos ---
+  function seedSVG(){
+    return `<svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+      <g stroke="#6f8a99" stroke-width="1" fill="none" stroke-linecap="round">
+        <line x1="20" y1="40" x2="20" y2="18"/>
+        <line x1="20" y1="18" x2="20" y2="4"/>
+        <line x1="20" y1="18" x2="8"  y2="6"/>
+        <line x1="20" y1="18" x2="32" y2="6"/>
+        <line x1="20" y1="18" x2="11" y2="2"/>
+        <line x1="20" y1="18" x2="29" y2="2"/>
+        <line x1="20" y1="18" x2="3"  y2="14"/>
+        <line x1="20" y1="18" x2="37" y2="14"/>
+      </g>
+      <ellipse cx="20" cy="38" rx="1.6" ry="3" fill="#6f8a99"/>
+    </svg>`;
+  }
+
+  // generar muchas semillas que parten desde la zona del diente de león
+  const seeds = document.getElementById('seeds');
+  const N = 16;
+  for(let i=0;i<N;i++){
+    const s = document.createElement('div');
+    s.className = 'seed';
+    s.innerHTML = seedSVG();
+    // punto de partida cerca de la esquina inferior izquierda
+    s.style.left = (3 + Math.random()*12) + '%';
+    s.style.top  = (55 + Math.random()*30) + '%';
+    s.style.animationDuration = (16 + Math.random()*12) + 's';   // vuelo lento
+    s.style.animationDelay = (-Math.random()*26) + 's';
+    const sc = 0.5 + Math.random()*0.7;
+    s.style.transform = 'scale('+sc+')';
+    seeds.appendChild(s);
+  }
+
+  // destellos
+  const stage = document.getElementById('stage');
+  for(let i=0;i<22;i++){
+    const sp=document.createElement('div');
+    sp.className='sparkle';
+    sp.style.left=(Math.random()*100)+'%';
+    sp.style.top=(Math.random()*100)+'%';
+    sp.style.animationDelay=(-Math.random()*6)+'s';
+    stage.appendChild(sp);
+  }
+</script>
+</body>
+</html>

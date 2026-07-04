@@ -25,6 +25,9 @@ const TributePreview = ({ formData }) => {
   // Pero el display SSR usa roomId, no memorialId. roomId esta en formData.room.
   const { memorialId } = useParams();
   const roomId = formData?.room;
+  // Plantilla elegida en el wizard: se pasa como override (?template=) al SSR
+  // para previsualizarla ANTES de guardar. 'default' no se envia (es el fallback).
+  const templateId = formData?.templateId;
 
   const [currentScreen, setCurrentScreen] = useState(1);
   const containerRef = useRef(null);
@@ -35,9 +38,12 @@ const TributePreview = ({ formData }) => {
 
   const previewSrc = useMemo(() => {
     if (!roomId) return '';
-    const qs = ['preview=1', `screen=${currentScreen}`, `_=${refreshNonce}`].join('&');
-    return `/digital-display-screen/${encodeURIComponent(roomId)}?${qs}`;
-  }, [roomId, currentScreen, refreshNonce]);
+    const parts = ['preview=1', `screen=${currentScreen}`, `_=${refreshNonce}`];
+    if (templateId && templateId !== 'default') {
+      parts.push(`template=${encodeURIComponent(templateId)}`);
+    }
+    return `/digital-display-screen/${encodeURIComponent(roomId)}?${parts.join('&')}`;
+  }, [roomId, currentScreen, refreshNonce, templateId]);
 
   const goPrev = () => setCurrentScreen(s => (s === 1 ? 4 : s - 1));
   const goNext = () => setCurrentScreen(s => (s === 4 ? 1 : s + 1));

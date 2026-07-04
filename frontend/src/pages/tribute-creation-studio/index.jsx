@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 import Icon from '../../components/AppIcon';
 import DeceasedInfoForm from './components/DeceasedInfoForm';
+import TemplatePickerForm from './components/TemplatePickerForm';
 import LocationDetailsForm from './components/LocationDetailsForm';
 import AccountHolderForm from './components/AccountHolderForm';
 import TributePreview from './components/TributePreview';
@@ -45,7 +46,10 @@ const TributeCreationStudio = () => {
     biography: '',
     photo: null,
     photoPreview: null,
-    
+
+    // Plantilla visual del homenaje (template_id en BD)
+    templateId: '',
+
     // Ubicación
     funeralHome: '',
     room: '',
@@ -112,6 +116,10 @@ const TributeCreationStudio = () => {
           photoPreview: m.photo_url ? (getFileUrl(m.photo_url) || m.photo_url) : null,
           existingPhotoUrl: m.photo_url || null,
 
+          // Homenajes viejos no tienen plantilla elegida: caen en 'default'
+          // (diseño teal clásico) y el picker les ofrece conservarla.
+          templateId: m.template_id || 'default',
+
           funeralHome: locationId,
           room: m.room_id || '',
           serviceStartDate: toLocalDatetimeInput(m.schedule_start),
@@ -143,6 +151,7 @@ const TributeCreationStudio = () => {
 
   const tabs = [
     { id: 'deceased', label: 'Información del Difunto', icon: 'User' },
+    { id: 'template', label: 'Plantilla', icon: 'Palette' },
     { id: 'location', label: 'Ubicación y Servicio', icon: 'MapPin' },
     { id: 'account', label: 'Titular de Cuenta', icon: 'Users' },
     { id: 'tributes', label: 'Mis tributos', icon: 'List' }
@@ -163,6 +172,7 @@ const TributeCreationStudio = () => {
     if (!formData?.fullName?.trim()) newErrors.fullName = 'El nombre completo es requerido';
     if (!formData?.birthDate) newErrors.birthDate = 'La fecha de nacimiento es requerida';
     if (!formData?.deathDate) newErrors.deathDate = 'La fecha de fallecimiento es requerida';
+    if (!formData?.templateId) newErrors.templateId = 'Selecciona una plantilla';
     if (!formData?.funeralHome) newErrors.funeralHome = 'Debe seleccionar una funeraria';
     if (!formData?.room) newErrors.room = 'Debe seleccionar una sala';
     if (!formData?.familyContactName?.trim()) newErrors.familyContactName = 'El nombre del contacto es requerido';
@@ -212,7 +222,7 @@ const TributeCreationStudio = () => {
         photo_url: photoUrl,
         emotional_message: formData?.biography
           || 'En memoria de un ser querido. Su vida y su amor permanecen con nosotros.',
-        template_id: 'default',
+        template_id: formData?.templateId || 'default',
         schedule_start: scheduleStart,
         schedule_end: scheduleEnd,
         exequias_venue_id: formData?.exequiasVenueId || null,
@@ -255,6 +265,7 @@ const TributeCreationStudio = () => {
   const getTabValidationStatus = (tabId) => {
     const tabErrors = {
       deceased: ['fullName', 'birthDate', 'deathDate'],
+      template: ['templateId'],
       location: ['funeralHome', 'room'],
       account: ['familyContactName', 'familyContactEmail']
     };
@@ -409,6 +420,14 @@ const TributeCreationStudio = () => {
                     />
                   )}
                   
+                  {activeTab === 'template' && (
+                    <TemplatePickerForm
+                      formData={formData}
+                      errors={errors}
+                      updateFormData={updateFormData}
+                    />
+                  )}
+
                   {activeTab === 'location' && (
                     <LocationDetailsForm
                       formData={formData}

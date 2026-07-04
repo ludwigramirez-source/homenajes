@@ -50,6 +50,14 @@ app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(__dirname, '../uploads');
 app.use('/uploads', express.static(UPLOAD_DIR));
 
+// Fondos y logos oficiales de las plantillas del display.
+// IMPORTANTE: la ruta debe colgar de /api/ porque el nginx de produccion solo
+// enruta /api/, /uploads/ y /digital-display-screen/ hacia el backend.
+app.use('/api/template-assets', express.static(
+  path.join(__dirname, 'assets', 'templates'),
+  { maxAge: '7d', immutable: true }
+));
+
 // Health check raiz
 app.get('/', (req, res) => {
   res.json({

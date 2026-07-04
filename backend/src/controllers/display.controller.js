@@ -4,6 +4,17 @@ const db = require('../config/database');
 const QRCode = require('qrcode');
 const view = require('../views/displayScreen');
 
+// Color oscuro del QR por plantilla (debe ser oscuro para que escanee bien).
+const QR_DARK_COLORS = {
+  agua: '#0a1c2e',
+  aire: '#182939',
+  fuego: '#5e2a20',
+  tierra: '#3f4a34',
+  bosque: '#4a3a22',
+  nino: '#2e4a5c',
+  nina: '#6e4f52'
+};
+
 // Helper: construye URL absoluta respetando el proxy reverso (X-Forwarded-Proto/Host).
 function getBaseUrl(req) {
   if (process.env.PUBLIC_URL) return process.env.PUBLIC_URL.replace(/\/+$/, '');
@@ -75,6 +86,14 @@ const getDisplay = async (req, res, next) => {
 
     const m = memorialResult.rows[0];
 
+    // Plantilla visual: la del homenaje, con override opcional via
+    // ?template=<id> (solo whitelist; usado por el preview del studio).
+    let templateId = m.template_id || 'default';
+    if (req.query.template && view.TEMPLATE_IDS.indexOf(req.query.template) !== -1) {
+      templateId = req.query.template;
+    }
+    if (view.TEMPLATE_IDS.indexOf(templateId) === -1) templateId = 'default';
+
     // 2) Registrar vista para analytics (no bloquea respuesta si falla).
     db.query(`
       INSERT INTO memorial_views (memorial_id, view_type, ip_address, user_agent)
@@ -117,7 +136,7 @@ const getDisplay = async (req, res, next) => {
       type: 'svg',
       errorCorrectionLevel: 'H',
       margin: 1,
-      color: { dark: '#1a7472', light: '#ffffff' },
+      color: { dark: QR_DARK_COLORS[templateId] || '#1a7472', light: '#ffffff' },
       width: 360
     });
 
@@ -158,7 +177,8 @@ const getDisplay = async (req, res, next) => {
       roomId: friendlyId,
       baseUrl: baseUrl,
       qrSvg: qrSvg,
-      preview: isPreview
+      preview: isPreview,
+      templateId: templateId
     });
 
     res.send(html);
