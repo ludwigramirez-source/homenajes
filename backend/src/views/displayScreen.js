@@ -972,17 +972,27 @@ var TEMPLATES = {
 };
 
 // Fondo del body segun tema y pantalla. Siempre con color solido de fallback.
+// Para temas PNG el arte NO va en el body: va en la capa .bg-art que termina
+// justo donde empieza el footer (100px), de modo que la cinta infinito y el
+// isotipo que vienen DIBUJADOS en el arte oficial queden visibles completos.
 function themedBgCss(theme, screen, baseUrl) {
   if (theme.bgType === 'png') {
-    var file = theme.id + '-' + (screen === 1 ? '1' : '2') + '.png';
-    return 'background-color: ' + theme.fallback + '; ' +
-      'background-image: url(' + baseUrl + '/api/template-assets/' + file + '); ' +
-      'background-repeat: no-repeat; background-position: center; ' +
-      '-webkit-background-size: cover; background-size: cover;';
+    return 'background-color: ' + theme.fallback + ';';
   }
   return 'background-color: ' + theme.fallback + '; ' +
     'background-image: ' + theme.bgWebkit + '; ' +
     'background-image: ' + theme.bgStd + ';';
+}
+
+// Capa del arte oficial (solo temas PNG). Anclada al borde inferior del area
+// util (encima del footer) para que la cinta/isotipo del arte no queden tapados.
+function themedArtCss(theme, screen, baseUrl) {
+  if (theme.bgType !== 'png') return '';
+  var file = theme.id + '-' + (screen === 1 ? '1' : '2') + '.png';
+  return '.bg-art { position: absolute; left: 0; top: 0; right: 0; bottom: 100px; z-index: 0; ' +
+    'background-image: url(' + baseUrl + '/api/template-assets/' + file + '); ' +
+    'background-repeat: no-repeat; background-position: center bottom; ' +
+    '-webkit-background-size: cover; background-size: cover; }';
 }
 
 // CSS base de las plantillas tematicas (mismas restricciones que commonCss).
@@ -998,21 +1008,38 @@ function themedCss(theme, screen, baseUrl) {
     '.viewport { position: relative; z-index: 2; width: 100%; height: 100%; padding-bottom: 100px; ',
     '  -webkit-box-sizing: border-box; box-sizing: border-box; }',
     '.layout-table { width: 100%; height: 100%; border-collapse: collapse; }',
-    // ---- Pantalla 1: servicio ----
-    '.t-center { vertical-align: middle; text-align: center; padding: 20px 80px 10px; }',
+    // ---- Pantalla 1: servicio (layout por bandas) ----
+    // La linea horizontal del arte oficial cae a ~37% del area util (980px en
+    // 1080p) = ~363px desde arriba. El nombre vive ARRIBA de esa linea y el
+    // resto del contenido DEBAJO. En temas CSS (sin arte) dibujamos nuestra
+    // propia linea en la misma posicion para mantener el mismo layout.
+    // La linea del arte cae a ~294px en 1080p (36.8% del arte anclado abajo):
+    // la banda del nombre termina ahi para que el nombre quede SOBRE la linea.
+    '.t-band-name { position: absolute; left: 7%; right: 7%; top: 0; height: 282px; z-index: 3; }',
+    '.t-band-name table { width: 100%; height: 100%; border-collapse: collapse; }',
+    '.t-band-name td { vertical-align: bottom; text-align: center; padding-bottom: 8px; }',
     '.t-name1 { font-family: ' + theme.fontName + '; font-weight: ' + theme.nameWeight + '; ',
     '  font-size: ' + theme.nameSize1 + 'px; line-height: 1.05; color: ' + theme.titulo + '; ',
     '  ' + (theme.nameUppercase ? 'text-transform: uppercase; letter-spacing: 1px; ' : '') +
     '  white-space: nowrap; overflow: hidden;' + shadow + ' }',
-    '.t-div1 { width: 520px; height: 1px; background: ' + theme.divider + '; margin: 26px auto 30px; }',
-    '.t-intro { font-weight: 600; font-size: 66px; line-height: 1.4; color: ' + theme.texto + '; }',
-    '.t-svc { width: 100%; border-collapse: collapse; margin-top: 44px; }',
-    '.t-svc td { width: 50%; padding: 16px 10px; text-align: center; }',
-    '.t-svc-line { font-size: 54px; font-weight: 600; color: ' + theme.texto + '; ',
+    // Linea propia solo para temas sin arte (css): misma posicion que la del arte
+    '.t-artline { position: absolute; left: 12%; right: 12%; top: 294px; height: 1px; ',
+    '  background: ' + theme.divider + '; z-index: 3; }',
+    // Banda de contenido: area reservada para el mensaje + datos del servicio.
+    '.t-band-body { position: absolute; left: 7%; right: 7%; top: 336px; bottom: 118px; ',
+    '  z-index: 3; text-align: center; }',
+    '.t-intro { font-weight: 600; font-size: 54px; line-height: 1.4; color: ' + theme.texto + '; ',
+    '  height: 250px; overflow: hidden; }',
+    // table-layout fixed: las celdas respetan el 50% aunque el contenido nowrap
+    // sea mas ancho (sin esto la tabla se expande y el texto se sale de pantalla;
+    // ademas el auto-ajuste necesita un clientWidth estable para medir).
+    '.t-svc { width: 100%; border-collapse: collapse; margin-top: 26px; table-layout: fixed; }',
+    '.t-svc td { width: 50%; padding: 14px 28px; text-align: center; overflow: hidden; }',
+    '.t-svc-line { font-size: 46px; font-weight: 600; color: ' + theme.texto + '; ',
     '  white-space: nowrap; overflow: hidden; }',
     '.t-lbl { font-weight: 700; color: ' + theme.titulo + '; }',
-    // ---- Logos de esquina ----
-    '.t-cinta { position: absolute; right: 0; bottom: 110px; z-index: 4; }',
+    // ---- Logos de esquina (solo temas CSS: en los PNG el arte ya los trae) ----
+    '.t-cinta { position: absolute; right: 0; bottom: 100px; z-index: 4; }',
     '.t-cinta img { display: block; height: 96px; width: auto; }',
     '.t-iso { position: absolute; right: 36px; bottom: 120px; width: 72px; height: 72px; ',
     '  background: #ffffff; border-radius: 50%; text-align: center; line-height: 72px; z-index: 4; ',
@@ -1069,16 +1096,36 @@ function themedCss(theme, screen, baseUrl) {
     '.dot-indicator { display: inline-block; width: 12px; height: 12px; border-radius: 50%; ',
     '  background: rgba(255,255,255,0.4); margin-left: 6px; vertical-align: middle; }',
     '.dot-indicator.active { background: #f0c040; width: 26px; border-radius: 6px; }'
-  ].join('\n') + '\n' + theme.particlesCss;
+  ].join('\n') + '\n' + themedArtCss(theme, screen, baseUrl) + '\n' + theme.particlesCss;
 }
 
 // Logo de esquina inferior derecha segun tema/pantalla.
+// Los temas con arte PNG NO llevan overlay: la cinta (pantalla 1) y el
+// isotipo (pantallas 2-4) ya vienen dibujados en el arte oficial.
 function themedLogoHtml(theme, screen, baseUrl) {
+  if (theme.bgType === 'png') return '';
   if (screen === 1 && theme.logo1 === 'infinito') {
     return '<div class="t-cinta"><img src="' + baseUrl + '/api/template-assets/infinito-' +
       theme.id + '.png" alt="Los Olivos"></div>';
   }
   return '<div class="t-iso"><img src="' + baseUrl + '/api/template-assets/isotipo.png" alt="Los Olivos"></div>';
+}
+
+// Footer tematico: banda con horario + indicadores, SIN el logo central
+// (la marca ya esta presente en la cinta/isotipo de cada pantalla).
+function renderThemedFooter(screen, totalScreens, scheduleStart, scheduleEnd) {
+  var dots = '';
+  for (var i = 1; i <= totalScreens; i++) {
+    dots += '<span class="dot-indicator' + (i === screen ? ' active' : '') + '"></span>';
+  }
+  return '<div class="footer">\n' +
+    '<table class="footer-table"><tr>\n' +
+    '  <td class="footer-left">Salas habilitadas de <b>' + escapeHtml(scheduleStart) +
+    '</b> a <b>' + escapeHtml(scheduleEnd) + '</b></td>\n' +
+    '  <td class="footer-center"></td>\n' +
+    '  <td class="footer-right">' + dots + '</td>\n' +
+    '</tr></table>\n' +
+    '</div>';
 }
 
 // =========== Pantalla 1 tematica: servicio ===========
@@ -1101,12 +1148,18 @@ function renderThemedService(m, theme) {
       '<span class="t-lbl">' + label + ':</span> ' + value + '</div>';
   }
 
-  return '<table class="layout-table"><tr><td class="t-center">' +
+  // Layout por bandas: nombre ARRIBA de la linea (del arte o propia), y
+  // debajo un area reservada para el mensaje (con ajuste dinamico) + datos.
+  var artline = theme.bgType === 'png' ? '' : '<div class="t-artline"></div>';
+
+  return '<div class="t-band-name"><table><tr><td>' +
     '<div class="t-name1" id="tName">' + escapeHtml(m.name) + '</div>' +
-    '<div class="t-div1"></div>' +
-    '<div class="t-intro">' +
-      'Hoy nos reunimos para honrar una vida inolvidable.<br>' +
-      'Conmemorando cada recuerdo como el m&aacute;s sincero homenaje de amor.' +
+    '</td></tr></table></div>' +
+    artline +
+    '<div class="t-band-body">' +
+    '<div class="t-intro" id="tIntro">' +
+      'Hoy nos reunimos para honrar una vida inolvidable, ' +
+      'conmemorando cada recuerdo como el m&aacute;s sincero homenaje al amor.' +
     '</div>' +
     '<table class="t-svc"><tr>' +
       '<td>' + svcCell('tSvc1', 'Ingreso', svcVal(ingreso, m.roomName)) + '</td>' +
@@ -1115,7 +1168,7 @@ function renderThemedService(m, theme) {
       '<td>' + svcCell('tSvc3', 'Exequias', svcVal(exequias, m.exequiasVenue)) + '</td>' +
       '<td>' + svcCell('tSvc4', 'Destino Final', svcVal(destino, m.finalDestinationVenue)) + '</td>' +
     '</tr></table>' +
-    '</td></tr></table>';
+    '</div>';
 }
 
 // =========== Pantalla 2 tematica: memorial (foto + mensaje) ===========
@@ -1213,29 +1266,39 @@ function renderThemedQr(m, theme, qrSvg) {
 }
 
 // Script ES5 de auto-ajuste de textos: reduce font-size mientras el texto
-// desborda. fits: array de [id, sizeInicial, sizeMinimo, paso, modo('w'|'h')].
+// desborda. fits: array de [id, sizeInicial, sizeMinimo, paso, modo].
+// Modos: 'w' = ancho (nowrap), 'h' = alto, 'b' = caja (ancho O alto).
+// Se re-ejecuta varias veces porque las webfonts (Raleway/Tangerine) cargan
+// asincronas: si se mide antes del swap, el texto real desborda. Cada corrida
+// resetea al tamano inicial y vuelve a medir con la fuente ya activa.
 function fitScriptJs(fits) {
   if (!fits || !fits.length) return '';
   return 'var FIT = ' + JSON.stringify(fits) + ';\n' +
-    'for (var fi = 0; fi < FIT.length; fi++) {\n' +
-    '  (function (cfg) {\n' +
-    '    var el = document.getElementById(cfg[0]);\n' +
-    '    if (!el) return;\n' +
-    '    var size = cfg[1];\n' +
-    '    var guard = 0;\n' +
-    '    if (cfg[4] === "w") {\n' +
-    '      while (el.scrollWidth > el.clientWidth && size > cfg[2] && guard < 80) {\n' +
+    'function runFits() {\n' +
+    '  for (var fi = 0; fi < FIT.length; fi++) {\n' +
+    '    (function (cfg) {\n' +
+    '      var el = document.getElementById(cfg[0]);\n' +
+    '      if (!el) return;\n' +
+    '      var size = cfg[1];\n' +
+    '      el.style.fontSize = size + "px";\n' +
+    '      var guard = 0;\n' +
+    '      function overflows() {\n' +
+    '        if (cfg[4] === "w") return el.scrollWidth > el.clientWidth;\n' +
+    '        if (cfg[4] === "h") return el.scrollHeight > el.clientHeight;\n' +
+    '        return el.scrollWidth > el.clientWidth || el.scrollHeight > el.clientHeight;\n' +
+    '      }\n' +
+    '      while (overflows() && size > cfg[2] && guard < 120) {\n' +
     '        size -= cfg[3]; guard++;\n' +
     '        el.style.fontSize = size + "px";\n' +
     '      }\n' +
-    '    } else {\n' +
-    '      while (el.scrollHeight > el.clientHeight && size > cfg[2] && guard < 80) {\n' +
-    '        size -= cfg[3]; guard++;\n' +
-    '        el.style.fontSize = size + "px";\n' +
-    '      }\n' +
-    '    }\n' +
-    '  })(FIT[fi]);\n' +
-    '}';
+    '    })(FIT[fi]);\n' +
+    '  }\n' +
+    '}\n' +
+    'runFits();\n' +
+    'window.onload = runFits;\n' +
+    'setTimeout(runFits, 400);\n' +
+    'setTimeout(runFits, 1200);\n' +
+    'setTimeout(runFits, 2600);';
 }
 
 // Shell HTML de las plantillas tematicas. Mantiene meta refresh, footer,
@@ -1269,12 +1332,13 @@ function renderThemedShell(opts) {
     '<style type="text/css">\n' + themedCss(theme, opts.screen, opts.baseUrl) + '\n</style>\n' +
     '</head>\n' +
     '<body>\n' +
+    (theme.bgType === 'png' ? '<div class="bg-art"></div>\n' : '') +
     '<div class="fx-layer" id="fxLayer">' + (theme.particlesHtml || '') + '</div>\n' +
     '<div class="viewport">\n' +
     opts.body + '\n' +
     themedLogoHtml(theme, opts.screen, opts.baseUrl) + '\n' +
     '</div>\n' +
-    renderFooter(opts.screen, opts.totalScreens, opts.scheduleStart, opts.scheduleEnd) + '\n' +
+    renderThemedFooter(opts.screen, opts.totalScreens, opts.scheduleStart, opts.scheduleEnd) + '\n' +
     '<script type="text/javascript">\n' + script + '\n</scr' + 'ipt>\n' +
     '</body>\n' +
     '</html>';
@@ -1323,13 +1387,15 @@ function renderThemed(opts, theme) {
   var fits = [];
   if (cyc.screen === 1) {
     body = renderThemedService(m, theme);
-    // Auto-ajuste: nombre gigante y las 4 lineas de datos del servicio.
+    // Auto-ajuste: nombre gigante (ancho), area del mensaje (caja: ancho+alto)
+    // y las 4 lineas de datos del servicio (ancho, sin partir linea).
     fits = [
-      ['tName', theme.nameSize1, 90, 6, 'w'],
-      ['tSvc1', 54, 34, 2, 'w'],
-      ['tSvc2', 54, 34, 2, 'w'],
-      ['tSvc3', 54, 34, 2, 'w'],
-      ['tSvc4', 54, 34, 2, 'w']
+      ['tName', theme.nameSize1, 80, 6, 'w'],
+      ['tIntro', 54, 28, 2, 'b'],
+      ['tSvc1', 46, 26, 2, 'w'],
+      ['tSvc2', 46, 26, 2, 'w'],
+      ['tSvc3', 46, 26, 2, 'w'],
+      ['tSvc4', 46, 26, 2, 'w']
     ];
   } else if (cyc.screen === 2) {
     body = renderThemedEmotional(m, theme);
