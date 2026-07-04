@@ -926,7 +926,7 @@ var TEMPLATES = {
     bgStd: 'radial-gradient(ellipse at 62% 30%, rgba(255,236,180,0.9), rgba(255,236,180,0) 45%), ' +
       'radial-gradient(ellipse at 40% 70%, rgba(120,95,50,0.5), rgba(120,95,50,0) 55%), ' +
       'linear-gradient(170deg, #7a5e30 0%, #a07d3e 25%, #c9a155 48%, #9c7838 72%, #5f4824 100%)',
-    logo1: 'isotipo',
+    logo1: 'infinito',
     particlesCss: BOSQUE_FX_CSS, particlesHtml: BOSQUE_FX_HTML, particlesJs: BOSQUE_FX_JS
   },
   nino: {
@@ -946,7 +946,7 @@ var TEMPLATES = {
     bgStd: 'radial-gradient(ellipse at 45% 60%, rgba(255,255,255,0.92), rgba(255,255,255,0) 48%), ' +
       'radial-gradient(ellipse at 75% 35%, rgba(245,250,252,0.7), rgba(245,250,252,0) 55%), ' +
       'linear-gradient(135deg, #a7cadd 0%, #cfe4ee 30%, #eef5f8 55%, #bcd8e6 80%, #a3c5d8 100%)',
-    logo1: 'isotipo',
+    logo1: 'infinito',
     particlesCss: NINO_FX_CSS, particlesHtml: NINO_FX_HTML, particlesJs: NINO_FX_JS
   },
   nina: {
@@ -966,7 +966,7 @@ var TEMPLATES = {
     bgStd: 'radial-gradient(ellipse at 30% 55%, rgba(255,252,250,0.9), rgba(255,252,250,0) 45%), ' +
       'radial-gradient(ellipse at 70% 30%, rgba(245,228,228,0.8), rgba(245,228,228,0) 55%), ' +
       'linear-gradient(135deg, #ead7d6 0%, #f2e6e0 35%, #ecd9d6 70%, #ddc4c4 100%)',
-    logo1: 'isotipo',
+    logo1: 'infinito',
     particlesCss: NINA_FX_CSS, particlesHtml: NINA_FX_HTML, particlesJs: NINA_FX_JS
   }
 };
