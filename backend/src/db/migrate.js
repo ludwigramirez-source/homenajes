@@ -175,6 +175,50 @@ const createTables = async () => {
     `);
     console.log('[MIGRATE] Tabla "condolences" creada');
 
+    // ========== ALTER: condolences: moderacion automatica con IA ==========
+    // Migracion incremental. El DEFAULT 'approved' hace backfill implicito de
+    // los mensajes existentes (todos quedan visibles como hasta ahora).
+    // Valores: 'approved' | 'rejected' | 'unmoderated'.
+    await client.query(`
+      ALTER TABLE condolences
+        ADD COLUMN IF NOT EXISTS moderation_status VARCHAR(20) DEFAULT 'approved',
+        ADD COLUMN IF NOT EXISTS moderation_reason TEXT,
+        ADD COLUMN IF NOT EXISTS moderation_model VARCHAR(80),
+        ADD COLUMN IF NOT EXISTS moderated_at TIMESTAMP
+    `);
+    console.log('[MIGRATE] Columnas de moderacion agregadas a "condolences"');
+
+    // ========== TABLA: llm_settings (Configuracion del proveedor LLM) ==========
+    // Una sola fila logica (el servicio hace upsert sobre la mas reciente).
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS llm_settings (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        provider VARCHAR(30) DEFAULT 'anthropic',
+        api_key TEXT,
+        model VARCHAR(80),
+        enabled BOOLEAN DEFAULT false,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log('[MIGRATE] Tabla "llm_settings" creada');
+
+    // ========== TABLA: llm_usage (Registro de gasto/uso del LLM) ==========
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS llm_usage (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        provider VARCHAR(30),
+        model VARCHAR(80),
+        purpose VARCHAR(30) DEFAULT 'moderation',
+        input_tokens INT,
+        output_tokens INT,
+        cost_usd NUMERIC(10,6),
+        condolence_id UUID REFERENCES condolences(id) ON DELETE SET NULL,
+        outcome VARCHAR(20)
+      )
+    `);
+    console.log('[MIGRATE] Tabla "llm_usage" creada');
+
     // ========== TABLA: memorial_views (Analytics) ==========
     await client.query(`
       CREATE TABLE IF NOT EXISTS memorial_views (
@@ -198,6 +242,8 @@ const createTables = async () => {
     await client.query(`CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_ceremony_venues_kind ON ceremony_venues(kind, active)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_ceremony_venues_location ON ceremony_venues(location_id)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_condolences_moderation ON condolences(moderation_status, created_at DESC)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_llm_usage_created ON llm_usage(created_at DESC)`);
     console.log('[MIGRATE] Indices creados');
 
     // ========== FUNCIONES Y TRIGGERS para updated_at ==========
@@ -211,7 +257,7 @@ const createTables = async () => {
       $$ language 'plpgsql'
     `);
 
-    const tablesWithUpdatedAt = ['users', 'locations', 'rooms', 'memorials', 'ceremony_venues'];
+    const tablesWithUpdatedAt = ['users', 'locations', 'rooms', 'memorials', 'ceremony_venues', 'llm_settings'];
     for (const table of tablesWithUpdatedAt) {
       await client.query(`
         DROP TRIGGER IF EXISTS update_${table}_updated_at ON ${table};

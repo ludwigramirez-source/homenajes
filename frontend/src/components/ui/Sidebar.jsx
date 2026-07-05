@@ -11,6 +11,7 @@ const NAV_GROUPS = [
     title: 'Operación',
     items: [
       { label: 'Homenajes', path: '/memorials', icon: 'BookOpen', match: ['/memorials'] },
+      { label: 'Tablón de mensajes', path: '/tablon', icon: 'MessageSquare', match: ['/tablon'] },
       { label: 'Salas y sedes', path: '/salas', icon: 'LayoutGrid', match: ['/salas'], roles: ['admin'] },
       { label: 'Crear tributo', path: '/tribute-creation-studio', icon: 'Heart', match: ['/tribute-creation-studio'], roles: ['admin', 'operator'] }
     ]
@@ -29,7 +30,8 @@ const NAV_GROUPS = [
     title: 'Sistema',
     roles: ['admin'],
     items: [
-      { label: 'Usuarios', path: '/usuarios', icon: 'Users', match: ['/usuarios'], roles: ['admin'] }
+      { label: 'Usuarios', path: '/usuarios', icon: 'Users', match: ['/usuarios'], roles: ['admin'] },
+      { label: 'Moderación IA', path: '/llm', icon: 'Sparkles', match: ['/llm'], roles: ['admin'] }
     ]
   }
 ];

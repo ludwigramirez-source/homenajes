@@ -20,6 +20,8 @@ const MemorialForm = () => {
   const [files, setFiles] = useState([]);
   const [authorized, setAuthorized] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  // true = aparece en la pantalla de la sala; false = la moderacion lo retuvo.
+  const [published, setPublished] = useState(true);
   const [errors, setErrors] = useState({});
   const [isDragging, setIsDragging] = useState(false);
   const [showElements, setShowElements] = useState(false);
@@ -147,6 +149,8 @@ const MemorialForm = () => {
 
       const response = await condolencesService.submit(submitFormData);
       if (response.success) {
+        // La moderacion automatica decide si el mensaje se publica en pantalla.
+        setPublished(response.data?.published !== false);
         setIsSubmitted(true);
       }
     } catch (err) {
@@ -187,16 +191,24 @@ const MemorialForm = () => {
 
           <div className="relative w-full max-w-md rounded-3xl p-12 text-center" style={{ background: theme.cardBg, backdropFilter: 'blur(20px)', border: theme.cardBorder, boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
             <div className="w-24 h-24 mx-auto mb-8 rounded-full flex items-center justify-center" style={{ background: theme.accent, boxShadow: '0 8px 24px rgba(0,0,0,0.2)' }}>
-              <svg className="w-14 h-14" style={{ color: theme.accentText }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-              </svg>
+              {published ? (
+                <svg className="w-14 h-14" style={{ color: theme.accentText }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              ) : (
+                <svg className="w-14 h-14" style={{ color: theme.accentText }} fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                </svg>
+              )}
             </div>
 
             <h2 className="text-3xl font-bold mb-4 text-white" style={{ fontFamily: 'Spectral, serif' }}>
-              Mensaje enviado
+              {published ? 'Mensaje enviado' : 'Gracias por tu mensaje'}
             </h2>
             <p className="text-lg leading-relaxed text-white opacity-85" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}>
-              Gracias por compartir tus recuerdos. Tu mensaje y fotos serán incluidos en el libro de homenaje para la familia.
+              {published
+                ? 'Gracias por compartir tus recuerdos. Tu mensaje y fotos serán incluidos en el libro de homenaje para la familia.'
+                : 'Hemos recibido tus palabras. Por respeto al espacio conmemorativo y a la familia, este mensaje no será publicado en la pantalla de la sala.'}
             </p>
 
             <div className="mt-8 flex justify-center">

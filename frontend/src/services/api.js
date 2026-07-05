@@ -105,7 +105,20 @@ export const condolencesService = {
   // Devuelve solo campos no sensibles.
   getPublic: (memorialId, limit = 60) =>
     api.get(`/condolences/public/${memorialId}`, { params: { limit } }).then(r => r.data),
+  // Moderacion manual desde el Tablon: action = 'approve' | 'reject'
+  moderate: (id, action) => api.patch(`/condolences/${id}/moderation`, { action }).then(r => r.data),
   remove: (id) => api.delete(`/condolences/${id}`).then(r => r.data)
+};
+
+// ============ LLM (moderacion automatica con IA) ============
+export const llmService = {
+  getSettings: () => api.get('/llm/settings').then(r => r.data),
+  // Solo enviar api_key si el usuario escribio una nueva.
+  saveSettings: (data) => api.put('/llm/settings', data).then(r => r.data),
+  // api_key opcional: si se pasa, valida esa key; si no, usa la guardada.
+  getModels: (apiKey) =>
+    api.get('/llm/models', { params: apiKey ? { api_key: apiKey } : {} }).then(r => r.data),
+  getUsage: () => api.get('/llm/usage').then(r => r.data)
 };
 
 // ============ USERS (gestion de usuarios - solo superadmin) ============

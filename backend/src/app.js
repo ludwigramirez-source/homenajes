@@ -16,6 +16,7 @@ const condolencesRoutes = require('./routes/condolences.routes');
 const analyticsRoutes = require('./routes/analytics.routes');
 const ceremonyVenuesRoutes = require('./routes/ceremonyVenues.routes');
 const usersRoutes = require('./routes/users.routes');
+const llmRoutes = require('./routes/llm.routes');
 const displayRoutes = require('./routes/display.routes');
 
 const app = express();
@@ -86,6 +87,7 @@ app.use('/api/condolences', condolencesRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/ceremony-venues', ceremonyVenuesRoutes);
 app.use('/api/users', usersRoutes);
+app.use('/api/llm', llmRoutes);
 
 // (la ruta /digital-display-screen se registra arriba, antes de helmet,
 // para que el SSR no quede sujeto a CSP estricta)

@@ -100,9 +100,10 @@ const getDisplay = async (req, res, next) => {
       VALUES ($1, 'display', $2, $3)
     `, [m.id, req.ip, req.get('user-agent') || '']).catch(() => { /* ignore */ });
 
-    // 3) Total real de mensajes para calcular paginacion.
+    // 3) Total real de mensajes para calcular paginacion (sin los rechazados
+    //    por moderacion: nunca se muestran en pantalla).
     const totalRes = await db.query(
-      'SELECT COUNT(*)::int AS count FROM condolences WHERE memorial_id = $1', [m.id]
+      "SELECT COUNT(*)::int AS count FROM condolences WHERE memorial_id = $1 AND moderation_status <> 'rejected'", [m.id]
     );
     const totalCount = totalRes.rows[0].count;
     const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
@@ -115,6 +116,7 @@ const getDisplay = async (req, res, next) => {
       SELECT id, sender_name, message, file1_url, created_at
       FROM condolences
       WHERE memorial_id = $1
+        AND moderation_status <> 'rejected'
       ORDER BY created_at DESC
       LIMIT $2 OFFSET $3
     `, [m.id, PAGE_SIZE, effectivePage * PAGE_SIZE]);

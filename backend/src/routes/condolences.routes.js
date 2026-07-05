@@ -14,6 +14,8 @@ router.get('/public/:memorialId', controller.getPublicByMemorial);
 // PROTEGIDOS
 router.get('/', authenticate, controller.getAll);
 router.get('/memorial/:memorialId', authenticate, controller.getByMemorial);
+// Moderacion manual (Tablon): admin/supervisor cualquier mensaje; operator solo su sede.
+router.patch('/:id/moderation', authenticate, authorize('admin', 'supervisor', 'operator'), controller.moderate);
 router.delete('/:id', authenticate, authorize('admin', 'supervisor'), controller.remove);
 
 module.exports = router;
