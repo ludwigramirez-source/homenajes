@@ -19,6 +19,7 @@ import UsersPage from './pages/users';
 import MessageBoard from './pages/message-board';
 import BooksPage from './pages/books';
 import LlmSettings from './pages/llm-settings';
+import EmailSettingsPage from './pages/email-settings';
 import DigitalDisplayScreen from './pages/digital-display-screen';
 import MemorialForm from './pages/memorial-form';
 
@@ -52,6 +53,7 @@ const Routes = () => {
               {/* Sistema: solo superadministrador */}
               <Route path="/usuarios" element={<ProtectedRoute roles={['admin']}><UsersPage /></ProtectedRoute>} />
               <Route path="/llm" element={<ProtectedRoute roles={['admin']}><LlmSettings /></ProtectedRoute>} />
+              <Route path="/configuracion-correo" element={<ProtectedRoute roles={['admin']}><EmailSettingsPage /></ProtectedRoute>} />
             </Route>
 
             <Route path="*" element={<NotFound />} />

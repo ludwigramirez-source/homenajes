@@ -32,7 +32,8 @@ const NAV_GROUPS = [
     roles: ['admin'],
     items: [
       { label: 'Usuarios', path: '/usuarios', icon: 'Users', match: ['/usuarios'], roles: ['admin'] },
-      { label: 'Moderación IA', path: '/llm', icon: 'Sparkles', match: ['/llm'], roles: ['admin'] }
+      { label: 'Moderación IA', path: '/llm', icon: 'Sparkles', match: ['/llm'], roles: ['admin'] },
+      { label: 'Correo saliente', path: '/configuracion-correo', icon: 'Mail', match: ['/configuracion-correo'], roles: ['admin'] }
     ]
   }
 ];
