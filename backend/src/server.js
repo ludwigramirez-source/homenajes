@@ -13,6 +13,7 @@ const server = app.listen(PORT, '0.0.0.0', () => {
   console.log('=========================================');
 
   require('./jobs/bookScheduler').startBookScheduler();
+  require('./jobs/memorialDeactivationScheduler').startMemorialDeactivationScheduler();
 });
 
 // Manejo de cierre graceful
