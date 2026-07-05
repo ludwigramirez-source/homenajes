@@ -202,6 +202,9 @@ const TributesList = () => {
                     <div className="text-xs text-muted-foreground">
                       {t.birth_year} — {t.death_year}
                     </div>
+                    {t.deceased_document_id && (
+                      <div className="text-xs text-muted-foreground">Doc: {t.deceased_document_id}</div>
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     <div className="text-foreground">{t.location_name}</div>

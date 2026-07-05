@@ -120,6 +120,7 @@ const getAll = async (req, res, next) => {
         m.deceased_name as memorial_name,
         m.deceased_name,
         m.template_id,
+        m.deceased_document_id,
         r.name as room_name,
         l.name as location_name
       FROM condolences c
@@ -152,7 +153,7 @@ const getAll = async (req, res, next) => {
     }
     if (search) {
       params.push(`%${search}%`);
-      query += ` AND (c.sender_name ILIKE $${params.length} OR c.sender_email ILIKE $${params.length} OR c.message ILIKE $${params.length})`;
+      query += ` AND (c.sender_name ILIKE $${params.length} OR c.sender_email ILIKE $${params.length} OR c.message ILIKE $${params.length} OR m.deceased_name ILIKE $${params.length} OR m.deceased_document_id ILIKE $${params.length})`;
     }
     if (marketing_consent !== undefined) {
       params.push(marketing_consent === 'true');

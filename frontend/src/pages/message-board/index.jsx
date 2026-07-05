@@ -1,10 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet';
-import { condolencesService, memorialsService, getFileUrl } from '../../services/api';
+import { condolencesService, getFileUrl } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import Icon from '../../components/AppIcon';
 import MetricCard from '../../components/analytics/MetricCard';
-import Select from '../../components/ui/Select';
 import { cn } from '../../utils/cn';
 
 const PAGE_SIZE = 30;
@@ -28,13 +27,6 @@ const lastDays = (n) => {
   return { from: fmt(from), to: fmt(to) };
 };
 
-const STATUS_OPTIONS = [
-  { value: '', label: 'Todos los estados' },
-  { value: 'approved', label: 'Publicados' },
-  { value: 'rejected', label: 'Rechazados' },
-  { value: 'unmoderated', label: 'Sin moderar' }
-];
-
 // Configuracion visual por estado de moderacion.
 const STATUS_META = {
   approved: { label: 'Publicado', badge: 'bg-green-100 text-green-700', dot: 'bg-green-500', icon: 'CheckCircle2' },
@@ -54,14 +46,12 @@ const MessageBoardPage = () => {
   const canModerate = role !== 'auditor';
   const canDelete = role === 'admin' || role === 'supervisor';
 
-  const [memorials, setMemorials] = useState([]);
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   // Filtros
-  const [memorialId, setMemorialId] = useState('');
-  const [status, setStatus] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
   const [range, setRange] = useState({ from: '', to: '' });
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
@@ -79,20 +69,11 @@ const MessageBoardPage = () => {
     return () => clearTimeout(debounceRef.current);
   }, [searchInput]);
 
-  // Cargar homenajes para el filtro (una sola vez)
-  useEffect(() => {
-    memorialsService.getAll()
-      .then(r => setMemorials(r?.data || []))
-      .catch(() => setMemorials([]));
-  }, []);
-
   const load = async () => {
     try {
       setLoading(true);
       setError(null);
       const params = {};
-      if (memorialId) params.memorial_id = memorialId;
-      if (status) params.status = status;
       if (range.from) params.from = range.from;
       if (range.to) params.to = range.to;
       if (search) params.search = search;
@@ -106,17 +87,9 @@ const MessageBoardPage = () => {
     }
   };
 
-  useEffect(() => { load(); }, [memorialId, status, range.from, range.to, search]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { load(); }, [range.from, range.to, search]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const memorialOptions = useMemo(() => ([
-    { value: '', label: 'Todos los homenajes' },
-    ...memorials.map(m => ({
-      value: m.id,
-      label: `${m.deceased_name}${m.location_name ? ` — ${m.location_name}` : ''}`
-    }))
-  ]), [memorials]);
-
-  // KPIs calculados sobre el resultado actual
+  // KPIs calculados sobre el universo completo (fecha/busqueda), sin importar el segmento activo.
   const kpis = useMemo(() => {
     const total = messages.length;
     let approved = 0, rejected = 0, unmoderated = 0;
@@ -129,8 +102,20 @@ const MessageBoardPage = () => {
     return { total, approved, rejected, unmoderated };
   }, [messages]);
 
-  const visible = messages.slice(0, visibleCount);
-  const hasFilters = memorialId || status || range.from || range.to || search;
+  // Filtrado por estado en el cliente (sin pedidos extra al servidor).
+  const filteredMessages = useMemo(() => (
+    statusFilter ? messages.filter(c => statusOf(c) === statusFilter) : messages
+  ), [messages, statusFilter]);
+
+  const statusButtons = [
+    { key: '', label: 'Todos', count: kpis.total },
+    { key: 'approved', label: 'Publicados', count: kpis.approved },
+    { key: 'rejected', label: 'Rechazados', count: kpis.rejected },
+    { key: 'unmoderated', label: 'Sin moderar', count: kpis.unmoderated }
+  ];
+
+  const visible = filteredMessages.slice(0, visibleCount);
+  const hasFilters = statusFilter || range.from || range.to || search;
 
   const applyPreset = (days) => setRange(lastDays(days));
   const clearRange = () => setRange({ from: '', to: '' });
@@ -205,30 +190,42 @@ const MessageBoardPage = () => {
 
           {/* Filtros */}
           <div className="bg-card rounded-lg border border-border shadow-elevation-md p-4">
+            <div className="flex items-center gap-2 mb-4 pb-3 border-b border-border">
+              <Icon name="Filter" size={16} className="text-muted-foreground" />
+              <h4 className="text-sm font-semibold text-foreground">Filtros</h4>
+            </div>
             <div className="flex items-end gap-3 flex-wrap">
-              <div className="w-full sm:w-72">
-                <Select
-                  label="Homenaje"
-                  options={memorialOptions}
-                  value={memorialId}
-                  onChange={(v) => setMemorialId(v ?? '')}
-                  placeholder="Todos los homenajes"
-                  searchable
-                />
-              </div>
-              <div className="w-full sm:w-48">
-                <Select
-                  label="Estado"
-                  options={STATUS_OPTIONS}
-                  value={status}
-                  onChange={(v) => setStatus(v ?? '')}
-                  placeholder="Todos los estados"
-                />
+              {/* Estado: segmentado con contadores */}
+              <div>
+                <p className="text-sm font-semibold text-foreground mb-2">Estado</p>
+                <div className="flex items-center rounded-md border border-border overflow-hidden">
+                  {statusButtons.map((b, i) => (
+                    <button
+                      key={b.key}
+                      onClick={() => { setStatusFilter(b.key); setVisibleCount(PAGE_SIZE); }}
+                      className={cn(
+                        "px-3 py-2 text-sm transition-colors flex items-center gap-1.5",
+                        statusFilter === b.key
+                          ? "bg-primary text-white"
+                          : "bg-transparent text-foreground hover:bg-muted",
+                        i > 0 && "border-l border-border"
+                      )}
+                    >
+                      {b.label}
+                      <span className={cn(
+                        "text-xs px-1.5 py-0.5 rounded-full",
+                        statusFilter === b.key ? "bg-white/20" : "bg-muted"
+                      )}>
+                        {b.count}
+                      </span>
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {/* Rango de fechas con presets */}
               <div>
-                <p className="text-sm font-medium text-foreground mb-2">Fechas</p>
+                <p className="text-sm font-semibold text-foreground mb-2">Fechas</p>
                 <div className="flex items-center gap-2 flex-wrap">
                   <input type="date" value={range.from} max={range.to || undefined}
                     onChange={(e) => setRange(r => ({ ...r, from: e.target.value }))}
@@ -254,7 +251,7 @@ const MessageBoardPage = () => {
 
               {/* Busqueda con debounce */}
               <div className="flex-1 min-w-[220px]">
-                <p className="text-sm font-medium text-foreground mb-2">Búsqueda</p>
+                <p className="text-sm font-semibold text-foreground mb-2">Búsqueda</p>
                 <div className="relative">
                   <Icon name="Search" size={14}
                     className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
@@ -262,7 +259,7 @@ const MessageBoardPage = () => {
                     type="text"
                     value={searchInput}
                     onChange={(e) => setSearchInput(e.target.value)}
-                    placeholder="Nombre, correo o contenido..."
+                    placeholder="Nombre, correo, mensaje, difunto o documento..."
                     className="w-full pl-9 pr-8 py-2 rounded-md border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                   />
                   {searchInput && (
@@ -284,7 +281,7 @@ const MessageBoardPage = () => {
                 <p className="text-sm text-muted-foreground">
                   {loading
                     ? 'Cargando...'
-                    : `${messages.length} ${messages.length === 1 ? 'mensaje' : 'mensajes'}${hasFilters ? ' con los filtros aplicados' : ''}`}
+                    : `${filteredMessages.length} ${filteredMessages.length === 1 ? 'mensaje' : 'mensajes'}${hasFilters ? ' con los filtros aplicados' : ''}`}
                 </p>
               </div>
             </div>
@@ -301,7 +298,7 @@ const MessageBoardPage = () => {
               </div>
             )}
 
-            {!loading && !error && messages.length === 0 && (
+            {!loading && !error && filteredMessages.length === 0 && (
               <div className="border-2 border-dashed border-border rounded-lg p-16 text-center">
                 <Icon name="Inbox" size={48} className="mx-auto mb-4 text-muted-foreground opacity-50" />
                 <p className="text-foreground font-medium">
@@ -382,6 +379,7 @@ const MessageBoardPage = () => {
                                   <span className="inline-flex items-center gap-1">
                                     <Icon name="BookOpen" size={12} />
                                     para {contextName}
+                                    {c.deceased_document_id ? ` (Doc: ${c.deceased_document_id})` : ''}
                                     {c.location_name ? ` · ${c.location_name}` : ''}
                                   </span>
                                 )}
@@ -460,14 +458,14 @@ const MessageBoardPage = () => {
             )}
 
             {/* Cargar mas */}
-            {!loading && messages.length > visibleCount && (
+            {!loading && filteredMessages.length > visibleCount && (
               <div className="pt-2 text-center">
                 <button
                   onClick={() => setVisibleCount(v => v + PAGE_SIZE)}
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm border border-border hover:bg-muted transition-colors text-foreground"
                 >
                   <Icon name="ChevronDown" size={16} />
-                  Cargar más ({messages.length - visibleCount} restantes)
+                  Cargar más ({filteredMessages.length - visibleCount} restantes)
                 </button>
               </div>
             )}

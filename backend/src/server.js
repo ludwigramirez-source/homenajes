@@ -11,6 +11,8 @@ const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`URL: ${process.env.PUBLIC_URL || `http://localhost:${PORT}`}`);
   console.log(`Documentacion: ${process.env.PUBLIC_URL || `http://localhost:${PORT}`}/api/docs`);
   console.log('=========================================');
+
+  require('./jobs/bookScheduler').startBookScheduler();
 });
 
 // Manejo de cierre graceful

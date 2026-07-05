@@ -28,6 +28,15 @@ const AccountHolderForm = ({ formData, errors, updateFormData }) => {
         </div>
 
         <Input
+          label="Documento de Identidad del Titular"
+          placeholder="Ej: C.C. 12345678"
+          value={formData?.familyContactDocumentId}
+          onChange={(e) => updateFormData('familyContactDocumentId', e?.target?.value)}
+          error={errors?.familyContactDocumentId}
+          description="Documento del titular de la cuenta, útil para trámites y cruces con CRM."
+        />
+
+        <Input
           type="tel"
           label="Teléfono de Contacto"
           placeholder="Ej: +57 300 123 4567"

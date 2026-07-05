@@ -12,6 +12,7 @@ const NAV_GROUPS = [
     items: [
       { label: 'Homenajes', path: '/memorials', icon: 'BookOpen', match: ['/memorials'] },
       { label: 'Tablón de mensajes', path: '/tablon', icon: 'MessageSquare', match: ['/tablon'] },
+      { label: 'Books', path: '/books', icon: 'Mail', match: ['/books'] },
       { label: 'Salas y sedes', path: '/salas', icon: 'LayoutGrid', match: ['/salas'], roles: ['admin'] },
       { label: 'Crear tributo', path: '/tribute-creation-studio', icon: 'Heart', match: ['/tribute-creation-studio'], roles: ['admin', 'operator'] }
     ]

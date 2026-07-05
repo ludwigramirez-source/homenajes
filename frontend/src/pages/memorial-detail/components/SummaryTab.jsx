@@ -53,6 +53,9 @@ const SummaryTab = ({ memorial }) => {
               {memorial.birth_year} — {memorial.death_year}
             </p>
           )}
+          {memorial?.deceased_document_id && (
+            <p className="text-xs text-muted-foreground mt-1">Doc: {memorial.deceased_document_id}</p>
+          )}
           <div className="mt-3 flex items-center gap-2">
             <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
               memorial?.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
@@ -113,6 +116,20 @@ const SummaryTab = ({ memorial }) => {
               label="Destino Final"
               value={memorial?.final_destination_venue_name ? `${memorial.final_destination_venue_name}${memorial.final_destination_datetime ? ' · ' + formatDateTime(memorial.final_destination_datetime) : ''}` : null}
             />
+          </div>
+        </div>
+
+        {/* Titular de Cuenta */}
+        <div>
+          <h4 className="text-sm font-semibold text-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
+            <Icon name="Users" size={14} />
+            Titular de Cuenta
+          </h4>
+          <div className="bg-muted/20 border border-border rounded-lg p-4 grid grid-cols-1 md:grid-cols-2 gap-2">
+            <InfoRow icon="User" label="Nombre" value={memorial?.family_contact_name} />
+            <InfoRow icon="IdCard" label="Documento" value={memorial?.family_contact_document_id} />
+            <InfoRow icon="Phone" label="Teléfono" value={memorial?.family_contact_phone} />
+            <InfoRow icon="Mail" label="Correo" value={memorial?.family_contact_email} />
           </div>
         </div>
 

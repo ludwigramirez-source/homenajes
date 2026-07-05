@@ -157,6 +157,17 @@ const createTables = async () => {
     `);
     console.log('[MIGRATE] Columnas horario diario + titular agregadas a "memorials"');
 
+    // ========== ALTER: memorials: documento de identidad (difunto y titular) ==========
+    // Desambigua homonimos y permite cruzar informacion con un CRM externo.
+    // SENSIBLE: nunca se expone en rutas publicas (formulario, display SSR,
+    // GET /rooms/:id/active-memorial). Solo visible en endpoints autenticados.
+    await client.query(`
+      ALTER TABLE memorials
+        ADD COLUMN IF NOT EXISTS deceased_document_id VARCHAR(30),
+        ADD COLUMN IF NOT EXISTS family_contact_document_id VARCHAR(30)
+    `);
+    console.log('[MIGRATE] Columnas documento de identidad agregadas a "memorials"');
+
     // ========== TABLA: condolences (Condolencias) ==========
     await client.query(`
       CREATE TABLE IF NOT EXISTS condolences (
@@ -219,6 +230,45 @@ const createTables = async () => {
     `);
     console.log('[MIGRATE] Tabla "llm_usage" creada');
 
+    // ========== TABLA: email_settings (Configuracion SMTP para envio de books) ==========
+    // Una sola fila logica (el servicio hace upsert sobre la mas reciente),
+    // mismo patron que llm_settings.
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS email_settings (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        smtp_host VARCHAR(255),
+        smtp_port INTEGER DEFAULT 587,
+        smtp_secure BOOLEAN DEFAULT false,
+        smtp_user VARCHAR(255),
+        smtp_password TEXT,
+        from_name VARCHAR(150) DEFAULT 'SERCOFUN Los Olivos',
+        from_email VARCHAR(255),
+        send_delay_days INTEGER DEFAULT 1,
+        updated_by UUID REFERENCES users(id),
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log('[MIGRATE] Tabla "email_settings" creada');
+
+    // ========== TABLA: book_sends (Registro de envios del libro de condolencias en PDF) ==========
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS book_sends (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        memorial_id UUID NOT NULL REFERENCES memorials(id) ON DELETE CASCADE,
+        status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','sent','failed')),
+        recipient_email VARCHAR(255),
+        pdf_path VARCHAR(500),
+        message_count INTEGER DEFAULT 0,
+        error_message TEXT,
+        attempt_count INTEGER DEFAULT 1,
+        trigger_type VARCHAR(20) NOT NULL DEFAULT 'auto' CHECK (trigger_type IN ('auto','manual')),
+        triggered_by UUID REFERENCES users(id),
+        sent_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log('[MIGRATE] Tabla "book_sends" creada');
+
     // ========== TABLA: memorial_views (Analytics) ==========
     await client.query(`
       CREATE TABLE IF NOT EXISTS memorial_views (
@@ -244,6 +294,8 @@ const createTables = async () => {
     await client.query(`CREATE INDEX IF NOT EXISTS idx_ceremony_venues_location ON ceremony_venues(location_id)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_condolences_moderation ON condolences(moderation_status, created_at DESC)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_llm_usage_created ON llm_usage(created_at DESC)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_book_sends_memorial ON book_sends(memorial_id)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_book_sends_status ON book_sends(status)`);
     console.log('[MIGRATE] Indices creados');
 
     // ========== FUNCIONES Y TRIGGERS para updated_at ==========
@@ -257,7 +309,7 @@ const createTables = async () => {
       $$ language 'plpgsql'
     `);
 
-    const tablesWithUpdatedAt = ['users', 'locations', 'rooms', 'memorials', 'ceremony_venues', 'llm_settings'];
+    const tablesWithUpdatedAt = ['users', 'locations', 'rooms', 'memorials', 'ceremony_venues', 'llm_settings', 'email_settings'];
     for (const table of tablesWithUpdatedAt) {
       await client.query(`
         DROP TRIGGER IF EXISTS update_${table}_updated_at ON ${table};

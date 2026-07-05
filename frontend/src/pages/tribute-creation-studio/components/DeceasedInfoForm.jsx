@@ -77,6 +77,15 @@ const DeceasedInfoForm = ({ formData, errors, updateFormData }) => {
           required
         />
 
+        <Input
+          label="Documento de Identidad"
+          placeholder="Ej: C.C. 12345678"
+          value={formData?.deceasedDocumentId}
+          onChange={(e) => updateFormData('deceasedDocumentId', e?.target?.value)}
+          error={errors?.deceasedDocumentId}
+          description="Cédula u otro documento del difunto. Ayuda a diferenciar homónimos y a cruzar información con sistemas externos (CRM)."
+        />
+
         <div className="md:col-span-2">
           <label className="text-sm font-medium text-foreground block mb-2">
             Biografía / Mensaje Conmemorativo

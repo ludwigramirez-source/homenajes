@@ -17,6 +17,7 @@ import MemorialDetail from './pages/memorial-detail';
 import RoomsManagement from './pages/rooms-management';
 import UsersPage from './pages/users';
 import MessageBoard from './pages/message-board';
+import BooksPage from './pages/books';
 import LlmSettings from './pages/llm-settings';
 import DigitalDisplayScreen from './pages/digital-display-screen';
 import MemorialForm from './pages/memorial-form';
@@ -47,6 +48,7 @@ const Routes = () => {
               <Route path="/memorials/:id" element={<MemorialDetail />} />
               <Route path="/salas" element={<ProtectedRoute roles={['admin']}><RoomsManagement /></ProtectedRoute>} />
               <Route path="/tablon" element={<MessageBoard />} />
+              <Route path="/books" element={<BooksPage />} />
               {/* Sistema: solo superadministrador */}
               <Route path="/usuarios" element={<ProtectedRoute roles={['admin']}><UsersPage /></ProtectedRoute>} />
               <Route path="/llm" element={<ProtectedRoute roles={['admin']}><LlmSettings /></ProtectedRoute>} />

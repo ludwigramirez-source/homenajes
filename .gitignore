@@ -38,6 +38,10 @@ dist/
 backend/uploads/*
 !backend/uploads/.gitkeep
 
+# PDFs generados de los "books" (mensajes de condolencia personales, no publicos)
+backend/storage/*
+!backend/storage/.gitkeep
+
 # =============================================
 # Logs
 # =============================================

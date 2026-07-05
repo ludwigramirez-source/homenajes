@@ -43,6 +43,7 @@ const TributeCreationStudio = () => {
     fullName: '',
     birthDate: '',
     deathDate: '',
+    deceasedDocumentId: '',
     biography: '',
     photo: null,
     photoPreview: null,
@@ -67,6 +68,7 @@ const TributeCreationStudio = () => {
 
     // Titular de cuenta (se persiste en memorials.family_contact_*)
     familyContactName: '',
+    familyContactDocumentId: '',
     familyContactPhone: '',
     familyContactEmail: '',
     billingAddress: ''
@@ -111,6 +113,7 @@ const TributeCreationStudio = () => {
           fullName: m.deceased_name || '',
           birthDate: m.birth_year ? `${m.birth_year}-01-01` : '',
           deathDate: m.death_year ? `${m.death_year}-01-01` : '',
+          deceasedDocumentId: m.deceased_document_id || '',
           biography: m.emotional_message || '',
           photo: null, // no reasignamos File; conservamos URL existente abajo
           photoPreview: m.photo_url ? (getFileUrl(m.photo_url) || m.photo_url) : null,
@@ -135,6 +138,7 @@ const TributeCreationStudio = () => {
           // Datos del titular: estos no se precargaban antes (de ahi el bug
           // "no me mantiene los datos al editar").
           familyContactName: m.family_contact_name || '',
+          familyContactDocumentId: m.family_contact_document_id || '',
           familyContactPhone: m.family_contact_phone || '',
           familyContactEmail: m.family_contact_email || '',
           billingAddress: m.billing_address || ''
@@ -219,6 +223,7 @@ const TributeCreationStudio = () => {
         deceased_name: formData?.fullName,
         birth_year: birthYear,
         death_year: deathYear,
+        deceased_document_id: formData?.deceasedDocumentId || null,
         photo_url: photoUrl,
         emotional_message: formData?.biography
           || 'En memoria de un ser querido. Su vida y su amor permanecen con nosotros.',
@@ -232,6 +237,7 @@ const TributeCreationStudio = () => {
         daily_hours_start: formData?.dailyHoursStart || null,
         daily_hours_end: formData?.dailyHoursEnd || null,
         family_contact_name: formData?.familyContactName || null,
+        family_contact_document_id: formData?.familyContactDocumentId || null,
         family_contact_phone: formData?.familyContactPhone || null,
         family_contact_email: formData?.familyContactEmail || null,
         billing_address: formData?.billingAddress || null

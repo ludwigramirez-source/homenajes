@@ -42,6 +42,7 @@ services:
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
       CORS_ORIGIN: ${CORS_ORIGIN:-*}
       UPLOAD_DIR: /app/uploads
+      BOOKS_STORAGE_DIR: /app/storage/books
       MAX_FILE_SIZE: ${MAX_FILE_SIZE:-5242880}
       PUBLIC_URL: ${BACKEND_PUBLIC_URL:-http://localhost:3001}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:8080}
@@ -49,6 +50,7 @@ services:
       - "3001:3001"
     volumes:
       - uploads_data:/app/uploads
+      - books_data:/app/storage/books
     networks:
       - sercofun_network
 
@@ -71,6 +73,8 @@ volumes:
   postgres_data:
     driver: local
   uploads_data:
+    driver: local
+  books_data:
     driver: local
 
 networks:
