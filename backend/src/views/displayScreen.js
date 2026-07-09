@@ -408,9 +408,9 @@ function renderScreenQr(m, qrSvg) {
         escapeHtml(firstName) + '</div>' +
         '<div class="subtitle" style="margin-bottom:32px;">estamos a su lado</div>' +
         '<div style="font-size:36px;font-weight:600;line-height:1.5;">' +
-        'Hazte presente dejando un mensaje</div>' +
+        'Tu presencia y tus recuerdos mantienen viva su memoria.</div>' +
         '<div style="font-size:28px;opacity:0.85;margin-top:16px;font-weight:300;line-height:1.5;">' +
-        'que proviene desde todo el amor que hay al recordar con el coraz&oacute;n</div>' +
+        'Escanea este c&oacute;digo para compartir tus palabras y fotos con la familia.</div>' +
       '</td>' +
     '</tr></table>';
 }
@@ -1411,8 +1411,8 @@ function renderThemedQr(m, theme, qrSvg) {
       '<div class="t-eyebrow">En memoria de</div>' +
       '<div class="t-name2" style="margin-top:0;">' + escapeHtml(m.name) + '</div>' +
       '<div class="t-years">' + escapeHtml(m.birthYear || '') + ' &mdash; ' + escapeHtml(m.deathYear || '') + '</div>' +
-      '<div class="t-qrtext">Hazte presente dejando un mensaje que proviene desde todo el amor ' +
-      'que hay al recordar con el coraz&oacute;n.</div>' +
+      '<div class="t-qrtext">Tu presencia y tus recuerdos mantienen viva su memoria. ' +
+      'Escanea este c&oacute;digo para compartir tus palabras y fotos con la familia.</div>' +
     '</td>' +
     '</tr></table>';
 }
