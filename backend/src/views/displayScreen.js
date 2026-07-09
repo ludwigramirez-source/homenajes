@@ -1160,6 +1160,10 @@ function themedCss(theme, screen, baseUrl) {
     // ---- Pantallas 2 y 4 ----
     '.t-col-l { width: 44%; vertical-align: middle; text-align: center; padding: 30px; }',
     '.t-col-r { width: 56%; vertical-align: middle; padding: 30px 90px 30px 20px; }',
+    // Columna derecha de la pantalla QR de 'nubes': SOLO el mensaje (sin
+    // eyebrow/nombre/anios, que se movieron a la izquierda junto al QR), asi
+    // que se puede centrar el texto en vez de alinearlo a la izquierda.
+    '.t-qr-r-centered { width: 56%; vertical-align: middle; text-align: center; padding: 30px 90px; }',
     // Foto rectangular con esquinas redondeadas (la guia abandona el ovalo teal)
     '.t-photo { display: inline-block; width: 400px; height: 480px; border-radius: 18px; ',
     '  border: 6px solid rgba(255,255,255,0.65); background-color: rgba(255,255,255,0.25); ',
@@ -1198,7 +1202,13 @@ function themedCss(theme, screen, baseUrl) {
     '  overflow: hidden; padding: 30px 46px; background: rgba(255,255,255,0.55); ',
     '  border: 1px solid rgba(255,255,255,0.7); border-radius: 12px; ',
     '  font-family: ' + theme.fontBody + '; font-size: 40px; line-height: 1.5; color: ' + theme.texto + '; }',
-    '.t-qrtext { font-weight: 600; font-size: 72px; line-height: 1.45; color: ' + theme.texto + '; margin-top: 30px; }',
+    // max-height + overflow:hidden: le dan al auto-ajuste (modo 'h', id tQrMsg)
+    // un limite real contra el cual medir antes de reducir el tamano de fuente.
+    // La celda vertical-align:middle tiene ~980px utiles (viewport completo
+    // menos el footer), asi que 700px deja margen de sobra sin forzar el
+    // texto al tamano minimo.
+    '.t-qrtext { font-weight: 600; font-size: 72px; line-height: 1.45; color: ' + theme.texto + '; ',
+    '  margin-top: 30px; max-height: 700px; overflow: hidden; }',
     '.qr-box2 { display: inline-block; padding: 22px; background: #ffffff; border-radius: 28px; }',
     '.qr-box2 svg { display: block; width: 420px; height: 420px; }',
     '.t-scan { margin-top: 28px; font-size: 34px; font-weight: 700; color: ' + theme.titulo + '; }',
@@ -1402,6 +1412,26 @@ function renderThemedMessages(m, theme, condolences, totalCount, page, totalPage
 
 // =========== Pantalla 4 tematica: QR ===========
 function renderThemedQr(m, theme, qrSvg) {
+  // 'nubes' agrupa eyebrow+QR+nombre+anios en la columna izquierda (igual que
+  // el mockup aprobado por el cliente) y deja el mensaje SOLO en la derecha,
+  // lo que permite centrarlo; se quita el rotulo "Escanea el codigo QR" (queda
+  // redundante: el propio mensaje ya invita a escanear). Los demas temas
+  // conservan el layout de siempre (sin tocar).
+  if (theme.emotionalLayout === 'centered') {
+    return '<table class="layout-table"><tr>' +
+      '<td class="t-col-l">' +
+        '<div class="t-eyebrow" style="font-size:40px;margin-bottom:14px;">En memoria de</div>' +
+        '<div class="qr-box2">' + (qrSvg || '') + '</div>' +
+        '<div class="t-name2" style="margin-top:20px;">' + escapeHtml(m.name) + '</div>' +
+        '<div class="t-years">' + escapeHtml(m.birthYear || '') + ' &mdash; ' + escapeHtml(m.deathYear || '') + '</div>' +
+      '</td>' +
+      '<td class="t-qr-r-centered">' +
+        '<div class="t-qrtext" id="tQrMsg" style="margin-top:0;">Tu presencia y tus recuerdos mantienen viva su memoria. ' +
+        'Escanea este c&oacute;digo para compartir tus palabras y fotos con la familia.</div>' +
+      '</td>' +
+      '</tr></table>';
+  }
+
   return '<table class="layout-table"><tr>' +
     '<td class="t-col-l">' +
       '<div class="qr-box2">' + (qrSvg || '') + '</div>' +
@@ -1411,7 +1441,7 @@ function renderThemedQr(m, theme, qrSvg) {
       '<div class="t-eyebrow">En memoria de</div>' +
       '<div class="t-name2" style="margin-top:0;">' + escapeHtml(m.name) + '</div>' +
       '<div class="t-years">' + escapeHtml(m.birthYear || '') + ' &mdash; ' + escapeHtml(m.deathYear || '') + '</div>' +
-      '<div class="t-qrtext">Tu presencia y tus recuerdos mantienen viva su memoria. ' +
+      '<div class="t-qrtext" id="tQrMsg">Tu presencia y tus recuerdos mantienen viva su memoria. ' +
       'Escanea este c&oacute;digo para compartir tus palabras y fotos con la familia.</div>' +
     '</td>' +
     '</tr></table>';
@@ -1536,7 +1566,10 @@ function renderThemed(opts, theme) {
     fits = [['tFitMsg', 72, 40, 4, 'h']];
   } else {
     body = renderThemedQr(m, theme, opts.qrSvg);
-    fits = [];
+    // tQrMsg solo existe en el layout 'centered' de nubes (mensaje solo en la
+    // columna derecha); en los demas temas el id no existe y fitScriptJs lo
+    // ignora sin error, asi que es seguro incluirlo siempre.
+    fits = [['tQrMsg', 72, 40, 4, 'h']];
   }
 
   var schedStart = format12h(m.dailyHoursStart || '08:00');
