@@ -169,7 +169,7 @@ function commonCss() {
     // Footer fijo. Altura 100px: aloja el logo (180x~62), la tagline debajo y
     // deja respiro vertical para el texto del horario a la izquierda.
     '.footer { position: absolute; left: 0; right: 0; bottom: 0; ',
-    '  background: rgba(0,0,0,0.25); padding: 10px 36px; height: 100px; }',
+    '  padding: 10px 36px; height: 100px; }',
     '.footer-table { width: 100%; height: 100%; border-collapse: collapse; }',
     '.footer-table td { vertical-align: middle; color: #ffffff; }',
     // Horario a la izquierda, alineado a la izquierda y centrado verticalmente.
@@ -241,9 +241,7 @@ function renderFooter(currentScreen, totalScreens, scheduleStart, scheduleEnd) {
   }
   return '<div class="footer">\n' +
     '  <table class="footer-table"><tr>\n' +
-    '    <td class="footer-left">Salas habilitadas de <b>' +
-        escapeHtml(scheduleStart || '08:00 a.m') + '</b> a <b>' +
-        escapeHtml(scheduleEnd || '11:00 p.m') + '</b></td>\n' +
+    '    <td class="footer-left"></td>\n' +
     '    <td class="footer-center">\n' +
          (LOGO_DATA_URI
            ? '      <img class="footer-logo" src="' + LOGO_DATA_URI + '" alt="Los Olivos">\n'
@@ -852,55 +850,53 @@ var NINA_FX_JS =
 // rgba(255,255,255,0) con corte generoso), igual que fx-ray de BOSQUE y
 // fx-bubble de AGUA. Se usan divs estaticos (como BOSQUE_FX_HTML) con
 // animation-delay negativo para desincronizar las 3 capas.
+// Optimizaciones de rendimiento (TVs LG con motores WebKit viejos y GPU
+// debil): 1) .fx-nube/.fx-nube-glow se promueven a capa de composicion propia
+// con translateZ(0)+backface-visibility:hidden, para que el motor las trate
+// como bitmaps trasladados en vez de repintar el gradiente en cada frame;
+// 2) cada @keyframes de deriva baja de 5-6 waypoints a solo 3 (0/50/100%),
+// conservando el fade de opacity al inicio/fin y el mismo pico de opacity de
+// antes, con un solo desplazamiento horizontal intermedio (menos interpolacion
+// por frame); 3) cada capa usa UN solo radial-gradient (antes dos apilados),
+// con mas stops de opacidad para mantener cobertura visual similar (mitad del
+// costo de pintado); 4) .fx-nube baja de 140% a 120% de ancho (menos area
+// pintada mientras el vaiven horizontal sigue siendo de apenas ~15px).
 var NUBES_FX_CSS =
   '.fx-nube-glow { position:absolute; left:0; right:0; top:0; height:42%; opacity:0.6; ' +
+  '-webkit-transform: translateZ(0); transform: translateZ(0); -webkit-backface-visibility: hidden; backface-visibility: hidden; ' +
   'background: rgba(228,211,168,0.18); ' +
   'background: -webkit-radial-gradient(50% 0%, ellipse, rgba(228,211,168,0.55), rgba(228,211,168,0.14) 45%, rgba(228,211,168,0) 75%); ' +
   'background: radial-gradient(ellipse at 50% 0%, rgba(228,211,168,0.55), rgba(228,211,168,0.14) 45%, rgba(228,211,168,0) 75%); ' +
   '-webkit-animation: fxNubeGlowPulse 9s ease-in-out infinite; animation: fxNubeGlowPulse 9s ease-in-out infinite; }\n' +
   kfDual('fxNubeGlowPulse', '0%,100% { opacity:0.45; } 50% { opacity:0.8; }') + '\n' +
-  '.fx-nube { position:absolute; left:-20%; width:140%; height:420px; opacity:0; }\n' +
+  '.fx-nube { position:absolute; left:-10%; width:120%; height:420px; opacity:0; ' +
+  '-webkit-transform: translateZ(0); transform: translateZ(0); -webkit-backface-visibility: hidden; backface-visibility: hidden; }\n' +
   '.fx-nube-far { top:-360px; ' +
   'background: rgba(255,255,255,0.4); ' +
-  'background: -webkit-radial-gradient(30% 45%, ellipse, rgba(255,255,255,0.8), rgba(255,255,255,0.3) 45%, rgba(255,255,255,0) 70%), ' +
-  '-webkit-radial-gradient(72% 55%, ellipse, rgba(255,255,255,0.7), rgba(255,255,255,0.25) 42%, rgba(255,255,255,0) 68%); ' +
-  'background: radial-gradient(ellipse at 30% 45%, rgba(255,255,255,0.8), rgba(255,255,255,0.3) 45%, rgba(255,255,255,0) 70%), ' +
-  'radial-gradient(ellipse at 72% 55%, rgba(255,255,255,0.7), rgba(255,255,255,0.25) 42%, rgba(255,255,255,0) 68%); ' +
+  'background: -webkit-radial-gradient(50% 50%, ellipse, rgba(255,255,255,0.85), rgba(255,255,255,0.32) 40%, rgba(255,255,255,0.12) 62%, rgba(255,255,255,0) 78%); ' +
+  'background: radial-gradient(ellipse at 50% 50%, rgba(255,255,255,0.85), rgba(255,255,255,0.32) 40%, rgba(255,255,255,0.12) 62%, rgba(255,255,255,0) 78%); ' +
   '-webkit-animation: fxNubeDriftFar 68s linear infinite; animation: fxNubeDriftFar 68s linear infinite; }\n' +
   kfDual('fxNubeDriftFar',
     '0% { -webkit-transform:translate(0,0); transform:translate(0,0); opacity:0; } ' +
-    '10% { opacity:0.28; } ' +
-    '30% { -webkit-transform:translate(12px,320px); transform:translate(12px,320px); } ' +
-    '55% { -webkit-transform:translate(-10px,590px); transform:translate(-10px,590px); } ' +
-    '80% { -webkit-transform:translate(14px,860px); transform:translate(14px,860px); opacity:0.28; } ' +
+    '50% { -webkit-transform:translate(12px,540px); transform:translate(12px,540px); opacity:0.28; } ' +
     '100% { -webkit-transform:translate(0,1080px); transform:translate(0,1080px); opacity:0; }') + '\n' +
   '.fx-nube-mid { top:-420px; ' +
   'background: rgba(255,255,255,0.5); ' +
-  'background: -webkit-radial-gradient(38% 50%, ellipse, rgba(255,255,255,0.85), rgba(255,255,255,0.32) 38%, rgba(255,255,255,0) 64%), ' +
-  '-webkit-radial-gradient(78% 45%, ellipse, rgba(255,255,255,0.75), rgba(255,255,255,0.28) 36%, rgba(255,255,255,0) 62%); ' +
-  'background: radial-gradient(ellipse at 38% 50%, rgba(255,255,255,0.85), rgba(255,255,255,0.32) 38%, rgba(255,255,255,0) 64%), ' +
-  'radial-gradient(ellipse at 78% 45%, rgba(255,255,255,0.75), rgba(255,255,255,0.28) 36%, rgba(255,255,255,0) 62%); ' +
+  'background: -webkit-radial-gradient(50% 50%, ellipse, rgba(255,255,255,0.9), rgba(255,255,255,0.35) 36%, rgba(255,255,255,0.14) 58%, rgba(255,255,255,0) 74%); ' +
+  'background: radial-gradient(ellipse at 50% 50%, rgba(255,255,255,0.9), rgba(255,255,255,0.35) 36%, rgba(255,255,255,0.14) 58%, rgba(255,255,255,0) 74%); ' +
   '-webkit-animation: fxNubeDriftMid 50s linear infinite; animation: fxNubeDriftMid 50s linear infinite; }\n' +
   kfDual('fxNubeDriftMid',
     '0% { -webkit-transform:translate(0,0); transform:translate(0,0); opacity:0; } ' +
-    '12% { opacity:0.4; } ' +
-    '35% { -webkit-transform:translate(-14px,340px); transform:translate(-14px,340px); } ' +
-    '60% { -webkit-transform:translate(16px,620px); transform:translate(16px,620px); } ' +
-    '85% { -webkit-transform:translate(-12px,900px); transform:translate(-12px,900px); opacity:0.4; } ' +
+    '50% { -webkit-transform:translate(-14px,540px); transform:translate(-14px,540px); opacity:0.4; } ' +
     '100% { -webkit-transform:translate(0,1080px); transform:translate(0,1080px); opacity:0; }') + '\n' +
   '.fx-nube-near { top:-480px; ' +
   'background: rgba(255,255,255,0.6); ' +
-  'background: -webkit-radial-gradient(45% 55%, ellipse, rgba(255,255,255,0.95), rgba(255,255,255,0.4) 32%, rgba(255,255,255,0) 58%), ' +
-  '-webkit-radial-gradient(82% 40%, ellipse, rgba(255,255,255,0.85), rgba(255,255,255,0.35) 30%, rgba(255,255,255,0) 56%); ' +
-  'background: radial-gradient(ellipse at 45% 55%, rgba(255,255,255,0.95), rgba(255,255,255,0.4) 32%, rgba(255,255,255,0) 58%), ' +
-  'radial-gradient(ellipse at 82% 40%, rgba(255,255,255,0.85), rgba(255,255,255,0.35) 30%, rgba(255,255,255,0) 56%); ' +
+  'background: -webkit-radial-gradient(50% 50%, ellipse, rgba(255,255,255,0.97), rgba(255,255,255,0.42) 32%, rgba(255,255,255,0.16) 54%, rgba(255,255,255,0) 70%); ' +
+  'background: radial-gradient(ellipse at 50% 50%, rgba(255,255,255,0.97), rgba(255,255,255,0.42) 32%, rgba(255,255,255,0.16) 54%, rgba(255,255,255,0) 70%); ' +
   '-webkit-animation: fxNubeDriftNear 30s linear infinite; animation: fxNubeDriftNear 30s linear infinite; }\n' +
   kfDual('fxNubeDriftNear',
     '0% { -webkit-transform:translate(0,0); transform:translate(0,0); opacity:0; } ' +
-    '15% { opacity:0.55; } ' +
-    '38% { -webkit-transform:translate(15px,360px); transform:translate(15px,360px); } ' +
-    '62% { -webkit-transform:translate(-15px,650px); transform:translate(-15px,650px); } ' +
-    '85% { -webkit-transform:translate(15px,900px); transform:translate(15px,900px); opacity:0.55; } ' +
+    '50% { -webkit-transform:translate(15px,540px); transform:translate(15px,540px); opacity:0.55; } ' +
     '100% { -webkit-transform:translate(0,1080px); transform:translate(0,1080px); opacity:0; }');
 
 var NUBES_FX_HTML =
@@ -1043,9 +1039,20 @@ var TEMPLATES = {
     fontsHref: NUBES_FONTS_HREF,
     fontName: '"Cormorant Garamond", Georgia, "Times New Roman", serif',
     fontBody: '"EB Garamond", Georgia, serif',
-    nameWeight: 600, nameSize1: 160, nameUppercase: false, name2Size: 96, name2Weight: 600,
+    nameWeight: 600, nameSize1: 145, nameUppercase: false, name2Size: 96, name2Weight: 600,
+    // nameLineHeight: Cormorant Garamond tiene metricas de ascendente mas
+    // altas que Raleway (fuente del resto de temas); a line-height:1.05 el
+    // glifo superior (ej. la "J" de un nombre) se recorta contra el
+    // overflow:hidden de .t-name1. Solo 'nubes' necesita este valor mas alto;
+    // los demas temas siguen usando el fallback 1.05 (ver regla .t-name1).
+    nameLineHeight: 1.22,
     titulo: '#2b3a44', texto: '#3c5a6e', eyebrow: '#3c5a6e',
     divider: 'rgba(201,168,106,0.6)', titleShadow: false,
+    // hideArtline: 'nubes' usa una foto real de cielo (bgPhoto), no arte PNG
+    // sintetico con corte visible; el divisor .t-artline (color dorado) se ve
+    // como un elemento extra no deseado ("linea amarilla") sobre la foto, asi
+    // que se omite solo para este tema.
+    hideArtline: true,
     cardBg: 'rgba(255,255,255,0.55)', cardBorder: 'rgba(255,255,255,0.7)', cardText: '#3c5a6e',
     avatarBg: '#3c5a6e', avatarText: '#ffffff',
     fallback: '#7fa9c4', bgType: 'css',
@@ -1054,6 +1061,10 @@ var TEMPLATES = {
     // todavia cuando este modulo se carga (ver themedBgCss).
     bgPhoto: 'nubes-fondo.jpg',
     logo1: 'infinito',
+    // emotionalLayout: pantalla 2 (foto+nombre+mensaje) usa una tarjeta unica
+    // centrada en vez del layout de dos columnas compartido por los demas
+    // temas (ver renderThemedEmotional).
+    emotionalLayout: 'centered',
     particlesCss: NUBES_FX_CSS, particlesHtml: NUBES_FX_HTML, particlesJs: NUBES_FX_JS
   }
 };
@@ -1117,7 +1128,10 @@ function themedCss(theme, screen, baseUrl) {
     '.t-band-name table { width: 100%; height: 100%; border-collapse: collapse; }',
     '.t-band-name td { vertical-align: bottom; text-align: center; padding-bottom: 8px; }',
     '.t-name1 { font-family: ' + theme.fontName + '; font-weight: ' + theme.nameWeight + '; ',
-    '  font-size: ' + theme.nameSize1 + 'px; line-height: 1.05; color: ' + theme.titulo + '; ',
+    // line-height: 1.05 es el default de todos los temas (Raleway). 'nubes'
+    // define nameLineHeight:1.22 porque Cormorant Garamond tiene ascendentes
+    // mas altos y a 1.05 el glifo superior se recorta contra overflow:hidden.
+    '  font-size: ' + theme.nameSize1 + 'px; line-height: ' + (theme.nameLineHeight || 1.05) + '; color: ' + theme.titulo + '; ',
     '  ' + (theme.nameUppercase ? 'text-transform: uppercase; letter-spacing: 1px; ' : '') +
     '  white-space: nowrap; overflow: hidden;' + shadow + ' }',
     // Linea propia solo para temas sin arte (css): misma posicion que la del arte
@@ -1157,6 +1171,33 @@ function themedCss(theme, screen, baseUrl) {
     '.t-eyebrow { font-weight: 600; font-size: 85px; line-height: 1.15; color: ' + theme.eyebrow + '; margin-bottom: 28px; }',
     '.t-emsg { font-weight: 600; font-size: 72px; line-height: 1.45; color: ' + theme.texto + '; ',
     '  max-height: 640px; overflow: hidden; }',
+    // ---- Pantalla 2 alternativa: tarjeta centrada (solo tema 'nubes',
+    // ver emotionalLayout:"centered" y renderThemedEmotional) ----
+    '.t-card2 { position: absolute; left: 0; right: 0; top: 40px; bottom: 118px; text-align: center; z-index: 3; }',
+    // display:block + margin:0 auto (no inline-block) para que la foto quede
+    // SIEMPRE en su propia linea, con la etiqueta/nombre/anos/mensaje debajo
+    // (si fuera inline-block quedaria en la misma linea que la etiqueta,
+    // lado a lado, en vez de apilada).
+    '.t-card2-photo { display: block; margin: 0 auto; width: 300px; height: 300px; border-radius: 16px; ',
+    '  border: 5px solid rgba(255,255,255,0.7); background-color: rgba(255,255,255,0.3); ',
+    '  background-position: center top; background-repeat: no-repeat; ',
+    '  -webkit-background-size: cover; background-size: cover; }',
+    '.t-card2-eyebrow { display: inline-block; margin-top: 18px; padding: 8px 26px; ',
+    '  background: rgba(255,255,255,0.6); border-radius: 6px; ',
+    '  font-family: ' + theme.fontBody + '; font-size: 26px; font-weight: 600; letter-spacing: 2px; ',
+    '  text-transform: uppercase; color: ' + theme.eyebrow + '; }',
+    '.t-card2-name { margin-top: 22px; font-family: ' + theme.fontName + '; font-weight: ' + theme.nameWeight + '; ',
+    '  font-size: 88px; line-height: 1.2; color: ' + theme.titulo + '; }',
+    '.t-card2-years { margin-top: 10px; font-family: ' + theme.fontBody + '; font-style: italic; ',
+    '  font-size: 40px; color: ' + theme.texto + '; }',
+    // max-height 330 (no 260): tras medir en 1920x1080 sobraban ~78px entre
+    // el pie de la tarjeta de mensaje y el area reservada del footer; se usa
+    // ese espacio para que el auto-ajuste (fits: tFitMsg) tenga mas margen
+    // antes de tener que reducir el tamano de fuente al minimo.
+    '.t-card2-msg { display: inline-block; margin-top: 26px; max-width: 1150px; max-height: 330px; ',
+    '  overflow: hidden; padding: 30px 46px; background: rgba(255,255,255,0.55); ',
+    '  border: 1px solid rgba(255,255,255,0.7); border-radius: 12px; ',
+    '  font-family: ' + theme.fontBody + '; font-size: 40px; line-height: 1.5; color: ' + theme.texto + '; }',
     '.t-qrtext { font-weight: 600; font-size: 72px; line-height: 1.45; color: ' + theme.texto + '; margin-top: 30px; }',
     '.qr-box2 { display: inline-block; padding: 22px; background: #ffffff; border-radius: 28px; }',
     '.qr-box2 svg { display: block; width: 420px; height: 420px; }',
@@ -1180,9 +1221,9 @@ function themedCss(theme, screen, baseUrl) {
     '.page-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; ',
     '  background: ' + theme.divider + '; margin: 0 4px; }',
     '.page-dot.active { background: ' + theme.titulo + '; width: 22px; border-radius: 5px; }',
-    // ---- Footer (identico al legacy, banda oscura translucida) ----
+    // ---- Footer (identico al legacy; sin capa oscura, footer transparente) ----
     '.footer { position: absolute; left: 0; right: 0; bottom: 0; ',
-    '  background: rgba(0,0,0,0.30); padding: 10px 36px; height: 100px; z-index: 5; }',
+    '  padding: 10px 36px; height: 100px; z-index: 5; }',
     '.footer-table { width: 100%; height: 100%; border-collapse: collapse; }',
     '.footer-table td { vertical-align: middle; color: #ffffff; }',
     '.footer-left { width: 33%; font-size: 19px; opacity: 0.85; text-align: left; font-weight: 500; }',
@@ -1218,8 +1259,7 @@ function renderThemedFooter(screen, totalScreens, scheduleStart, scheduleEnd) {
   }
   return '<div class="footer">\n' +
     '<table class="footer-table"><tr>\n' +
-    '  <td class="footer-left">Salas habilitadas de <b>' + escapeHtml(scheduleStart) +
-    '</b> a <b>' + escapeHtml(scheduleEnd) + '</b></td>\n' +
+    '  <td class="footer-left"></td>\n' +
     '  <td class="footer-center"></td>\n' +
     '  <td class="footer-right">' + dots + '</td>\n' +
     '</tr></table>\n' +
@@ -1248,7 +1288,7 @@ function renderThemedService(m, theme) {
 
   // Layout por bandas: nombre ARRIBA de la linea (del arte o propia), y
   // debajo un area reservada para el mensaje (con ajuste dinamico) + datos.
-  var artline = theme.bgType === 'png' ? '' : '<div class="t-artline"></div>';
+  var artline = (theme.bgType === 'png' || theme.hideArtline) ? '' : '<div class="t-artline"></div>';
 
   return '<div class="t-band-name"><table><tr><td>' +
     '<div class="t-name1" id="tName">' + escapeHtml(m.name) + '</div>' +
@@ -1273,6 +1313,20 @@ function renderThemedService(m, theme) {
 function renderThemedEmotional(m, theme) {
   var photo = m.photoUrl || '';
   var photoStyle = photo ? ' style="background-image:url(\'' + escapeHtml(photo) + '\');"' : '';
+
+  // 'nubes' usa una tarjeta unica centrada (foto+etiqueta+nombre+anos+mensaje
+  // en una sola columna) en vez del layout de dos columnas de los otros temas.
+  if (theme.emotionalLayout === 'centered') {
+    return '<div class="t-card2">' +
+      '<div class="t-card2-photo"' + photoStyle + '></div>' +
+      '<div class="t-card2-eyebrow">En memoria de</div>' +
+      '<div class="t-card2-name">' + escapeHtml(m.name) + '</div>' +
+      '<div class="t-card2-years">' + escapeHtml(m.birthYear || '') + ' &mdash; ' + escapeHtml(m.deathYear || '') + '</div>' +
+      '<div class="t-card2-msg" id="tFitMsg">' + escapeHtml(m.emotionalMessage || '') + '</div>' +
+      '</div>';
+  }
+
+  // --- Layout existente de dos columnas (SIN CAMBIOS, para los otros 7 temas) ---
   return '<table class="layout-table"><tr>' +
     '<td class="t-col-l">' +
       '<div class="t-photo"' + photoStyle + '></div>' +
