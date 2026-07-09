@@ -114,6 +114,17 @@ export const THEMES = {
     light: false,
     accent: '#5f4824',
     accentText: '#ffffff'
+  }),
+
+  nubes: buildTheme({
+    background: `
+      radial-gradient(ellipse at 42% 55%, rgba(255,255,255,0.9), rgba(255,255,255,0) 50%),
+      radial-gradient(ellipse at 72% 30%, rgba(235,244,250,0.75), rgba(235,244,250,0) 55%),
+      linear-gradient(150deg, #b7d3e6 0%, #d6e8f2 30%, #eef6fa 55%, #c9dfec 80%, #a9c9dd 100%)`,
+    light: true,
+    // #3c5a6e sobre blanco da ~7.3:1, cumple AA (>=4.5:1) sin ajuste.
+    accent: '#3c5a6e',
+    accentText: '#ffffff'
   })
 };
 

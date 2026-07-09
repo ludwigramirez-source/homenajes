@@ -12,7 +12,8 @@ const QR_DARK_COLORS = {
   tierra: '#3f4a34',
   bosque: '#4a3a22',
   nino: '#2e4a5c',
-  nina: '#6e4f52'
+  nina: '#6e4f52',
+  nubes: '#2b3a44'
 };
 
 // Helper: construye URL absoluta respetando el proxy reverso (X-Forwarded-Proto/Host).

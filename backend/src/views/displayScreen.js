@@ -4,7 +4,7 @@
 // Layout con <table> + vertical-align. CSS con float donde corresponda.
 //
 // PLANTILLAS: ademas del diseno teal original ('default'), este modulo soporta
-// 7 plantillas tematicas (agua, aire, fuego, tierra, bosque, nino, nina)
+// 8 plantillas tematicas (agua, aire, fuego, tierra, bosque, nino, nina, nubes)
 // definidas en el objeto TEMPLATES. Cualquier template_id desconocido cae al
 // camino legacy para no romper homenajes existentes.
 //
@@ -440,7 +440,7 @@ function renderEmptyRoom(message) {
 // ====================================================================
 
 // Whitelist compartida con los controllers (validacion de template_id).
-var TEMPLATE_IDS = ['default', 'nino', 'nina', 'agua', 'aire', 'fuego', 'tierra', 'bosque'];
+var TEMPLATE_IDS = ['default', 'nino', 'nina', 'agua', 'aire', 'fuego', 'tierra', 'bosque', 'nubes'];
 
 // --- Helpers de CSS animado compatible (duplica @keyframes con prefijo) ---
 function kfDual(name, frames) {
@@ -844,10 +844,79 @@ var NINA_FX_JS =
   '});' +
   sparkleJs(12);
 
+// Nubes: 3 capas de "franjas de nube" (lejos/media/cerca) que se desplazan
+// verticalmente en loop infinito, con un leve balanceo horizontal ("mecer")
+// integrado en el MISMO @keyframes (varios waypoints de translateX a lo largo
+// del recorrido), mas un resplandor calido pulsante arriba. Sin filter:blur ni
+// mix-blend-mode: la suavidad la da el propio radial-gradient (ultimo stop en
+// rgba(255,255,255,0) con corte generoso), igual que fx-ray de BOSQUE y
+// fx-bubble de AGUA. Se usan divs estaticos (como BOSQUE_FX_HTML) con
+// animation-delay negativo para desincronizar las 3 capas.
+var NUBES_FX_CSS =
+  '.fx-nube-glow { position:absolute; left:0; right:0; top:0; height:42%; opacity:0.6; ' +
+  'background: rgba(228,211,168,0.18); ' +
+  'background: -webkit-radial-gradient(50% 0%, ellipse, rgba(228,211,168,0.55), rgba(228,211,168,0.14) 45%, rgba(228,211,168,0) 75%); ' +
+  'background: radial-gradient(ellipse at 50% 0%, rgba(228,211,168,0.55), rgba(228,211,168,0.14) 45%, rgba(228,211,168,0) 75%); ' +
+  '-webkit-animation: fxNubeGlowPulse 9s ease-in-out infinite; animation: fxNubeGlowPulse 9s ease-in-out infinite; }\n' +
+  kfDual('fxNubeGlowPulse', '0%,100% { opacity:0.45; } 50% { opacity:0.8; }') + '\n' +
+  '.fx-nube { position:absolute; left:-20%; width:140%; height:420px; opacity:0; }\n' +
+  '.fx-nube-far { top:-360px; ' +
+  'background: rgba(255,255,255,0.4); ' +
+  'background: -webkit-radial-gradient(30% 45%, ellipse, rgba(255,255,255,0.8), rgba(255,255,255,0.3) 45%, rgba(255,255,255,0) 70%), ' +
+  '-webkit-radial-gradient(72% 55%, ellipse, rgba(255,255,255,0.7), rgba(255,255,255,0.25) 42%, rgba(255,255,255,0) 68%); ' +
+  'background: radial-gradient(ellipse at 30% 45%, rgba(255,255,255,0.8), rgba(255,255,255,0.3) 45%, rgba(255,255,255,0) 70%), ' +
+  'radial-gradient(ellipse at 72% 55%, rgba(255,255,255,0.7), rgba(255,255,255,0.25) 42%, rgba(255,255,255,0) 68%); ' +
+  '-webkit-animation: fxNubeDriftFar 68s linear infinite; animation: fxNubeDriftFar 68s linear infinite; }\n' +
+  kfDual('fxNubeDriftFar',
+    '0% { -webkit-transform:translate(0,0); transform:translate(0,0); opacity:0; } ' +
+    '10% { opacity:0.28; } ' +
+    '30% { -webkit-transform:translate(12px,320px); transform:translate(12px,320px); } ' +
+    '55% { -webkit-transform:translate(-10px,590px); transform:translate(-10px,590px); } ' +
+    '80% { -webkit-transform:translate(14px,860px); transform:translate(14px,860px); opacity:0.28; } ' +
+    '100% { -webkit-transform:translate(0,1080px); transform:translate(0,1080px); opacity:0; }') + '\n' +
+  '.fx-nube-mid { top:-420px; ' +
+  'background: rgba(255,255,255,0.5); ' +
+  'background: -webkit-radial-gradient(38% 50%, ellipse, rgba(255,255,255,0.85), rgba(255,255,255,0.32) 38%, rgba(255,255,255,0) 64%), ' +
+  '-webkit-radial-gradient(78% 45%, ellipse, rgba(255,255,255,0.75), rgba(255,255,255,0.28) 36%, rgba(255,255,255,0) 62%); ' +
+  'background: radial-gradient(ellipse at 38% 50%, rgba(255,255,255,0.85), rgba(255,255,255,0.32) 38%, rgba(255,255,255,0) 64%), ' +
+  'radial-gradient(ellipse at 78% 45%, rgba(255,255,255,0.75), rgba(255,255,255,0.28) 36%, rgba(255,255,255,0) 62%); ' +
+  '-webkit-animation: fxNubeDriftMid 50s linear infinite; animation: fxNubeDriftMid 50s linear infinite; }\n' +
+  kfDual('fxNubeDriftMid',
+    '0% { -webkit-transform:translate(0,0); transform:translate(0,0); opacity:0; } ' +
+    '12% { opacity:0.4; } ' +
+    '35% { -webkit-transform:translate(-14px,340px); transform:translate(-14px,340px); } ' +
+    '60% { -webkit-transform:translate(16px,620px); transform:translate(16px,620px); } ' +
+    '85% { -webkit-transform:translate(-12px,900px); transform:translate(-12px,900px); opacity:0.4; } ' +
+    '100% { -webkit-transform:translate(0,1080px); transform:translate(0,1080px); opacity:0; }') + '\n' +
+  '.fx-nube-near { top:-480px; ' +
+  'background: rgba(255,255,255,0.6); ' +
+  'background: -webkit-radial-gradient(45% 55%, ellipse, rgba(255,255,255,0.95), rgba(255,255,255,0.4) 32%, rgba(255,255,255,0) 58%), ' +
+  '-webkit-radial-gradient(82% 40%, ellipse, rgba(255,255,255,0.85), rgba(255,255,255,0.35) 30%, rgba(255,255,255,0) 56%); ' +
+  'background: radial-gradient(ellipse at 45% 55%, rgba(255,255,255,0.95), rgba(255,255,255,0.4) 32%, rgba(255,255,255,0) 58%), ' +
+  'radial-gradient(ellipse at 82% 40%, rgba(255,255,255,0.85), rgba(255,255,255,0.35) 30%, rgba(255,255,255,0) 56%); ' +
+  '-webkit-animation: fxNubeDriftNear 30s linear infinite; animation: fxNubeDriftNear 30s linear infinite; }\n' +
+  kfDual('fxNubeDriftNear',
+    '0% { -webkit-transform:translate(0,0); transform:translate(0,0); opacity:0; } ' +
+    '15% { opacity:0.55; } ' +
+    '38% { -webkit-transform:translate(15px,360px); transform:translate(15px,360px); } ' +
+    '62% { -webkit-transform:translate(-15px,650px); transform:translate(-15px,650px); } ' +
+    '85% { -webkit-transform:translate(15px,900px); transform:translate(15px,900px); opacity:0.55; } ' +
+    '100% { -webkit-transform:translate(0,1080px); transform:translate(0,1080px); opacity:0; }');
+
+var NUBES_FX_HTML =
+  '<div class="fx-nube-glow"></div>' +
+  '<div class="fx-nube fx-nube-far" style="-webkit-animation-delay:-14s; animation-delay:-14s;"></div>' +
+  '<div class="fx-nube fx-nube-mid" style="-webkit-animation-delay:-22s; animation-delay:-22s;"></div>' +
+  '<div class="fx-nube fx-nube-near" style="-webkit-animation-delay:-6s; animation-delay:-6s;"></div>';
+
+// Sin spawn dinamico: los 3 divs ya vienen fijos en NUBES_FX_HTML.
+var NUBES_FX_JS = '';
+
 // --- Definicion de temas ---
 // Cada tema define fuentes, colores, fondo, logo de pantalla 1 y particulas.
 var RALEWAY_FONTS_HREF = 'https://fonts.googleapis.com/css2?family=Raleway:wght@500;600;700;800&display=swap';
 var NINA_FONTS_HREF = 'https://fonts.googleapis.com/css2?family=Raleway:wght@500;600;700;800&family=Tangerine:wght@400;700&family=Cormorant+Garamond:wght@400;500;600&display=swap';
+var NUBES_FONTS_HREF = 'https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;500;600&family=Cormorant+Garamond:wght@400;500;600;700&family=EB+Garamond:wght@400;500;600&display=swap';
 var RALEWAY_STACK = '"Raleway", Arial, Helvetica, sans-serif';
 
 var TEMPLATES = {
@@ -968,6 +1037,24 @@ var TEMPLATES = {
       'linear-gradient(135deg, #ead7d6 0%, #f2e6e0 35%, #ecd9d6 70%, #ddc4c4 100%)',
     logo1: 'infinito',
     particlesCss: NINA_FX_CSS, particlesHtml: NINA_FX_HTML, particlesJs: NINA_FX_JS
+  },
+  nubes: {
+    id: 'nubes',
+    fontsHref: NUBES_FONTS_HREF,
+    fontName: '"Cormorant Garamond", Georgia, "Times New Roman", serif',
+    fontBody: '"EB Garamond", Georgia, serif',
+    nameWeight: 600, nameSize1: 160, nameUppercase: false, name2Size: 96, name2Weight: 600,
+    titulo: '#2b3a44', texto: '#3c5a6e', eyebrow: '#3c5a6e',
+    divider: 'rgba(201,168,106,0.6)', titleShadow: false,
+    cardBg: 'rgba(255,255,255,0.55)', cardBorder: 'rgba(255,255,255,0.7)', cardText: '#3c5a6e',
+    avatarBg: '#3c5a6e', avatarText: '#ffffff',
+    fallback: '#7fa9c4', bgType: 'css',
+    // Foto real de cielo con nubes (no un gradiente): bgPhoto guarda solo el
+    // nombre de archivo porque la URL absoluta requiere baseUrl, que no existe
+    // todavia cuando este modulo se carga (ver themedBgCss).
+    bgPhoto: 'nubes-fondo.jpg',
+    logo1: 'infinito',
+    particlesCss: NUBES_FX_CSS, particlesHtml: NUBES_FX_HTML, particlesJs: NUBES_FX_JS
   }
 };
 
@@ -978,6 +1065,17 @@ var TEMPLATES = {
 function themedBgCss(theme, screen, baseUrl) {
   if (theme.bgType === 'png') {
     return 'background-color: ' + theme.fallback + ';';
+  }
+  // Temas 'css' con foto de fondo real (ej. nubes): la URL absoluta solo se
+  // puede construir aqui, en tiempo de request, porque bgPhoto guarda nada
+  // mas el nombre de archivo (el objeto TEMPLATES se arma una sola vez al
+  // cargar el modulo, antes de conocer baseUrl). No hay funcion prefijada
+  // -webkit- que aplicar: url()/center/cover/no-repeat y el color de fallback
+  // final del shorthand "background" son universales.
+  if (theme.bgPhoto) {
+    var photoUrl = baseUrl + '/api/template-assets/' + theme.bgPhoto;
+    return 'background-color: ' + theme.fallback + '; ' +
+      'background: url(' + photoUrl + ') center/cover no-repeat, ' + theme.fallback + ';';
   }
   return 'background-color: ' + theme.fallback + '; ' +
     'background-image: ' + theme.bgWebkit + '; ' +
@@ -1346,35 +1444,17 @@ function renderThemedShell(opts) {
 
 // =========== Rotacion de pantallas (compartida legacy/tematico) ===========
 function computeCycle(opts) {
-  var TOTAL = 4;
+  var TOTAL = 3;
   var screen = parseInt(opts.screen, 10);
   if (isNaN(screen) || screen < 1 || screen > TOTAL) screen = 1;
-
-  var page = parseInt(opts.page, 10);
-  if (isNaN(page) || page < 0) page = 0;
-  var totalPages = Math.max(1, opts.totalPages || 1);
-  if (page >= totalPages) page = 0;
 
   var nextScreen = screen + 1;
   if (nextScreen > TOTAL) nextScreen = 1;
 
-  // Avanzamos la pagina de mensajes JUSTO al salir de la pantalla 3 (screen=3 -> 4).
-  // Asi cuando vuelva el ciclo a la pantalla 3 (despues de 4 y 1 y 2), mostrara la
-  // siguiente "tanda" de 6. Wraparound al final.
-  var nextPage = page;
-  if (screen === 3 && totalPages > 1) {
-    nextPage = (page + 1) % totalPages;
-  }
-
-  // URL siguiente: mantiene page si toca; en screen=1 conserva ?page para no perder
-  // el contexto del ciclo. Si nextPage es 0 y nextScreen es 1, URL limpio.
-  var qsParts = [];
-  if (nextScreen !== 1) qsParts.push('screen=' + nextScreen);
-  if (nextPage > 0) qsParts.push('page=' + nextPage);
-  var qs = qsParts.length ? '?' + qsParts.join('&') : '';
+  var qs = nextScreen !== 1 ? '?screen=' + nextScreen : '';
   var nextUrl = '/digital-display-screen/' + encodeURIComponent(opts.roomId) + qs;
 
-  return { total: TOTAL, screen: screen, page: page, totalPages: totalPages, nextUrl: nextUrl };
+  return { total: TOTAL, screen: screen, nextUrl: nextUrl };
 }
 
 // =========== Render tematico ===========
@@ -1400,10 +1480,9 @@ function renderThemed(opts, theme) {
   } else if (cyc.screen === 2) {
     body = renderThemedEmotional(m, theme);
     fits = [['tFitMsg', 72, 40, 4, 'h']];
-  } else if (cyc.screen === 3) {
-    body = renderThemedMessages(m, theme, opts.condolences || [], opts.totalMessages, cyc.page, cyc.totalPages);
   } else {
     body = renderThemedQr(m, theme, opts.qrSvg);
+    fits = [];
   }
 
   var schedStart = format12h(m.dailyHoursStart || '08:00');
@@ -1431,7 +1510,6 @@ function renderLegacy(opts) {
   var body;
   if (cyc.screen === 1) body = renderScreenService(m);
   else if (cyc.screen === 2) body = renderScreenEmotional(m);
-  else if (cyc.screen === 3) body = renderScreenMessages(m, opts.condolences || [], opts.totalMessages, cyc.page, cyc.totalPages);
   else body = renderScreenQr(m, opts.qrSvg);
 
   // Horario diario que la sala esta habilitada (footer). Convertimos 24h a 12h
@@ -1456,7 +1534,7 @@ function renderLegacy(opts) {
 // Devuelve el HTML de la vista solicitada. opts.templateId selecciona la
 // plantilla; 'default' o cualquier valor desconocido usa el diseno teal legacy.
 function render(opts) {
-  // opts: { memorial, condolences, totalMessages, screen (1..4), page,
+  // opts: { memorial, condolences, totalMessages, screen (1..3), page,
   //         totalPages, roomId, baseUrl, qrSvg, preview, templateId }
   var theme = TEMPLATES[opts.templateId];
   if (theme) return renderThemed(opts, theme);

@@ -4,14 +4,13 @@ import Icon from '../../../components/AppIcon';
 import { cn } from '../../../utils/cn';
 
 // Vista previa del tributo: muestra el display SSR real dentro de un iframe
-// escalado, con botones manuales para rotar entre las 4 pantallas.
+// escalado, con botones manuales para rotar entre las 3 pantallas.
 // Funciona solo en modo edicion (cuando ya existe el memorial en BD); en
 // creacion, muestra un placeholder pidiendo guardar primero.
 const SCREENS = [
   { n: 1, label: 'Servicio' },
   { n: 2, label: 'Mensaje' },
-  { n: 3, label: 'Mensajes recibidos' },
-  { n: 4, label: 'Código QR' }
+  { n: 3, label: 'Código QR' }
 ];
 
 // Resolucion nativa del display (las pantallas LG son 1920x1080).
@@ -45,8 +44,8 @@ const TributePreview = ({ formData }) => {
     return `/digital-display-screen/${encodeURIComponent(roomId)}?${parts.join('&')}`;
   }, [roomId, currentScreen, refreshNonce, templateId]);
 
-  const goPrev = () => setCurrentScreen(s => (s === 1 ? 4 : s - 1));
-  const goNext = () => setCurrentScreen(s => (s === 4 ? 1 : s + 1));
+  const goPrev = () => setCurrentScreen(s => (s === 1 ? 3 : s - 1));
+  const goNext = () => setCurrentScreen(s => (s === 3 ? 1 : s + 1));
 
   // Calculamos el scale dinamicamente a partir del ancho del contenedor.
   // Usamos un estado local que se actualiza con ResizeObserver para responder
@@ -78,7 +77,7 @@ const TributePreview = ({ formData }) => {
           <div className="w-3 h-3 rounded-full bg-warning" />
           <div className="w-3 h-3 rounded-full bg-success" />
           <span className="ml-1 text-xs font-medium text-muted-foreground truncate">
-            Vista Previa &middot; Pantalla {currentScreen} de 4
+            Vista Previa &middot; Pantalla {currentScreen} de 3
             <span className="hidden lg:inline"> &middot; {SCREENS[currentScreen - 1].label}</span>
           </span>
         </div>

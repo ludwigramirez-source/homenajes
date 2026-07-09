@@ -22,7 +22,8 @@ const TEMPLATE_GROUPS = [
       { id: 'aire', label: 'Aire' },
       { id: 'fuego', label: 'Fuego' },
       { id: 'tierra', label: 'Tierra' },
-      { id: 'bosque', label: 'Bosque' }
+      { id: 'bosque', label: 'Bosque' },
+      { id: 'nubes', label: 'Nubes' }
     ]
   }
 ];
