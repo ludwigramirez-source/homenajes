@@ -27,6 +27,9 @@ const TributePreview = ({ formData }) => {
   // Plantilla elegida en el wizard: se pasa como override (?template=) al SSR
   // para previsualizarla ANTES de guardar. 'default' no se envia (es el fallback).
   const templateId = formData?.templateId;
+  // Variante religiosa (is_religious): override en vivo antes de guardar,
+  // mismo mecanismo que el override de plantilla via ?template=.
+  const isReligious = formData?.isReligious;
 
   const [currentScreen, setCurrentScreen] = useState(1);
   const containerRef = useRef(null);
@@ -41,8 +44,9 @@ const TributePreview = ({ formData }) => {
     if (templateId && templateId !== 'default') {
       parts.push(`template=${encodeURIComponent(templateId)}`);
     }
+    parts.push(`religious=${isReligious ? '1' : '0'}`);
     return `/digital-display-screen/${encodeURIComponent(roomId)}?${parts.join('&')}`;
-  }, [roomId, currentScreen, refreshNonce, templateId]);
+  }, [roomId, currentScreen, refreshNonce, templateId, isReligious]);
 
   const goPrev = () => setCurrentScreen(s => (s === 1 ? 3 : s - 1));
   const goNext = () => setCurrentScreen(s => (s === 3 ? 1 : s + 1));

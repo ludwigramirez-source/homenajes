@@ -11,9 +11,11 @@ const QR_DARK_COLORS = {
   fuego: '#5e2a20',
   tierra: '#3f4a34',
   bosque: '#4a3a22',
-  nino: '#2e4a5c',
-  nina: '#6e4f52',
-  nubes: '#2b3a44'
+  naturaleza: '#1f3a2c',
+  nubes: '#182939',
+  nino: '#182939',
+  nina: '#511633',
+  adulto: '#382b22'
 };
 
 // Helper: construye URL absoluta respetando el proxy reverso (X-Forwarded-Proto/Host).
@@ -95,6 +97,12 @@ const getDisplay = async (req, res, next) => {
     }
     if (view.TEMPLATE_IDS.indexOf(templateId) === -1) templateId = 'default';
 
+    // Variante religiosa: la del homenaje guardado, con override opcional
+    // ?religious=1|0 (usado por la vista previa del studio antes de guardar).
+    let isReligious = !!m.is_religious;
+    if (req.query.religious === '1' || req.query.religious === 'true') isReligious = true;
+    else if (req.query.religious === '0' || req.query.religious === 'false') isReligious = false;
+
     // 2) Registrar vista para analytics (no bloquea respuesta si falla).
     db.query(`
       INSERT INTO memorial_views (memorial_id, view_type, ip_address, user_agent)
@@ -163,6 +171,7 @@ const getDisplay = async (req, res, next) => {
       exequiasDatetime: m.exequias_datetime,
       finalDestinationVenue: m.final_destination_venue_name,
       finalDestinationDatetime: m.final_destination_datetime,
+      isReligious: isReligious,
       totalMessagesCount: totalCount
     };
 

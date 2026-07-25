@@ -50,6 +50,9 @@ const TributeCreationStudio = () => {
 
     // Plantilla visual del homenaje (template_id en BD)
     templateId: '',
+    // Variante religiosa (is_religious en BD): agrega "Descansa en la paz
+    // del Señor" y la cruz entre años en vez del guion.
+    isReligious: false,
 
     // Ubicación
     funeralHome: '',
@@ -122,6 +125,7 @@ const TributeCreationStudio = () => {
           // Homenajes viejos no tienen plantilla elegida: caen en 'default'
           // (diseño teal clásico) y el picker les ofrece conservarla.
           templateId: m.template_id || 'default',
+          isReligious: !!m.is_religious,
 
           funeralHome: locationId,
           room: m.room_id || '',
@@ -228,6 +232,7 @@ const TributeCreationStudio = () => {
         emotional_message: formData?.biography
           || 'En memoria de un ser querido. Su vida y su amor permanecen con nosotros.',
         template_id: formData?.templateId || 'default',
+        is_religious: !!formData?.isReligious,
         schedule_start: scheduleStart,
         schedule_end: scheduleEnd,
         exequias_venue_id: formData?.exequiasVenueId || null,

@@ -4,9 +4,18 @@
 // Layout con <table> + vertical-align. CSS con float donde corresponda.
 //
 // PLANTILLAS: ademas del diseno teal original ('default'), este modulo soporta
-// 8 plantillas tematicas (agua, aire, fuego, tierra, bosque, nino, nina, nubes)
-// definidas en el objeto TEMPLATES. Cualquier template_id desconocido cae al
-// camino legacy para no romper homenajes existentes.
+// 10 plantillas tematicas definidas en el objeto TEMPLATES. Cualquier
+// template_id desconocido cae al camino legacy para no romper homenajes
+// existentes.
+// - agua, aire, fuego, tierra, bosque: disenos "4 elementos" RETIRADOS del
+//   selector de plantillas (ya no cumplen el manual de marca), pero el codigo
+//   se mantiene intacto para no romper homenajes activos ya creados con ellos.
+// - naturaleza, nubes, nino, nina, adulto: linea vigente ("Guia FINAL slides"),
+//   con fondo fotografico (bgPhoto, logo Los Olivos ya incluido en el arte),
+//   layout de servicio V2 (serviceLayout:'v2') y tarjeta centrada en pantallas
+//   2/3 (emotionalLayout:'centered'). Cada una admite variante religiosa
+//   (memorial.isReligious): agrega "Descansa en la paz del senor" en la
+//   pantalla 1 y una cruz (en vez de guion) entre los anios.
 //
 // COMPATIBILIDAD del HTML emitido (TVs LG WebKit pre-2015):
 // - JS solo ES5 (var, function, concatenacion).
@@ -86,6 +95,57 @@ function formatDateLong(iso) {
   if (day < 10) day = '0' + day;
   return SPANISH_DAYS[d.getDay()] + ' ' + day + ' de ' +
          SPANISH_MONTHS[d.getMonth()] + ' de ' + d.getFullYear();
+}
+
+// Solo la hora ("2:00 p.m") de un datetime ISO, reutilizando format12h.
+function timeOnly12h(iso) {
+  if (!iso) return '';
+  var d = new Date(iso);
+  if (isNaN(d.getTime())) return '';
+  var hh = d.getHours();
+  var mm = d.getMinutes();
+  var hhmm = (hh < 10 ? '0' : '') + hh + ':' + (mm < 10 ? '0' : '') + mm;
+  return format12h(hhmm);
+}
+
+// '#rrggbb' -> 'rgba(r,g,b,alpha)'. Usado para las cajas de mensaje con
+// transparencia del 65% especificadas por tema en la guia de diseno.
+function hexToRgba(hex, alpha) {
+  var h = String(hex || '').replace('#', '');
+  if (h.length === 3) h = h.charAt(0) + h.charAt(0) + h.charAt(1) + h.charAt(1) + h.charAt(2) + h.charAt(2);
+  var r = parseInt(h.substring(0, 2), 16) || 0;
+  var g = parseInt(h.substring(2, 4), 16) || 0;
+  var b = parseInt(h.substring(4, 6), 16) || 0;
+  return 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')';
+}
+
+// Fuente con glifo de cruz latina (U+271D) para la variante religiosa: se pide
+// explicitamente que la cruz sea TEXTO (no una imagen/SVG), con una fuente que
+// incluya el simbolo. Noto Sans Symbols 2 lo cubre; el span se aisla en su
+// propia font-family para no afectar el resto del texto (Raleway).
+// Comillas simples (no dobles): este valor se inyecta dentro de un atributo
+// style="..." con comillas dobles; comillas dobles aqui romperian el HTML.
+var RELIGIOUS_CROSS_FONT = "'Noto Sans Symbols 2', 'Noto Sans Symbols', Arial, sans-serif";
+
+// Separador entre anios de nacimiento/fallecimiento: cruz (religiosa) o guion.
+function yearsSeparator(isReligious) {
+  return isReligious
+    ? ' <span style="font-family:' + RELIGIOUS_CROSS_FONT + ';">&#x271D;</span> '
+    : ' - ';
+}
+
+function yearsHtml(m) {
+  return escapeHtml(m.birthYear || '') + yearsSeparator(!!m.isReligious) + escapeHtml(m.deathYear || '');
+}
+
+// Divide el nombre completo en 2 lineas repartiendo las palabras a la mitad
+// (ej. "Ana Maria Neira Mosquera" -> "Ana Maria" / "Neira Mosquera"), tal como
+// muestra la guia de diseno para el nombre de la pantalla 1 de los temas V2.
+function nameTwoLines(name) {
+  var words = String(name || '').trim().split(/\s+/).filter(function (w) { return w; });
+  if (words.length <= 1) return [words.join(' '), ''];
+  var mid = Math.ceil(words.length / 2);
+  return [words.slice(0, mid).join(' '), words.slice(mid).join(' ')];
 }
 
 // CSS comun (diseno teal legacy). Sin flexbox, sin variables, sin grid.
@@ -438,7 +498,7 @@ function renderEmptyRoom(message) {
 // ====================================================================
 
 // Whitelist compartida con los controllers (validacion de template_id).
-var TEMPLATE_IDS = ['default', 'nino', 'nina', 'agua', 'aire', 'fuego', 'tierra', 'bosque', 'nubes'];
+var TEMPLATE_IDS = ['default', 'nino', 'nina', 'agua', 'aire', 'fuego', 'tierra', 'bosque', 'nubes', 'naturaleza', 'adulto'];
 
 // --- Helpers de CSS animado compatible (duplica @keyframes con prefijo) ---
 function kfDual(name, frames) {
@@ -915,6 +975,11 @@ var NINA_FONTS_HREF = 'https://fonts.googleapis.com/css2?family=Raleway:wght@500
 var NUBES_FONTS_HREF = 'https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;500;600&family=Cormorant+Garamond:wght@400;500;600;700&family=EB+Garamond:wght@400;500;600&display=swap';
 var RALEWAY_STACK = '"Raleway", Arial, Helvetica, sans-serif';
 
+// Pesos completos de Raleway (Medium/Semibold/Bold/Black) + Noto Sans Symbols 2
+// (glifo de cruz para la variante religiosa) para los 5 temas vigentes de la
+// guia FINAL: naturaleza, nubes, nino, nina, adulto.
+var RALEWAY_FULL_HREF = 'https://fonts.googleapis.com/css2?family=Raleway:wght@500;600;700;900&family=Noto+Sans+Symbols+2&display=swap';
+
 var TEMPLATES = {
   agua: {
     id: 'agua',
@@ -994,78 +1059,113 @@ var TEMPLATES = {
     logo1: 'infinito',
     particlesCss: BOSQUE_FX_CSS, particlesHtml: BOSQUE_FX_HTML, particlesJs: BOSQUE_FX_JS
   },
-  nino: {
-    id: 'nino',
-    fontsHref: RALEWAY_FONTS_HREF,
+  // ---- Linea vigente ("Guia FINAL slides"): fondo fotografico con logo Los
+  // Olivos ya incluido en el arte (hideLogo), layout de servicio V2
+  // (serviceLayout) y tarjeta centrada en pantallas 2/3 (emotionalLayout).
+  // Todas usan Raleway (Medium/Semibold/Bold/Black) segun la guia.
+  naturaleza: {
+    id: 'naturaleza',
+    fontsHref: RALEWAY_FULL_HREF,
     fontName: RALEWAY_STACK,
     fontBody: RALEWAY_STACK,
-    nameWeight: 800, nameSize1: 186, nameUppercase: true, name2Size: 85, name2Weight: 600,
-    titulo: '#1f364d', texto: '#2e4a5c', eyebrow: '#2e4a5c',
-    divider: 'rgba(46,74,92,0.4)', titleShadow: false,
-    cardBg: 'rgba(255,255,255,0.55)', cardBorder: 'rgba(255,255,255,0.7)', cardText: '#2e4a5c',
-    avatarBg: '#2e4a5c', avatarText: '#ffffff',
+    nameWeight: 500, nameSize1: 150, nameUppercase: true, name2Size: 80, name2Weight: 600,
+    titulo: '#ffffff', texto: '#ffffff', eyebrow: '#fcf0c0',
+    divider: 'rgba(255,255,255,0.3)', titleShadow: true,
+    cardBg: 'rgba(0,0,0,0.28)', cardBorder: 'rgba(255,255,255,0.3)', cardText: '#ffffff',
+    avatarBg: '#649378', avatarText: '#ffffff',
+    fallback: '#3c5c46', bgType: 'css',
+    bgPhoto: 'naturaleza-fondo.jpg',
+    religiousColor: '#fcf0c0',
+    msgBoxColor: '#649378', msgBoxBorder: 'rgba(255,255,255,0.5)',
+    hideLogo: true,
+    serviceLayout: 'v2',
+    emotionalLayout: 'centered',
+    particlesCss: '', particlesHtml: '', particlesJs: ''
+  },
+  nino: {
+    id: 'nino',
+    fontsHref: RALEWAY_FULL_HREF,
+    fontName: RALEWAY_STACK,
+    fontBody: RALEWAY_STACK,
+    nameWeight: 500, nameSize1: 150, nameUppercase: true, name2Size: 80, name2Weight: 600,
+    titulo: '#182939', texto: '#182939', eyebrow: '#182939',
+    divider: 'rgba(24,41,57,0.3)', titleShadow: false,
+    cardBg: 'rgba(255,255,255,0.55)', cardBorder: 'rgba(255,255,255,0.7)', cardText: '#182939',
+    avatarBg: '#182939', avatarText: '#ffffff',
     fallback: '#cfe4ee', bgType: 'css',
-    bgWebkit: '-webkit-radial-gradient(45% 60%, ellipse, rgba(255,255,255,0.92), rgba(255,255,255,0) 48%), ' +
-      '-webkit-radial-gradient(75% 35%, ellipse, rgba(245,250,252,0.7), rgba(245,250,252,0) 55%), ' +
-      '-webkit-linear-gradient(top left, #a7cadd 0%, #cfe4ee 30%, #eef5f8 55%, #bcd8e6 80%, #a3c5d8 100%)',
-    bgStd: 'radial-gradient(ellipse at 45% 60%, rgba(255,255,255,0.92), rgba(255,255,255,0) 48%), ' +
-      'radial-gradient(ellipse at 75% 35%, rgba(245,250,252,0.7), rgba(245,250,252,0) 55%), ' +
-      'linear-gradient(135deg, #a7cadd 0%, #cfe4ee 30%, #eef5f8 55%, #bcd8e6 80%, #a3c5d8 100%)',
-    logo1: 'infinito',
-    particlesCss: NINO_FX_CSS, particlesHtml: NINO_FX_HTML, particlesJs: NINO_FX_JS
+    bgPhoto: 'nino-fondo.jpg',
+    religiousColor: '#182939',
+    msgBoxColor: '#a1ccde', msgBoxBorder: 'rgba(255,255,255,0.7)',
+    hideLogo: true,
+    serviceLayout: 'v2',
+    emotionalLayout: 'centered',
+    particlesCss: '', particlesHtml: '', particlesJs: ''
   },
   nina: {
     id: 'nina',
-    fontsHref: NINA_FONTS_HREF,
-    fontName: '"Tangerine", "Brush Script MT", cursive',
-    fontBody: '"Cormorant Garamond", Georgia, "Times New Roman", serif',
-    nameWeight: 700, nameSize1: 200, nameUppercase: false, name2Size: 110, name2Weight: 700,
-    titulo: '#6e4f52', texto: '#7a5a5c', eyebrow: '#a07e6e',
-    divider: 'rgba(160,126,110,0.5)', titleShadow: false,
-    cardBg: 'rgba(255,255,255,0.55)', cardBorder: 'rgba(255,255,255,0.7)', cardText: '#7a5a5c',
-    avatarBg: '#a07e6e', avatarText: '#ffffff',
-    fallback: '#ead7d6', bgType: 'css',
-    bgWebkit: '-webkit-radial-gradient(30% 55%, ellipse, rgba(255,252,250,0.9), rgba(255,252,250,0) 45%), ' +
-      '-webkit-radial-gradient(70% 30%, ellipse, rgba(245,228,228,0.8), rgba(245,228,228,0) 55%), ' +
-      '-webkit-linear-gradient(top left, #ead7d6 0%, #f2e6e0 35%, #ecd9d6 70%, #ddc4c4 100%)',
-    bgStd: 'radial-gradient(ellipse at 30% 55%, rgba(255,252,250,0.9), rgba(255,252,250,0) 45%), ' +
-      'radial-gradient(ellipse at 70% 30%, rgba(245,228,228,0.8), rgba(245,228,228,0) 55%), ' +
-      'linear-gradient(135deg, #ead7d6 0%, #f2e6e0 35%, #ecd9d6 70%, #ddc4c4 100%)',
-    logo1: 'infinito',
-    particlesCss: NINA_FX_CSS, particlesHtml: NINA_FX_HTML, particlesJs: NINA_FX_JS
+    fontsHref: RALEWAY_FULL_HREF,
+    fontName: RALEWAY_STACK,
+    fontBody: RALEWAY_STACK,
+    nameWeight: 500, nameSize1: 150, nameUppercase: true, name2Size: 80, name2Weight: 600,
+    // Color verificado por muestreo de pixel directo sobre el PDF (ver notas
+    // de la sesion): el color real de TODO el texto de nina es #511633; las
+    // anotaciones de flecha del PDF que marcan #182939 son un error de
+    // copiar/pegar heredado de las plantillas de nino/nubes.
+    titulo: '#511633', texto: '#511633', eyebrow: '#511633',
+    divider: 'rgba(81,22,51,0.3)', titleShadow: false,
+    cardBg: 'rgba(255,255,255,0.55)', cardBorder: 'rgba(96,26,58,0.5)', cardText: '#511633',
+    avatarBg: '#511633', avatarText: '#ffffff',
+    fallback: '#e8c3cd', bgType: 'css',
+    bgPhoto: 'nina-fondo.jpg',
+    religiousColor: '#511633',
+    msgBoxColor: '#edc5cf', msgBoxBorder: '#601a3a',
+    hideLogo: true,
+    serviceLayout: 'v2',
+    emotionalLayout: 'centered',
+    particlesCss: '', particlesHtml: '', particlesJs: ''
   },
   nubes: {
     id: 'nubes',
-    fontsHref: NUBES_FONTS_HREF,
-    fontName: '"Cormorant Garamond", Georgia, "Times New Roman", serif',
-    fontBody: '"EB Garamond", Georgia, serif',
-    nameWeight: 600, nameSize1: 145, nameUppercase: false, name2Size: 96, name2Weight: 600,
-    // nameLineHeight: Cormorant Garamond tiene metricas de ascendente mas
-    // altas que Raleway (fuente del resto de temas); a line-height:1.05 el
-    // glifo superior (ej. la "J" de un nombre) se recorta contra el
-    // overflow:hidden de .t-name1. Solo 'nubes' necesita este valor mas alto;
-    // los demas temas siguen usando el fallback 1.05 (ver regla .t-name1).
-    nameLineHeight: 1.22,
-    titulo: '#2b3a44', texto: '#3c5a6e', eyebrow: '#3c5a6e',
-    divider: 'rgba(201,168,106,0.6)', titleShadow: false,
-    // hideArtline: 'nubes' usa una foto real de cielo (bgPhoto), no arte PNG
-    // sintetico con corte visible; el divisor .t-artline (color dorado) se ve
-    // como un elemento extra no deseado ("linea amarilla") sobre la foto, asi
-    // que se omite solo para este tema.
-    hideArtline: true,
-    cardBg: 'rgba(255,255,255,0.55)', cardBorder: 'rgba(255,255,255,0.7)', cardText: '#3c5a6e',
-    avatarBg: '#3c5a6e', avatarText: '#ffffff',
+    fontsHref: RALEWAY_FULL_HREF,
+    fontName: RALEWAY_STACK,
+    fontBody: RALEWAY_STACK,
+    nameWeight: 500, nameSize1: 150, nameUppercase: true, name2Size: 80, name2Weight: 600,
+    titulo: '#182939', texto: '#182939', eyebrow: '#182939',
+    divider: 'rgba(24,41,57,0.3)', titleShadow: false,
+    cardBg: 'rgba(255,255,255,0.55)', cardBorder: 'rgba(255,255,255,0.7)', cardText: '#182939',
+    avatarBg: '#182939', avatarText: '#ffffff',
     fallback: '#7fa9c4', bgType: 'css',
     // Foto real de cielo con nubes (no un gradiente): bgPhoto guarda solo el
     // nombre de archivo porque la URL absoluta requiere baseUrl, que no existe
     // todavia cuando este modulo se carga (ver themedBgCss).
     bgPhoto: 'nubes-fondo.jpg',
-    logo1: 'infinito',
-    // emotionalLayout: pantalla 2 (foto+nombre+mensaje) usa una tarjeta unica
-    // centrada en vez del layout de dos columnas compartido por los demas
-    // temas (ver renderThemedEmotional).
+    religiousColor: '#182939',
+    msgBoxColor: '#7dadc7', msgBoxBorder: 'rgba(255,255,255,0.7)',
+    hideLogo: true,
+    serviceLayout: 'v2',
     emotionalLayout: 'centered',
+    // Se conserva la animacion de nubes (capas fx-nube) sobre la foto: bonus
+    // visual ya optimizado para WebKit de LG en una sesion anterior.
     particlesCss: NUBES_FX_CSS, particlesHtml: NUBES_FX_HTML, particlesJs: NUBES_FX_JS
+  },
+  adulto: {
+    id: 'adulto',
+    fontsHref: RALEWAY_FULL_HREF,
+    fontName: RALEWAY_STACK,
+    fontBody: RALEWAY_STACK,
+    nameWeight: 500, nameSize1: 150, nameUppercase: true, name2Size: 80, name2Weight: 600,
+    titulo: '#382b22', texto: '#382b22', eyebrow: '#42342a',
+    divider: 'rgba(56,43,34,0.3)', titleShadow: false,
+    cardBg: 'rgba(255,255,255,0.45)', cardBorder: 'rgba(255,255,255,0.6)', cardText: '#382b22',
+    avatarBg: '#382b22', avatarText: '#ffffff',
+    fallback: '#9c8a6e', bgType: 'css',
+    bgPhoto: 'adulto-fondo.jpg',
+    religiousColor: '#382b22',
+    msgBoxColor: '#d5cbb8', msgBoxBorder: 'rgba(255,255,255,0.6)',
+    hideLogo: true,
+    serviceLayout: 'v2',
+    emotionalLayout: 'centered',
+    particlesCss: '', particlesHtml: '', particlesJs: ''
   }
 };
 
@@ -1212,6 +1312,18 @@ function themedCss(theme, screen, baseUrl) {
     '.qr-box2 { display: inline-block; padding: 22px; background: #ffffff; border-radius: 28px; }',
     '.qr-box2 svg { display: block; width: 420px; height: 420px; }',
     '.t-scan { margin-top: 28px; font-size: 34px; font-weight: 700; color: ' + theme.titulo + '; }',
+    // ---- Pantalla 1 V2 (guia FINAL slides): portada/homenaje, ver
+    // renderThemedServiceV2. Solo la usan los temas con serviceLayout:'v2'. ----
+    '.t-v2-wrap { position: absolute; left: 6%; right: 6%; top: 0; bottom: 118px; z-index: 3; text-align: center; }',
+    '.t-v2-relig { font-weight: 600; font-size: 32px; margin-bottom: 22px; color: ' + (theme.religiousColor || theme.eyebrow) + '; }',
+    '.t-v2-name-line { font-weight: 900; font-size: 112px; line-height: 1.18; ',
+    '  text-transform: uppercase; letter-spacing: 1px; color: ' + theme.titulo + '; white-space: nowrap; overflow: hidden; }',
+    '.t-v2-sub { font-weight: 500; font-size: 34px; line-height: 1.5; margin-top: 28px; color: ' + theme.eyebrow + '; }',
+    '.t-v2-grid { width: 100%; max-width: 1500px; margin: 40px auto 0; border-collapse: collapse; table-layout: fixed; }',
+    '.t-v2-col { width: 50%; vertical-align: top; padding: 0 30px; text-align: left; }',
+    '.t-v2-row { font-size: 30px; line-height: 1.7; color: ' + theme.titulo + '; white-space: nowrap; overflow: hidden; }',
+    '.t-v2-lbl { font-weight: 700; }',
+    '.t-v2-val { font-weight: 500; }',
     // ---- Pantalla 3: mensajes ----
     '.t-msg-head { text-align: center; padding: 36px 40px 20px; }',
     '.t-msg-eyebrow { font-size: 36px; font-weight: 600; color: ' + theme.eyebrow + '; }',
@@ -1252,7 +1364,10 @@ function themedCss(theme, screen, baseUrl) {
 // Los temas con arte PNG NO llevan overlay: la cinta (pantalla 1) y el
 // isotipo (pantallas 2-4) ya vienen dibujados en el arte oficial.
 function themedLogoHtml(theme, screen, baseUrl) {
-  if (theme.bgType === 'png') return '';
+  // hideLogo: temas cuyo arte (bgPhoto) ya trae el logo Los Olivos compuesto
+  // en la esquina inferior derecha (extraido directo de la guia de diseno);
+  // dibujar la cinta/isotipo encima duplicaria el logo.
+  if (theme.bgType === 'png' || theme.hideLogo) return '';
   if (screen === 1 && theme.logo1 === 'infinito') {
     return '<div class="t-cinta"><img src="' + baseUrl + '/api/template-assets/infinito-' +
       theme.id + '.png" alt="Los Olivos"></div>';
@@ -1274,6 +1389,46 @@ function renderThemedFooter(screen, totalScreens, scheduleStart, scheduleEnd) {
     '  <td class="footer-right">' + dots + '</td>\n' +
     '</tr></table>\n' +
     '</div>';
+}
+
+// =========== Pantalla 1 V2: portada/homenaje (guia FINAL slides) ===========
+// Usada por los temas con serviceLayout:'v2' (naturaleza, nubes, nino, nina,
+// adulto). Reemplaza el layout de banda+nombre gigante+grid 2x2 de
+// renderThemedService (que se mantiene intacto para agua/aire/fuego/tierra/
+// bosque) por: header religioso opcional, nombre en 2 lineas mayusculas,
+// subtitulo fijo, y bloque Homenaje/Exequias | Despedida/Destino Final.
+function renderThemedServiceV2(m, theme) {
+  var isReligious = !!m.isReligious;
+  var lines = nameTwoLines(m.name);
+
+  var relig = isReligious
+    ? '<div class="t-v2-relig">Descansa en la paz del se&ntilde;or</div>'
+    : '';
+
+  var exqTime = timeOnly12h(m.exequiasDatetime);
+  var destTime = timeOnly12h(m.finalDestinationDatetime);
+  var homenaje = formatDateLong(m.scheduleStart) || 'Por confirmar';
+  var despedida = formatDateLong(m.scheduleEnd) || 'Por confirmar';
+  var exequias = escapeHtml(m.exequiasVenue || 'Por confirmar') + (exqTime ? ' ' + exqTime : '');
+  var destino = escapeHtml(m.finalDestinationVenue || 'Por confirmar') + (destTime ? ' ' + destTime : '');
+
+  return '<div class="t-v2-wrap"><table style="width:100%;height:100%;border-collapse:collapse;"><tr><td style="vertical-align:middle;">' +
+    relig +
+    '<div class="t-v2-name-line" id="tV2Name1">' + escapeHtml(lines[0]) + '</div>' +
+    (lines[1] ? '<div class="t-v2-name-line" id="tV2Name2">' + escapeHtml(lines[1]) + '</div>' : '') +
+    '<div class="t-v2-sub">Cada vida deja una huella &uacute;nica.<br>' +
+      'Gracias por acompa&ntilde;arnos a honrar, recordar y agradecer su historia.</div>' +
+    '<table class="t-v2-grid"><tr>' +
+      '<td class="t-v2-col">' +
+        '<div class="t-v2-row"><span class="t-v2-lbl">Homenaje:</span> <span class="t-v2-val">' + escapeHtml(homenaje) + '</span></div>' +
+        '<div class="t-v2-row"><span class="t-v2-lbl">Exequias:</span> <span class="t-v2-val">' + exequias + '</span></div>' +
+      '</td>' +
+      '<td class="t-v2-col">' +
+        '<div class="t-v2-row"><span class="t-v2-lbl">Despedida:</span> <span class="t-v2-val">' + escapeHtml(despedida) + '</span></div>' +
+        '<div class="t-v2-row"><span class="t-v2-lbl">Destino Final:</span> <span class="t-v2-val">' + destino + '</span></div>' +
+      '</td>' +
+    '</tr></table>' +
+  '</td></tr></table></div>';
 }
 
 // =========== Pantalla 1 tematica: servicio ===========
@@ -1324,15 +1479,25 @@ function renderThemedEmotional(m, theme) {
   var photo = m.photoUrl || '';
   var photoStyle = photo ? ' style="background-image:url(\'' + escapeHtml(photo) + '\');"' : '';
 
-  // 'nubes' usa una tarjeta unica centrada (foto+etiqueta+nombre+anos+mensaje
-  // en una sola columna) en vez del layout de dos columnas de los otros temas.
+  // Temas con emotionalLayout:'centered' (naturaleza, nubes, nino, nina,
+  // adulto) usan una tarjeta unica centrada (foto+etiqueta+nombre+anos+
+  // mensaje en una sola columna) en vez del layout de dos columnas de los
+  // otros temas. El mensaje de la caja es copy fijo de la guia FINAL slides
+  // (no el emotionalMessage/biografia que escribe la familia, que en estos
+  // temas no se muestra en pantalla); la caja usa el color de acento del
+  // tema al 65% de transparencia.
   if (theme.emotionalLayout === 'centered') {
+    var boxBg = theme.msgBoxColor ? hexToRgba(theme.msgBoxColor, 0.65) : 'rgba(255,255,255,0.55)';
+    var boxBorder = theme.msgBoxBorder || 'rgba(255,255,255,0.7)';
     return '<div class="t-card2">' +
       '<div class="t-card2-photo"' + photoStyle + '></div>' +
       '<div class="t-card2-eyebrow">En memoria de</div>' +
       '<div class="t-card2-name">' + escapeHtml(m.name) + '</div>' +
-      '<div class="t-card2-years">' + escapeHtml(m.birthYear || '') + ' &mdash; ' + escapeHtml(m.deathYear || '') + '</div>' +
-      '<div class="t-card2-msg" id="tFitMsg">' + escapeHtml(m.emotionalMessage || '') + '</div>' +
+      '<div class="t-card2-years">' + yearsHtml(m) + '</div>' +
+      '<div class="t-card2-msg" id="tFitMsg" style="background:' + boxBg + ';border-color:' + boxBorder + ';">' +
+      'Hay seres que no se van, solo se transforman en luz para guiarnos. ' +
+      'Con el coraz&oacute;n roto, pero agradecidos por cada segundo compartido, ' +
+      'su amor ser&aacute; nuestro refugio eterno.</div>' +
       '</div>';
   }
 
@@ -1412,22 +1577,23 @@ function renderThemedMessages(m, theme, condolences, totalCount, page, totalPage
 
 // =========== Pantalla 4 tematica: QR ===========
 function renderThemedQr(m, theme, qrSvg) {
-  // 'nubes' agrupa eyebrow+QR+nombre+anios en la columna izquierda (igual que
-  // el mockup aprobado por el cliente) y deja el mensaje SOLO en la derecha,
-  // lo que permite centrarlo; se quita el rotulo "Escanea el codigo QR" (queda
-  // redundante: el propio mensaje ya invita a escanear). Los demas temas
-  // conservan el layout de siempre (sin tocar).
+  // Temas con emotionalLayout:'centered' (naturaleza, nubes, nino, nina,
+  // adulto) agrupan eyebrow+QR+nombre+anios en la columna izquierda y dejan
+  // el mensaje SOLO en la derecha, lo que permite centrarlo; se quita el
+  // rotulo "Escanea el codigo QR" (redundante: el mensaje ya invita a
+  // escanear). Titulo y texto son los definitivos de la guia FINAL slides.
+  // Los demas temas conservan el layout/copy de siempre (sin tocar).
   if (theme.emotionalLayout === 'centered') {
     return '<table class="layout-table"><tr>' +
       '<td class="t-col-l">' +
-        '<div class="t-eyebrow" style="font-size:40px;margin-bottom:14px;">En memoria de</div>' +
+        '<div class="t-eyebrow" style="font-size:40px;margin-bottom:14px;">Hazte presente</div>' +
         '<div class="qr-box2">' + (qrSvg || '') + '</div>' +
         '<div class="t-name2" style="margin-top:20px;">' + escapeHtml(m.name) + '</div>' +
-        '<div class="t-years">' + escapeHtml(m.birthYear || '') + ' &mdash; ' + escapeHtml(m.deathYear || '') + '</div>' +
+        '<div class="t-years">' + yearsHtml(m) + '</div>' +
       '</td>' +
       '<td class="t-qr-r-centered">' +
-        '<div class="t-qrtext" id="tQrMsg" style="margin-top:0;">Tu presencia y tus recuerdos mantienen viva su memoria. ' +
-        'Escanea este c&oacute;digo para compartir tus palabras y fotos con la familia.</div>' +
+        '<div class="t-qrtext" id="tQrMsg" style="margin-top:0;">Brinda un mensaje que proviene desde todo el amor ' +
+        'que hay al recordar con el coraz&oacute;n.</div>' +
       '</td>' +
       '</tr></table>';
   }
@@ -1550,17 +1716,26 @@ function renderThemed(opts, theme) {
   var body;
   var fits = [];
   if (cyc.screen === 1) {
-    body = renderThemedService(m, theme);
-    // Auto-ajuste: nombre gigante (ancho), area del mensaje (caja: ancho+alto)
-    // y las 4 lineas de datos del servicio (ancho, sin partir linea).
-    fits = [
-      ['tName', theme.nameSize1, 80, 6, 'w'],
-      ['tIntro', 54, 28, 2, 'b'],
-      ['tSvc1', 46, 26, 2, 'w'],
-      ['tSvc2', 46, 26, 2, 'w'],
-      ['tSvc3', 46, 26, 2, 'w'],
-      ['tSvc4', 46, 26, 2, 'w']
-    ];
+    if (theme.serviceLayout === 'v2') {
+      body = renderThemedServiceV2(m, theme);
+      // Auto-ajuste: cada linea del nombre (ancho, sin partir linea).
+      fits = [
+        ['tV2Name1', 112, 60, 4, 'w'],
+        ['tV2Name2', 112, 60, 4, 'w']
+      ];
+    } else {
+      body = renderThemedService(m, theme);
+      // Auto-ajuste: nombre gigante (ancho), area del mensaje (caja: ancho+alto)
+      // y las 4 lineas de datos del servicio (ancho, sin partir linea).
+      fits = [
+        ['tName', theme.nameSize1, 80, 6, 'w'],
+        ['tIntro', 54, 28, 2, 'b'],
+        ['tSvc1', 46, 26, 2, 'w'],
+        ['tSvc2', 46, 26, 2, 'w'],
+        ['tSvc3', 46, 26, 2, 'w'],
+        ['tSvc4', 46, 26, 2, 'w']
+      ];
+    }
   } else if (cyc.screen === 2) {
     body = renderThemedEmotional(m, theme);
     fits = [['tFitMsg', 72, 40, 4, 'h']];

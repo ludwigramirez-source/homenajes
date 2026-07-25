@@ -1,7 +1,7 @@
 const db = require('../config/database');
 
 // Plantillas visuales validas para el display (misma whitelist que el view).
-const VALID_TEMPLATE_IDS = ['default', 'nino', 'nina', 'agua', 'aire', 'fuego', 'tierra', 'bosque', 'nubes'];
+const VALID_TEMPLATE_IDS = ['default', 'nino', 'nina', 'agua', 'aire', 'fuego', 'tierra', 'bosque', 'nubes', 'naturaleza', 'adulto'];
 
 const getAll = async (req, res, next) => {
   try {
@@ -109,7 +109,7 @@ const create = async (req, res, next) => {
       final_destination_venue_id, final_destination_datetime,
       daily_hours_start, daily_hours_end,
       family_contact_name, family_contact_phone, family_contact_email, billing_address,
-      deceased_document_id, family_contact_document_id
+      deceased_document_id, family_contact_document_id, is_religious
     } = req.body;
 
     if (!room_id || !deceased_name || !emotional_message || !schedule_start || !schedule_end) {
@@ -135,11 +135,11 @@ const create = async (req, res, next) => {
         final_destination_venue_id, final_destination_datetime,
         daily_hours_start, daily_hours_end,
         family_contact_name, family_contact_phone, family_contact_email, billing_address,
-        deceased_document_id, family_contact_document_id
+        deceased_document_id, family_contact_document_id, is_religious
       )
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, true, $11, $12, $13, $14, $15,
               COALESCE($16::time, '08:00'::time), COALESCE($17::time, '23:00'::time),
-              $18, $19, $20, $21, $22, $23)
+              $18, $19, $20, $21, $22, $23, $24)
       RETURNING *
     `, [
       room_id, deceased_name, birth_year, death_year, photo_url,
@@ -156,7 +156,8 @@ const create = async (req, res, next) => {
       family_contact_email || null,
       billing_address || null,
       deceased_document_id || null,
-      family_contact_document_id || null
+      family_contact_document_id || null,
+      !!is_religious
     ]);
 
     res.status(201).json({ success: true, data: result.rows[0] });
@@ -175,7 +176,7 @@ const update = async (req, res, next) => {
       final_destination_venue_id, final_destination_datetime,
       daily_hours_start, daily_hours_end,
       family_contact_name, family_contact_phone, family_contact_email, billing_address,
-      deceased_document_id, family_contact_document_id
+      deceased_document_id, family_contact_document_id, is_religious
     } = req.body;
 
     if (template_id !== undefined && template_id !== null &&
@@ -209,8 +210,9 @@ const update = async (req, res, next) => {
           family_contact_email = COALESCE($19, family_contact_email),
           billing_address = COALESCE($20, billing_address),
           deceased_document_id = COALESCE($21, deceased_document_id),
-          family_contact_document_id = COALESCE($22, family_contact_document_id)
-      WHERE id = $23
+          family_contact_document_id = COALESCE($22, family_contact_document_id),
+          is_religious = COALESCE($23, is_religious)
+      WHERE id = $24
       RETURNING *
     `, [
       deceased_name, birth_year, death_year, photo_url,
@@ -221,6 +223,7 @@ const update = async (req, res, next) => {
       daily_hours_start, daily_hours_end,
       family_contact_name, family_contact_phone, family_contact_email, billing_address,
       deceased_document_id, family_contact_document_id,
+      (is_religious === undefined ? null : !!is_religious),
       id
     ]);
 

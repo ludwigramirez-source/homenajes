@@ -47,7 +47,8 @@ export const THEMES = {
       radial-gradient(ellipse at 75% 35%, rgba(245,250,252,0.7), rgba(245,250,252,0) 55%),
       linear-gradient(135deg, #a7cadd 0%, #cfe4ee 30%, #eef5f8 55%, #bcd8e6 80%, #a3c5d8 100%)`,
     light: true,
-    accent: '#3f7092',
+    // Paleta actualizada segun la guia FINAL slides (primario/acento #182939).
+    accent: '#182939',
     accentText: '#ffffff'
   }),
 
@@ -57,7 +58,29 @@ export const THEMES = {
       radial-gradient(ellipse at 70% 30%, rgba(245,228,228,0.8), rgba(245,228,228,0) 55%),
       linear-gradient(135deg, #ead7d6 0%, #f2e6e0 35%, #ecd9d6 70%, #ddc4c4 100%)`,
     light: true,
-    accent: '#96626a',
+    // Color verificado por muestreo de pixel sobre el PDF de la guia: #511633
+    // (no #182939, que era un error de copiar/pegar en las anotaciones).
+    accent: '#511633',
+    accentText: '#ffffff'
+  }),
+
+  naturaleza: buildTheme({
+    background: `
+      radial-gradient(ellipse at 50% 30%, rgba(200,225,190,0.35), rgba(200,225,190,0) 50%),
+      radial-gradient(ellipse at 70% 75%, rgba(30,50,35,0.5), rgba(30,50,35,0) 55%),
+      linear-gradient(170deg, #4a6b52 0%, #3c5c46 30%, #2e4a38 60%, #1f3a2c 100%)`,
+    light: false,
+    accent: '#3c5c46',
+    accentText: '#ffffff'
+  }),
+
+  adulto: buildTheme({
+    background: `
+      radial-gradient(ellipse at 40% 40%, rgba(255,250,240,0.85), rgba(255,250,240,0) 50%),
+      radial-gradient(ellipse at 75% 70%, rgba(140,110,80,0.4), rgba(140,110,80,0) 55%),
+      linear-gradient(150deg, #c9b899 0%, #ddd0b5 30%, #f0e8d8 55%, #cbb896 80%, #9c8a6e 100%)`,
+    light: true,
+    accent: '#382b22',
     accentText: '#ffffff'
   }),
 
@@ -122,8 +145,8 @@ export const THEMES = {
       radial-gradient(ellipse at 72% 30%, rgba(235,244,250,0.75), rgba(235,244,250,0) 55%),
       linear-gradient(150deg, #b7d3e6 0%, #d6e8f2 30%, #eef6fa 55%, #c9dfec 80%, #a9c9dd 100%)`,
     light: true,
-    // #3c5a6e sobre blanco da ~7.3:1, cumple AA (>=4.5:1) sin ajuste.
-    accent: '#3c5a6e',
+    // Paleta actualizada segun la guia FINAL slides (primario/acento #182939).
+    accent: '#182939',
     accentText: '#ffffff'
   })
 };

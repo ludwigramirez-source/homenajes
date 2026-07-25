@@ -1,29 +1,24 @@
 import React from 'react';
 import Icon from '../../../components/AppIcon';
+import { Checkbox } from '../../../components/ui/Checkbox';
 import { cn } from '../../../utils/cn';
 
 // Selector visual de plantilla del homenaje. La plantilla (template_id)
 // define el ambiente visual del display en sala y del formulario QR de
 // condolencias. Las miniaturas viven en frontend/public/templates/.
+// Linea vigente segun la guia de diseno de Los Olivos (fondos "4 elementos"
+// agua/aire/fuego/tierra/bosque retirados del selector; siguen funcionando
+// para homenajes activos ya creados con ellos, solo no se ofrecen aqui).
 const TEMPLATE_GROUPS = [
   {
-    id: 'infantil',
-    label: 'Infantil',
+    id: 'plantillas',
+    label: 'Plantillas',
     templates: [
+      { id: 'naturaleza', label: 'Naturaleza' },
+      { id: 'nubes', label: 'Nubes' },
       { id: 'nino', label: 'Niño' },
-      { id: 'nina', label: 'Niña' }
-    ]
-  },
-  {
-    id: 'adulto',
-    label: 'Adulto',
-    templates: [
-      { id: 'agua', label: 'Agua' },
-      { id: 'aire', label: 'Aire' },
-      { id: 'fuego', label: 'Fuego' },
-      { id: 'tierra', label: 'Tierra' },
-      { id: 'bosque', label: 'Bosque' },
-      { id: 'nubes', label: 'Nubes' }
+      { id: 'nina', label: 'Niña' },
+      { id: 'adulto', label: 'Adulto' }
     ]
   }
 ];
@@ -141,6 +136,15 @@ const TemplatePickerForm = ({ formData, errors, updateFormData }) => {
           </div>
         </div>
       ))}
+
+      <div className="pt-2 border-t border-border">
+        <Checkbox
+          label="Versión religiosa (católica)"
+          description={'Agrega la leyenda "Descansa en la paz del Señor" en la pantalla de portada y reemplaza el guion entre los años por una cruz (ej. 1995 ✝ 2026).'}
+          checked={!!formData?.isReligious}
+          onChange={(e) => updateFormData('isReligious', e?.target?.checked)}
+        />
+      </div>
     </div>
   );
 };

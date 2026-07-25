@@ -168,6 +168,15 @@ const createTables = async () => {
     `);
     console.log('[MIGRATE] Columnas documento de identidad agregadas a "memorials"');
 
+    // ========== ALTER: memorials: variante religiosa de la plantilla ==========
+    // Un solo checkbox por homenaje: agrega "Descansa en la paz del senor"
+    // (slide 1) y el simbolo de cruz entre anios (slides 2 y 3) en vez del guion.
+    await client.query(`
+      ALTER TABLE memorials
+        ADD COLUMN IF NOT EXISTS is_religious BOOLEAN DEFAULT false
+    `);
+    console.log('[MIGRATE] Columna is_religious agregada a "memorials"');
+
     // ========== TABLA: condolences (Condolencias) ==========
     await client.query(`
       CREATE TABLE IF NOT EXISTS condolences (

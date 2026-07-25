@@ -20,8 +20,14 @@ const BOOKS_STORAGE_DIR = process.env.BOOKS_STORAGE_DIR || path.join(__dirname, 
 // parte del mismo homenaje. id desconocido -> 'default'.
 const TEMPLATE_COLORS = {
   default: { accent: '#f0c040', base: '#1a7472' },
-  nino: { accent: '#3f7092', base: '#1a7472' },
-  nina: { accent: '#96626a', base: '#1a7472' },
+  // Paleta actualizada segun la guia FINAL slides.
+  nino: { accent: '#182939', base: '#1a7472' },
+  nina: { accent: '#511633', base: '#1a7472' },
+  nubes: { accent: '#182939', base: '#1a7472' },
+  naturaleza: { accent: '#3c5c46', base: '#1a7472' },
+  adulto: { accent: '#382b22', base: '#1a7472' },
+  // Fondos "4 elementos" retirados del selector; se mantienen aqui por
+  // compatibilidad con homenajes activos ya creados con ellos.
   agua: { accent: '#2c7d96', base: '#1a7472' },
   aire: { accent: '#3a6b8c', base: '#1a7472' },
   fuego: { accent: '#b05e22', base: '#1a7472' },
