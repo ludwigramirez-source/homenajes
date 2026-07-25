@@ -20,19 +20,14 @@ const BOOKS_STORAGE_DIR = process.env.BOOKS_STORAGE_DIR || path.join(__dirname, 
 // parte del mismo homenaje. id desconocido -> 'default'.
 const TEMPLATE_COLORS = {
   default: { accent: '#f0c040', base: '#1a7472' },
-  // Paleta actualizada segun la guia FINAL slides.
+  // Paleta segun la guia FINAL slides. Los fondos "4 elementos" (agua/aire/
+  // fuego/tierra/bosque) se retiraron por completo: ya no hay homenajes
+  // activos usandolos.
   nino: { accent: '#182939', base: '#1a7472' },
   nina: { accent: '#511633', base: '#1a7472' },
   nubes: { accent: '#182939', base: '#1a7472' },
   naturaleza: { accent: '#3c5c46', base: '#1a7472' },
-  adulto: { accent: '#382b22', base: '#1a7472' },
-  // Fondos "4 elementos" retirados del selector; se mantienen aqui por
-  // compatibilidad con homenajes activos ya creados con ellos.
-  agua: { accent: '#2c7d96', base: '#1a7472' },
-  aire: { accent: '#3a6b8c', base: '#1a7472' },
-  fuego: { accent: '#b05e22', base: '#1a7472' },
-  tierra: { accent: '#7a6a35', base: '#1a7472' },
-  bosque: { accent: '#5f4824', base: '#1a7472' }
+  adulto: { accent: '#382b22', base: '#1a7472' }
 };
 
 function getTemplateColors(templateId) {

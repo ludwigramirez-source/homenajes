@@ -4,18 +4,18 @@
 // Layout con <table> + vertical-align. CSS con float donde corresponda.
 //
 // PLANTILLAS: ademas del diseno teal original ('default'), este modulo soporta
-// 10 plantillas tematicas definidas en el objeto TEMPLATES. Cualquier
+// 5 plantillas tematicas definidas en el objeto TEMPLATES (naturaleza, nubes,
+// nino, nina, adulto), segun la "Guia FINAL slides" de Los Olivos. Cualquier
 // template_id desconocido cae al camino legacy para no romper homenajes
-// existentes.
-// - agua, aire, fuego, tierra, bosque: disenos "4 elementos" RETIRADOS del
-//   selector de plantillas (ya no cumplen el manual de marca), pero el codigo
-//   se mantiene intacto para no romper homenajes activos ya creados con ellos.
-// - naturaleza, nubes, nino, nina, adulto: linea vigente ("Guia FINAL slides"),
-//   con fondo fotografico (bgPhoto, logo Los Olivos ya incluido en el arte),
-//   layout de servicio V2 (serviceLayout:'v2') y tarjeta centrada en pantallas
-//   2/3 (emotionalLayout:'centered'). Cada una admite variante religiosa
-//   (memorial.isReligious): agrega "Descansa en la paz del senor" en la
-//   pantalla 1 y una cruz (en vez de guion) entre los anios.
+// existentes. Los disenos "4 elementos" previos (agua/aire/fuego/tierra/
+// bosque) se retiraron por completo del codigo: no cumplian el manual de
+// marca y no quedaban homenajes activos usandolos.
+// Las 5 plantillas vigentes comparten: fondo fotografico (bgPhoto, logo Los
+// Olivos ya incluido en el arte, ver hideLogo), layout de servicio V2
+// (serviceLayout:'v2') y tarjeta centrada en pantallas 2/3
+// (emotionalLayout:'centered'). Cada una admite variante religiosa
+// (memorial.isReligious): agrega "Descansa en la paz del senor" en la
+// pantalla 1 y una cruz (en vez de guion) entre los anios.
 //
 // COMPATIBILIDAD del HTML emitido (TVs LG WebKit pre-2015):
 // - JS solo ES5 (var, function, concatenacion).
@@ -498,32 +498,12 @@ function renderEmptyRoom(message) {
 // ====================================================================
 
 // Whitelist compartida con los controllers (validacion de template_id).
-var TEMPLATE_IDS = ['default', 'nino', 'nina', 'agua', 'aire', 'fuego', 'tierra', 'bosque', 'nubes', 'naturaleza', 'adulto'];
+var TEMPLATE_IDS = ['default', 'nino', 'nina', 'nubes', 'naturaleza', 'adulto'];
 
 // --- Helpers de CSS animado compatible (duplica @keyframes con prefijo) ---
 function kfDual(name, frames) {
   return '@-webkit-keyframes ' + name + ' { ' + frames + ' }\n' +
          '@keyframes ' + name + ' { ' + frames + ' }';
-}
-
-// Destellos genericos (twinkle). color: centro del radial.
-function sparkleCss(color) {
-  return '.fx-sparkle { position:absolute; width:5px; height:5px; border-radius:50%; opacity:0; ' +
-    'background: ' + color + '; ' +
-    'background: -webkit-radial-gradient(center, circle, ' + color + ', rgba(255,255,255,0)); ' +
-    'background: radial-gradient(circle, ' + color + ', rgba(255,255,255,0)); ' +
-    '-webkit-animation: fxTwinkle 7s ease-in-out infinite; animation: fxTwinkle 7s ease-in-out infinite; }\n' +
-    kfDual('fxTwinkle',
-      '0%,100% { opacity:0; -webkit-transform:scale(0.5); transform:scale(0.5); } ' +
-      '50% { opacity:0.8; -webkit-transform:scale(1); transform:scale(1); }');
-}
-
-function sparkleJs(count) {
-  return 'fxSpawn("fx-sparkle", ' + count + ', function (d) {' +
-    'd.style.left = (Math.random() * 100) + "%";' +
-    'd.style.top = (Math.random() * 100) + "%";' +
-    'fxAnim(d, 5 + Math.random() * 4, -Math.random() * 8);' +
-    '});';
 }
 
 // Helpers ES5 emitidos una sola vez por pagina para generar particulas.
@@ -545,370 +525,12 @@ var FX_HELPERS_JS =
     'el.style.animationDelay = delay + "s";' +
   '}';
 
-// Hojas cayendo (compartido por tierra y bosque; cambian los colores en el JS).
-var LEAF_FX_CSS =
-  '.fx-leaf { position:absolute; top:-60px; width:22px; height:18px; opacity:0; ' +
-  '-webkit-animation: fxLeafFall 32s linear infinite; animation: fxLeafFall 32s linear infinite; }\n' +
-  '.fx-leaf svg { width:100%; height:100%; display:block; }\n' +
-  kfDual('fxLeafFall',
-    '0% { -webkit-transform:translate(0,0) rotate(0deg); transform:translate(0,0) rotate(0deg); opacity:0; } ' +
-    '8% { opacity:0.9; } 92% { opacity:0.85; } ' +
-    '100% { -webkit-transform:translate(-90px,1250px) rotate(380deg); transform:translate(-90px,1250px) rotate(380deg); opacity:0.1; }');
-
-// Funcion emitida que genera el SVG de una hoja (colores por parametro).
-var FX_LEAF_FN =
-  "function fxLeafSvg(c) {" +
-  " return '<svg viewBox=\"0 0 40 32\" xmlns=\"http://www.w3.org/2000/svg\">' +" +
-  " '<path d=\"M2 16 C 12 2, 30 2, 38 16 C 30 30, 12 30, 2 16 Z\" fill=\"' + c[0] + '\" stroke=\"' + c[1] + '\" stroke-width=\"1\"/>' +" +
-  " '<path d=\"M5 16 L 35 16\" stroke=\"' + c[1] + '\" stroke-width=\"1\" fill=\"none\"/>' +" +
-  " '</svg>';" +
-  "}";
-
-function leafJs(count, colorsLiteral) {
-  return 'var fxLeafCols = ' + colorsLiteral + ';' +
-    FX_LEAF_FN +
-    'fxSpawn("fx-leaf", ' + count + ', function (d, i) {' +
-    'd.innerHTML = fxLeafSvg(fxLeafCols[i % fxLeafCols.length]);' +
-    'd.style.left = (Math.random() * 100) + "%";' +
-    'var s = 14 + Math.random() * 14;' +
-    'd.style.width = s + "px"; d.style.height = (s * 0.8) + "px";' +
-    'fxAnim(d, 26 + Math.random() * 16, -Math.random() * 40);' +
-    '});';
-}
-
-// --- SVG estaticos generados en Node (una vez por proceso) ---
-
-// Diente de leon: tallo + corona radial de semillas. partial=true deja un
-// hueco (semillas que ya volaron), como en la escena de referencia.
-function buildDandelionSvg(stemPath, cx, cy, count, radius, partial) {
-  var lines = '';
-  for (var i = 0; i < count; i++) {
-    var ang = (i / count) * Math.PI * 2;
-    if (partial && ang > 5.9) continue;
-    if (partial && ang < 1.4) continue;
-    var len = radius * (0.85 + Math.random() * 0.3);
-    var x2 = Math.round((cx + Math.cos(ang) * len) * 10) / 10;
-    var y2 = Math.round((cy + Math.sin(ang) * len) * 10) / 10;
-    lines += '<line x1="' + cx + '" y1="' + cy + '" x2="' + x2 + '" y2="' + y2 + '"/>' +
-             '<circle cx="' + x2 + '" cy="' + y2 + '" r="2.2" fill="#cdd9e0" stroke="none"/>';
-  }
-  return '<svg viewBox="0 0 200 520" xmlns="http://www.w3.org/2000/svg">' +
-    '<path d="' + stemPath + '" stroke="#6f8a99" stroke-width="3" fill="none" stroke-linecap="round"/>' +
-    '<g stroke="#7c97a6" stroke-width="1.3">' + lines + '</g>' +
-    '<circle cx="' + cx + '" cy="' + cy + '" r="3" fill="#6f8a99"/>' +
-    '</svg>';
-}
-
-var DANDELION_SVG_A = buildDandelionSvg('M100 520 C 88 400, 96 300, 100 212', 100, 208, 34, 34, false);
-var DANDELION_SVG_B = buildDandelionSvg('M100 520 C 92 410, 100 320, 104 246', 104, 242, 30, 30, true);
-
-// Rama de cerezo de nina.html (estatica; el "bloom" animado del original usa
-// transform-box sobre <g>, no fiable en WebKit antiguo, se omite).
-var NINA_BRANCH_SVG =
-  '<svg viewBox="0 0 400 800" xmlns="http://www.w3.org/2000/svg">' +
-  '<g stroke="#9a7d72" fill="none" stroke-linecap="round">' +
-  '<path d="M400 40 C 320 120, 300 240, 250 380 C 220 470, 210 560, 240 700" stroke-width="7"/>' +
-  '<path d="M300 200 C 240 250, 210 330, 180 430" stroke-width="5"/>' +
-  '<path d="M260 360 C 210 400, 190 470, 175 560" stroke-width="5"/>' +
-  '<path d="M330 300 C 300 380, 300 470, 320 600" stroke-width="5"/>' +
-  '<path d="M250 380 C 300 420, 340 470, 360 560" stroke-width="4"/>' +
-  '</g>' +
-  '<g fill="#f3b9c6" stroke="#e89bb0" stroke-width="1">' +
-  '<g><circle cx="250" cy="380" r="9"/><circle cx="262" cy="372" r="7"/>' +
-  '<circle cx="240" cy="372" r="7"/><circle cx="256" cy="392" r="7"/>' +
-  '<circle cx="244" cy="392" r="7"/><circle cx="251" cy="380" r="3" fill="#fff5d6"/></g>' +
-  '<g><circle cx="180" cy="430" r="8"/><circle cx="191" cy="423" r="6"/>' +
-  '<circle cx="170" cy="423" r="6"/><circle cx="186" cy="441" r="6"/>' +
-  '<circle cx="174" cy="441" r="6"/></g>' +
-  '<g><circle cx="320" cy="500" r="9"/><circle cx="332" cy="492" r="7"/>' +
-  '<circle cx="308" cy="492" r="7"/><circle cx="326" cy="513" r="7"/>' +
-  '<circle cx="314" cy="513" r="7"/><circle cx="321" cy="500" r="3" fill="#fff5d6"/></g>' +
-  '<g><circle cx="175" cy="560" r="8"/><circle cx="186" cy="553" r="6"/>' +
-  '<circle cx="165" cy="553" r="6"/><circle cx="181" cy="571" r="6"/>' +
-  '<circle cx="169" cy="571" r="6"/></g>' +
-  '<g><circle cx="360" cy="560" r="8"/><circle cx="371" cy="553" r="6"/>' +
-  '<circle cx="350" cy="553" r="6"/><circle cx="366" cy="571" r="6"/>' +
-  '<circle cx="354" cy="571" r="6"/></g>' +
-  '<g><circle cx="300" cy="180" r="8"/><circle cx="311" cy="173" r="6"/>' +
-  '<circle cx="290" cy="173" r="6"/><circle cx="306" cy="191" r="6"/>' +
-  '<circle cx="294" cy="191" r="6"/></g>' +
-  '</g></svg>';
-
-// Mariposa: un solo SVG; el aleteo se hace con scaleX sobre el contenedor
-// (rotateY no es confiable en WebKit antiguo).
-function butterflySvg(fill) {
-  return '<svg viewBox="0 0 120 100" xmlns="http://www.w3.org/2000/svg">' +
-    '<path d="M60 50 C 10 0, 0 60, 55 60 C 40 80, 50 95, 60 70 Z" fill="' + fill + '" stroke="#b98e92" stroke-width="1.5"/>' +
-    '<path d="M60 50 C 110 0, 120 60, 65 60 C 80 80, 70 95, 60 70 Z" fill="' + fill + '" stroke="#b98e92" stroke-width="1.5"/>' +
-    '<line x1="60" y1="40" x2="60" y2="78" stroke="#9a7d72" stroke-width="2"/>' +
-    '</svg>';
-}
-
-// --- CSS y JS de particulas por tema ---
-
-var AGUA_FX_CSS =
-  '.fx-bubble { position:absolute; bottom:-60px; border-radius:50%; ' +
-  'border:1px solid rgba(255,255,255,0.4); opacity:0; ' +
-  'background: rgba(255,255,255,0.35); ' +
-  'background: -webkit-radial-gradient(35% 30%, circle, rgba(255,255,255,0.9), rgba(255,255,255,0.15) 55%, rgba(255,255,255,0.05) 100%); ' +
-  'background: radial-gradient(circle at 35% 30%, rgba(255,255,255,0.9), rgba(255,255,255,0.15) 55%, rgba(255,255,255,0.05) 100%); ' +
-  '-webkit-animation: fxRise 18s linear infinite; animation: fxRise 18s linear infinite; }\n' +
-  kfDual('fxRise',
-    '0% { -webkit-transform:translate(0,0); transform:translate(0,0); opacity:0; } ' +
-    '10% { opacity:0.85; } 85% { opacity:0.7; } ' +
-    '100% { -webkit-transform:translate(40px,-1250px); transform:translate(40px,-1250px); opacity:0; }') + '\n' +
-  sparkleCss('#ffffff');
-
-var AGUA_FX_JS =
-  'fxSpawn("fx-bubble", 16, function (d) {' +
-  'var s = 6 + Math.random() * 20;' +
-  'd.style.width = s + "px"; d.style.height = s + "px";' +
-  'd.style.left = (Math.random() * 100) + "%";' +
-  'fxAnim(d, 14 + Math.random() * 12, -Math.random() * 24);' +
-  '});' +
-  sparkleJs(12);
-
-var AIRE_FX_CSS =
-  '.fx-cloud { position:absolute; left:-640px; opacity:0; ' +
-  '-webkit-animation: fxCross 60s linear infinite; animation: fxCross 60s linear infinite; }\n' +
-  kfDual('fxCross',
-    '0% { -webkit-transform:translateX(0); transform:translateX(0); opacity:0; } ' +
-    '12% { opacity:0.8; } 88% { opacity:0.8; } ' +
-    '100% { -webkit-transform:translateX(2750px); transform:translateX(2750px); opacity:0; }') + '\n' +
-  '.fx-feather { position:absolute; top:-80px; width:30px; height:48px; opacity:0; ' +
-  '-webkit-animation: fxFeatherFall 30s linear infinite; animation: fxFeatherFall 30s linear infinite; }\n' +
-  '.fx-feather svg { width:100%; height:100%; display:block; }\n' +
-  kfDual('fxFeatherFall',
-    '0% { -webkit-transform:translate(0,0) rotate(-10deg); transform:translate(0,0) rotate(-10deg); opacity:0; } ' +
-    '10% { opacity:0.9; } 90% { opacity:0.85; } ' +
-    '100% { -webkit-transform:translate(140px,1250px) rotate(40deg); transform:translate(140px,1250px) rotate(40deg); opacity:0.1; }') + '\n' +
-  '.fx-gust { position:absolute; height:2px; border-radius:2px; opacity:0; ' +
-  'background: rgba(255,255,255,0.6); ' +
-  'background: -webkit-linear-gradient(left, rgba(255,255,255,0), rgba(255,255,255,0.8), rgba(255,255,255,0)); ' +
-  'background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,0.8), rgba(255,255,255,0)); ' +
-  '-webkit-animation: fxGust 16s linear infinite; animation: fxGust 16s linear infinite; }\n' +
-  kfDual('fxGust',
-    '0% { -webkit-transform:translateX(-420px) scaleX(0.6); transform:translateX(-420px) scaleX(0.6); opacity:0; } ' +
-    '30% { opacity:0.7; } 70% { opacity:0.7; } ' +
-    '100% { -webkit-transform:translateX(1300px) scaleX(1.2); transform:translateX(1300px) scaleX(1.2); opacity:0; }');
-
-var FX_CLOUD_FN =
-  "function fxCloudSvg(w) {" +
-  " return '<svg width=\"' + Math.round(w) + '\" height=\"' + Math.round(w * 0.5) + '\" viewBox=\"0 0 200 100\" xmlns=\"http://www.w3.org/2000/svg\">' +" +
-  " '<g fill=\"#ffffff\" opacity=\"0.85\">' +" +
-  " '<ellipse cx=\"60\" cy=\"65\" rx=\"55\" ry=\"30\"/><ellipse cx=\"110\" cy=\"55\" rx=\"50\" ry=\"35\"/>' +" +
-  " '<ellipse cx=\"150\" cy=\"68\" rx=\"45\" ry=\"26\"/><ellipse cx=\"95\" cy=\"72\" rx=\"60\" ry=\"24\"/>' +" +
-  " '</g></svg>';" +
-  "}";
-
-var FX_FEATHER_FN =
-  "function fxFeatherSvg(t) {" +
-  " return '<svg viewBox=\"0 0 40 64\" xmlns=\"http://www.w3.org/2000/svg\">' +" +
-  " '<path d=\"M20 2 C 33 18, 33 44, 22 62 C 21 50, 21 30, 20 2 Z\" fill=\"' + t + '\" stroke=\"#a9c0d2\" stroke-width=\"1\"/>' +" +
-  " '<path d=\"M20 2 C 7 18, 7 44, 18 62 C 19 50, 19 30, 20 2 Z\" fill=\"' + t + '\" stroke=\"#a9c0d2\" stroke-width=\"1\"/>' +" +
-  " '<line x1=\"20\" y1=\"4\" x2=\"20\" y2=\"60\" stroke=\"#9bb4c8\" stroke-width=\"1.4\"/>' +" +
-  " '</svg>';" +
-  "}";
-
-var AIRE_FX_JS =
-  FX_CLOUD_FN + FX_FEATHER_FN +
-  'fxSpawn("fx-cloud", 4, function (d) {' +
-  'var w = 220 + Math.random() * 200;' +
-  'd.innerHTML = fxCloudSvg(w);' +
-  'd.style.top = (5 + Math.random() * 55) + "%";' +
-  'fxAnim(d, 48 + Math.random() * 30, -Math.random() * 70);' +
-  '});' +
-  'var fxTints = ["#ffffff", "#eaf2f8", "#dcebf4"];' +
-  'fxSpawn("fx-feather", 6, function (d, i) {' +
-  'd.innerHTML = fxFeatherSvg(fxTints[i % 3]);' +
-  'd.style.left = (Math.random() * 90) + "%";' +
-  'var s = 20 + Math.random() * 14;' +
-  'd.style.width = s + "px"; d.style.height = (s * 1.6) + "px";' +
-  'fxAnim(d, 24 + Math.random() * 14, -Math.random() * 34);' +
-  '});' +
-  'fxSpawn("fx-gust", 4, function (d) {' +
-  'd.style.top = (10 + Math.random() * 75) + "%";' +
-  'd.style.left = (Math.random() * 30) + "%";' +
-  'd.style.width = (140 + Math.random() * 200) + "px";' +
-  'fxAnim(d, 15 + Math.random() * 9, -Math.random() * 20);' +
-  '});';
-
-var FUEGO_FX_CSS =
-  // Resplandor inferior pulsante: solo anima opacity (sin blur, barato en TV).
-  '.fx-glow { position:absolute; left:0; right:0; bottom:0; height:50%; opacity:0.7; ' +
-  'background: rgba(255,150,50,0.18); ' +
-  'background: -webkit-radial-gradient(50% 100%, ellipse, rgba(255,170,60,0.5), rgba(255,120,40,0.16) 45%, rgba(255,120,40,0) 70%); ' +
-  'background: radial-gradient(ellipse at 50% 100%, rgba(255,170,60,0.5), rgba(255,120,40,0.16) 45%, rgba(255,120,40,0) 70%); ' +
-  '-webkit-animation: fxPulse 7s ease-in-out infinite; animation: fxPulse 7s ease-in-out infinite; }\n' +
-  kfDual('fxPulse', '0%,100% { opacity:0.55; } 50% { opacity:0.95; }') + '\n' +
-  '.fx-ember { position:absolute; bottom:-40px; width:7px; height:7px; border-radius:50%; opacity:0; ' +
-  'background: #ff8a2e; ' +
-  'background: -webkit-radial-gradient(center, circle, #ffe7a8, #ff8a2e 60%, rgba(255,90,30,0) 100%); ' +
-  'background: radial-gradient(circle, #ffe7a8, #ff8a2e 60%, rgba(255,90,30,0) 100%); ' +
-  '-webkit-animation: fxEmberRise 20s linear infinite; animation: fxEmberRise 20s linear infinite; }\n' +
-  kfDual('fxEmberRise',
-    '0% { -webkit-transform:translate(0,0); transform:translate(0,0); opacity:0; } ' +
-    '10% { opacity:1; } 80% { opacity:0.9; } ' +
-    '100% { -webkit-transform:translate(60px,-1250px); transform:translate(60px,-1250px); opacity:0; }');
-
-var FUEGO_FX_JS =
-  'fxSpawn("fx-ember", 24, function (d) {' +
-  'var s = 4 + Math.random() * 5;' +
-  'd.style.width = s + "px"; d.style.height = s + "px";' +
-  'd.style.left = (Math.random() * 100) + "%";' +
-  'fxAnim(d, 14 + Math.random() * 12, -Math.random() * 26);' +
-  '});';
-
-var TIERRA_FX_CSS = LEAF_FX_CSS + '\n' + sparkleCss('#fff6da');
-
-var TIERRA_FX_JS =
-  leafJs(12, '[["#7d9b58","#5e7a3e"],["#a8b566","#86994a"],["#c79a4e","#a87b35"],["#9cba73","#7a9550"],["#b6884a","#946a2f"]]') +
-  sparkleJs(10);
-
-var BOSQUE_FX_CSS =
-  LEAF_FX_CSS + '\n' +
-  // Rayos de luz: linear-gradient rotado, solo anima opacity (sin blur ni
-  // mix-blend-mode; la suavidad la da el propio gradiente).
-  '.fx-ray { position:absolute; top:-20%; width:12%; height:150%; opacity:0.35; ' +
-  '-webkit-transform-origin:50% 0; transform-origin:50% 0; ' +
-  'background: rgba(255,240,190,0.2); ' +
-  'background: -webkit-linear-gradient(top, rgba(255,240,190,0.4), rgba(255,235,180,0.1) 55%, rgba(255,235,180,0) 85%); ' +
-  'background: linear-gradient(180deg, rgba(255,240,190,0.4), rgba(255,235,180,0.1) 55%, rgba(255,235,180,0) 85%); ' +
-  '-webkit-animation: fxRayPulse 10s ease-in-out infinite; animation: fxRayPulse 10s ease-in-out infinite; }\n' +
-  kfDual('fxRayPulse', '0%,100% { opacity:0.22; } 50% { opacity:0.5; }') + '\n' +
-  '.fx-bmote { position:absolute; width:6px; height:6px; border-radius:50%; opacity:0; ' +
-  'background: rgba(255,245,210,0.9); ' +
-  'background: -webkit-radial-gradient(center, circle, rgba(255,245,210,0.95), rgba(255,235,180,0) 70%); ' +
-  'background: radial-gradient(circle, rgba(255,245,210,0.95), rgba(255,235,180,0) 70%); ' +
-  '-webkit-animation: fxMoteUp 22s linear infinite; animation: fxMoteUp 22s linear infinite; }\n' +
-  kfDual('fxMoteUp',
-    '0% { -webkit-transform:translate(0,0); transform:translate(0,0); opacity:0; } ' +
-    '15% { opacity:0.9; } 85% { opacity:0.7; } ' +
-    '100% { -webkit-transform:translate(40px,-750px); transform:translate(40px,-750px); opacity:0; }');
-
-var BOSQUE_FX_HTML =
-  '<div class="fx-ray" style="left:52%; -webkit-transform:rotate(15deg); transform:rotate(15deg); -webkit-animation-duration:10s; animation-duration:10s;"></div>' +
-  '<div class="fx-ray" style="left:68%; -webkit-transform:rotate(18deg); transform:rotate(18deg); -webkit-animation-duration:13s; animation-duration:13s; -webkit-animation-delay:-4s; animation-delay:-4s;"></div>' +
-  '<div class="fx-ray" style="left:84%; -webkit-transform:rotate(21deg); transform:rotate(21deg); -webkit-animation-duration:11s; animation-duration:11s; -webkit-animation-delay:-7s; animation-delay:-7s;"></div>';
-
-var BOSQUE_FX_JS =
-  leafJs(10, '[["#c79a4e","#a87b35"],["#b6884a","#946a2f"],["#a87a3a","#865e26"],["#cf9d52","#a8782f"],["#9c7a3c","#7a5c28"]]') +
-  'fxSpawn("fx-bmote", 18, function (d) {' +
-  'd.style.left = (35 + Math.random() * 60) + "%";' +
-  'd.style.top = (15 + Math.random() * 70) + "%";' +
-  'fxAnim(d, 16 + Math.random() * 14, -Math.random() * 28);' +
-  '});';
-
-var NINO_FX_CSS =
-  // El vaiven se aplica al contenedor HTML (no al <g> del SVG) porque los
-  // transforms CSS sobre elementos SVG no son fiables en WebKit antiguo.
-  '.fx-dande { position:absolute; bottom:-10px; left:2%; width:190px; height:500px; ' +
-  '-webkit-transform-origin:50% 100%; transform-origin:50% 100%; ' +
-  '-webkit-animation: fxSway 9s ease-in-out infinite; animation: fxSway 9s ease-in-out infinite; }\n' +
-  '.fx-dande svg { width:100%; height:100%; display:block; }\n' +
-  '.fx-dande-b { left:9%; width:170px; height:460px; ' +
-  '-webkit-animation-duration:11s; animation-duration:11s; ' +
-  '-webkit-animation-delay:-2s; animation-delay:-2s; }\n' +
-  kfDual('fxSway',
-    '0%,100% { -webkit-transform:rotate(-2deg); transform:rotate(-2deg); } ' +
-    '50% { -webkit-transform:rotate(2.5deg); transform:rotate(2.5deg); }') + '\n' +
-  '.fx-seed { position:absolute; width:26px; height:26px; opacity:0; ' +
-  '-webkit-animation: fxSeedFly 22s linear infinite; animation: fxSeedFly 22s linear infinite; }\n' +
-  '.fx-seed svg { width:100%; height:100%; display:block; }\n' +
-  kfDual('fxSeedFly',
-    '0% { -webkit-transform:translate(0,0) rotate(0deg); transform:translate(0,0) rotate(0deg); opacity:0; } ' +
-    '10% { opacity:0.85; } 90% { opacity:0.7; } ' +
-    '100% { -webkit-transform:translate(1150px,-480px) rotate(220deg); transform:translate(1150px,-480px) rotate(220deg); opacity:0; }') + '\n' +
-  sparkleCss('#ffffff');
-
-var NINO_FX_HTML =
-  '<div class="fx-dande">' + DANDELION_SVG_A + '</div>' +
-  '<div class="fx-dande fx-dande-b">' + DANDELION_SVG_B + '</div>';
-
-var FX_SEED_FN =
-  "function fxSeedSvg() {" +
-  " return '<svg viewBox=\"0 0 40 40\" xmlns=\"http://www.w3.org/2000/svg\">' +" +
-  " '<g stroke=\"#6f8a99\" stroke-width=\"1\" fill=\"none\" stroke-linecap=\"round\">' +" +
-  " '<line x1=\"20\" y1=\"40\" x2=\"20\" y2=\"18\"/><line x1=\"20\" y1=\"18\" x2=\"20\" y2=\"4\"/>' +" +
-  " '<line x1=\"20\" y1=\"18\" x2=\"8\" y2=\"6\"/><line x1=\"20\" y1=\"18\" x2=\"32\" y2=\"6\"/>' +" +
-  " '<line x1=\"20\" y1=\"18\" x2=\"11\" y2=\"2\"/><line x1=\"20\" y1=\"18\" x2=\"29\" y2=\"2\"/>' +" +
-  " '<line x1=\"20\" y1=\"18\" x2=\"3\" y2=\"14\"/><line x1=\"20\" y1=\"18\" x2=\"37\" y2=\"14\"/>' +" +
-  " '</g><ellipse cx=\"20\" cy=\"38\" rx=\"1.6\" ry=\"3\" fill=\"#6f8a99\"/></svg>';" +
-  "}";
-
-var NINO_FX_JS =
-  FX_SEED_FN +
-  'fxSpawn("fx-seed", 10, function (d) {' +
-  'd.innerHTML = fxSeedSvg();' +
-  'd.style.left = (3 + Math.random() * 12) + "%";' +
-  'd.style.top = (55 + Math.random() * 30) + "%";' +
-  'var s = 14 + Math.random() * 14;' +
-  'd.style.width = s + "px"; d.style.height = s + "px";' +
-  'fxAnim(d, 18 + Math.random() * 12, -Math.random() * 28);' +
-  '});' +
-  sparkleJs(10);
-
-var NINA_FX_CSS =
-  '.fx-branch { position:absolute; right:-2%; top:-2%; width:42%; height:104%; }\n' +
-  '.fx-branch svg { width:100%; height:100%; display:block; }\n' +
-  '.fx-petal { position:absolute; top:-40px; width:18px; height:14px; opacity:0; ' +
-  'background: #f0b7c6; ' +
-  'background: -webkit-radial-gradient(30% 30%, circle, #f7c9d4, #e89bb0); ' +
-  'background: radial-gradient(circle at 30% 30%, #f7c9d4, #e89bb0); ' +
-  'border-radius: 60% 0 60% 0; ' +
-  '-webkit-animation: fxPetalFall 18s linear infinite; animation: fxPetalFall 18s linear infinite; }\n' +
-  kfDual('fxPetalFall',
-    '0% { -webkit-transform:translate(0,0) rotate(0deg); transform:translate(0,0) rotate(0deg); opacity:0; } ' +
-    '8% { opacity:0.9; } ' +
-    '100% { -webkit-transform:translate(-60px,1250px) rotate(420deg); transform:translate(-60px,1250px) rotate(420deg); opacity:0.15; }') + '\n' +
-  // Mariposas: flotan (translate en el div externo) y aletean (scaleX en el
-  // div interno; rotateY no es confiable en estas TVs).
-  '.fx-bfly { position:absolute; }\n' +
-  '.fx-flap { width:100%; height:100%; ' +
-  '-webkit-animation: fxFlap 1.6s ease-in-out infinite; animation: fxFlap 1.6s ease-in-out infinite; }\n' +
-  '.fx-flap svg { width:100%; height:100%; display:block; }\n' +
-  kfDual('fxFlap',
-    '0%,100% { -webkit-transform:scaleX(1); transform:scaleX(1); } ' +
-    '50% { -webkit-transform:scaleX(0.3); transform:scaleX(0.3); }') + '\n' +
-  '.fx-float1 { -webkit-animation: fxFloat1 18s ease-in-out infinite; animation: fxFloat1 18s ease-in-out infinite; }\n' +
-  '.fx-float2 { -webkit-animation: fxFloat2 22s ease-in-out infinite; animation: fxFloat2 22s ease-in-out infinite; }\n' +
-  '.fx-float3 { -webkit-animation: fxFloat3 16s ease-in-out infinite; animation: fxFloat3 16s ease-in-out infinite; }\n' +
-  kfDual('fxFloat1',
-    '0%,100% { -webkit-transform:translate(0,0) rotate(-4deg); transform:translate(0,0) rotate(-4deg); } ' +
-    '50% { -webkit-transform:translate(14px,-18px) rotate(4deg); transform:translate(14px,-18px) rotate(4deg); }') + '\n' +
-  kfDual('fxFloat2',
-    '0%,100% { -webkit-transform:translate(0,0) rotate(3deg); transform:translate(0,0) rotate(3deg); } ' +
-    '50% { -webkit-transform:translate(-12px,-14px) rotate(-5deg); transform:translate(-12px,-14px) rotate(-5deg); }') + '\n' +
-  kfDual('fxFloat3',
-    '0%,100% { -webkit-transform:translate(0,0) rotate(0deg); transform:translate(0,0) rotate(0deg); } ' +
-    '50% { -webkit-transform:translate(8px,-22px) rotate(6deg); transform:translate(8px,-22px) rotate(6deg); }') + '\n' +
-  sparkleCss('#ffffff');
-
-var NINA_FX_HTML =
-  '<div class="fx-branch">' + NINA_BRANCH_SVG + '</div>' +
-  '<div class="fx-bfly fx-float1" style="left:16%; top:58%; width:110px; height:92px;">' +
-  '<div class="fx-flap">' + butterflySvg('#f7d4dc') + '</div></div>' +
-  '<div class="fx-bfly fx-float2" style="left:7%; top:70%; width:90px; height:75px;">' +
-  '<div class="fx-flap" style="-webkit-animation-delay:-0.4s; animation-delay:-0.4s;">' + butterflySvg('#f5c8d2') + '</div></div>' +
-  '<div class="fx-bfly fx-float3" style="left:30%; top:63%; width:64px; height:54px;">' +
-  '<div class="fx-flap" style="-webkit-animation-delay:-0.7s; animation-delay:-0.7s;">' + butterflySvg('#fae0e6') + '</div></div>';
-
-var NINA_FX_JS =
-  'fxSpawn("fx-petal", 12, function (d) {' +
-  'd.style.left = (Math.random() * 100) + "%";' +
-  'var s = 12 + Math.random() * 10;' +
-  'd.style.width = s + "px"; d.style.height = (s * 0.78) + "px";' +
-  'fxAnim(d, 14 + Math.random() * 10, -Math.random() * 18);' +
-  '});' +
-  sparkleJs(12);
-
 // Nubes: 3 capas de "franjas de nube" (lejos/media/cerca) que se desplazan
 // verticalmente en loop infinito, con un leve balanceo horizontal ("mecer")
 // integrado en el MISMO @keyframes (varios waypoints de translateX a lo largo
 // del recorrido), mas un resplandor calido pulsante arriba. Sin filter:blur ni
 // mix-blend-mode: la suavidad la da el propio radial-gradient (ultimo stop en
-// rgba(255,255,255,0) con corte generoso), igual que fx-ray de BOSQUE y
-// fx-bubble de AGUA. Se usan divs estaticos (como BOSQUE_FX_HTML) con
+// rgba(255,255,255,0) con corte generoso). Se usan divs estaticos con
 // animation-delay negativo para desincronizar las 3 capas.
 // Optimizaciones de rendimiento (TVs LG con motores WebKit viejos y GPU
 // debil): 1) .fx-nube/.fx-nube-glow se promueven a capa de composicion propia
@@ -970,9 +592,6 @@ var NUBES_FX_JS = '';
 
 // --- Definicion de temas ---
 // Cada tema define fuentes, colores, fondo, logo de pantalla 1 y particulas.
-var RALEWAY_FONTS_HREF = 'https://fonts.googleapis.com/css2?family=Raleway:wght@500;600;700;800&display=swap';
-var NINA_FONTS_HREF = 'https://fonts.googleapis.com/css2?family=Raleway:wght@500;600;700;800&family=Tangerine:wght@400;700&family=Cormorant+Garamond:wght@400;500;600&display=swap';
-var NUBES_FONTS_HREF = 'https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;500;600&family=Cormorant+Garamond:wght@400;500;600;700&family=EB+Garamond:wght@400;500;600&display=swap';
 var RALEWAY_STACK = '"Raleway", Arial, Helvetica, sans-serif';
 
 // Pesos completos de Raleway (Medium/Semibold/Bold/Black) + Noto Sans Symbols 2
@@ -981,84 +600,6 @@ var RALEWAY_STACK = '"Raleway", Arial, Helvetica, sans-serif';
 var RALEWAY_FULL_HREF = 'https://fonts.googleapis.com/css2?family=Raleway:wght@500;600;700;900&family=Noto+Sans+Symbols+2&display=swap';
 
 var TEMPLATES = {
-  agua: {
-    id: 'agua',
-    fontsHref: RALEWAY_FONTS_HREF,
-    fontName: RALEWAY_STACK,
-    fontBody: RALEWAY_STACK,
-    nameWeight: 800, nameSize1: 186, nameUppercase: true, name2Size: 85, name2Weight: 600,
-    titulo: '#0a1c2e', texto: '#1f364d', eyebrow: '#1f364d',
-    divider: 'rgba(31,54,77,0.4)', titleShadow: false,
-    cardBg: 'rgba(255,255,255,0.55)', cardBorder: 'rgba(255,255,255,0.7)', cardText: '#1f364d',
-    avatarBg: '#1f364d', avatarText: '#ffffff',
-    fallback: '#4ea3bb', bgType: 'png',
-    logo1: 'infinito',
-    particlesCss: AGUA_FX_CSS, particlesHtml: '', particlesJs: AGUA_FX_JS
-  },
-  aire: {
-    id: 'aire',
-    fontsHref: RALEWAY_FONTS_HREF,
-    fontName: RALEWAY_STACK,
-    fontBody: RALEWAY_STACK,
-    nameWeight: 800, nameSize1: 186, nameUppercase: true, name2Size: 85, name2Weight: 600,
-    titulo: '#182939', texto: '#2e3a46', eyebrow: '#2e3a46',
-    divider: 'rgba(46,58,70,0.4)', titleShadow: false,
-    cardBg: 'rgba(255,255,255,0.55)', cardBorder: 'rgba(255,255,255,0.7)', cardText: '#2e3a46',
-    avatarBg: '#2e3a46', avatarText: '#ffffff',
-    fallback: '#d2e6f1', bgType: 'png',
-    logo1: 'infinito',
-    particlesCss: AIRE_FX_CSS, particlesHtml: '', particlesJs: AIRE_FX_JS
-  },
-  fuego: {
-    id: 'fuego',
-    fontsHref: RALEWAY_FONTS_HREF,
-    fontName: RALEWAY_STACK,
-    fontBody: RALEWAY_STACK,
-    nameWeight: 800, nameSize1: 186, nameUppercase: true, name2Size: 85, name2Weight: 600,
-    titulo: '#ffffff', texto: '#fdf5e6', eyebrow: '#fdf5e6',
-    divider: 'rgba(255,255,255,0.4)', titleShadow: true,
-    cardBg: 'rgba(0,0,0,0.28)', cardBorder: 'rgba(255,255,255,0.25)', cardText: '#fdf5e6',
-    avatarBg: '#ffffff', avatarText: '#94472a',
-    fallback: '#4a231d', bgType: 'png',
-    logo1: 'infinito',
-    particlesCss: FUEGO_FX_CSS, particlesHtml: '<div class="fx-glow"></div>', particlesJs: FUEGO_FX_JS
-  },
-  tierra: {
-    id: 'tierra',
-    fontsHref: RALEWAY_FONTS_HREF,
-    fontName: RALEWAY_STACK,
-    fontBody: RALEWAY_STACK,
-    nameWeight: 800, nameSize1: 186, nameUppercase: true, name2Size: 85, name2Weight: 600,
-    titulo: '#ffffff', texto: '#e8f0ea', eyebrow: '#e8f0ea',
-    divider: 'rgba(255,255,255,0.4)', titleShadow: true,
-    cardBg: 'rgba(0,0,0,0.28)', cardBorder: 'rgba(255,255,255,0.25)', cardText: '#e8f0ea',
-    avatarBg: '#ffffff', avatarText: '#5a6a48',
-    fallback: '#5c5340', bgType: 'png',
-    logo1: 'infinito',
-    particlesCss: TIERRA_FX_CSS, particlesHtml: '', particlesJs: TIERRA_FX_JS
-  },
-  bosque: {
-    id: 'bosque',
-    fontsHref: RALEWAY_FONTS_HREF,
-    fontName: RALEWAY_STACK,
-    fontBody: RALEWAY_STACK,
-    nameWeight: 800, nameSize1: 186, nameUppercase: true, name2Size: 85, name2Weight: 600,
-    // bosque no esta en la guia: se eligen blancos calidos coherentes con la
-    // escena dorada de referencia.
-    titulo: '#ffffff', texto: '#f3e8cf', eyebrow: '#f3e8cf',
-    divider: 'rgba(255,255,255,0.4)', titleShadow: true,
-    cardBg: 'rgba(0,0,0,0.28)', cardBorder: 'rgba(255,255,255,0.25)', cardText: '#f3e8cf',
-    avatarBg: '#ffffff', avatarText: '#7a5e30',
-    fallback: '#9c7838', bgType: 'css',
-    bgWebkit: '-webkit-radial-gradient(62% 30%, ellipse, rgba(255,236,180,0.9), rgba(255,236,180,0) 45%), ' +
-      '-webkit-radial-gradient(40% 70%, ellipse, rgba(120,95,50,0.5), rgba(120,95,50,0) 55%), ' +
-      '-webkit-linear-gradient(top, #7a5e30 0%, #a07d3e 25%, #c9a155 48%, #9c7838 72%, #5f4824 100%)',
-    bgStd: 'radial-gradient(ellipse at 62% 30%, rgba(255,236,180,0.9), rgba(255,236,180,0) 45%), ' +
-      'radial-gradient(ellipse at 40% 70%, rgba(120,95,50,0.5), rgba(120,95,50,0) 55%), ' +
-      'linear-gradient(170deg, #7a5e30 0%, #a07d3e 25%, #c9a155 48%, #9c7838 72%, #5f4824 100%)',
-    logo1: 'infinito',
-    particlesCss: BOSQUE_FX_CSS, particlesHtml: BOSQUE_FX_HTML, particlesJs: BOSQUE_FX_JS
-  },
   // ---- Linea vigente ("Guia FINAL slides"): fondo fotografico con logo Los
   // Olivos ya incluido en el arte (hideLogo), layout de servicio V2
   // (serviceLayout) y tarjeta centrada en pantallas 2/3 (emotionalLayout).

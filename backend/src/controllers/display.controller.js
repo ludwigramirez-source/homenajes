@@ -6,11 +6,6 @@ const view = require('../views/displayScreen');
 
 // Color oscuro del QR por plantilla (debe ser oscuro para que escanee bien).
 const QR_DARK_COLORS = {
-  agua: '#0a1c2e',
-  aire: '#182939',
-  fuego: '#5e2a20',
-  tierra: '#3f4a34',
-  bosque: '#4a3a22',
   naturaleza: '#1f3a2c',
   nubes: '#182939',
   nino: '#182939',

@@ -1,7 +1,7 @@
 const db = require('../config/database');
 
 // Plantillas visuales validas para el display (misma whitelist que el view).
-const VALID_TEMPLATE_IDS = ['default', 'nino', 'nina', 'agua', 'aire', 'fuego', 'tierra', 'bosque', 'nubes', 'naturaleza', 'adulto'];
+const VALID_TEMPLATE_IDS = ['default', 'nino', 'nina', 'nubes', 'naturaleza', 'adulto'];
 
 const getAll = async (req, res, next) => {
   try {

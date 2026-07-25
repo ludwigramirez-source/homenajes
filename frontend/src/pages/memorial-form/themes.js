@@ -84,61 +84,6 @@ export const THEMES = {
     accentText: '#ffffff'
   }),
 
-  agua: buildTheme({
-    background: `
-      radial-gradient(ellipse at 45% 38%, rgba(225,245,250,0.85), rgba(225,245,250,0) 50%),
-      radial-gradient(ellipse at 75% 70%, rgba(60,150,170,0.5), rgba(60,150,170,0) 55%),
-      linear-gradient(180deg, #cdeaf2 0%, #8fcad9 28%, #4ea3bb 60%, #2c7d96 85%, #1c6178 100%)`,
-    light: true,
-    accent: '#2c7d96',
-    accentText: '#ffffff'
-  }),
-
-  aire: buildTheme({
-    background: `
-      radial-gradient(ellipse at 45% 50%, rgba(255,255,255,0.95), rgba(255,255,255,0) 52%),
-      radial-gradient(ellipse at 78% 28%, rgba(232,243,250,0.7), rgba(232,243,250,0) 55%),
-      linear-gradient(150deg, #b3d0e2 0%, #d2e6f1 30%, #f3f9fc 55%, #c6dded 80%, #aacadd 100%)`,
-    light: true,
-    accent: '#3a6b8c',
-    accentText: '#ffffff'
-  }),
-
-  fuego: buildTheme({
-    background: `
-      radial-gradient(ellipse at 50% 92%, rgba(255,180,70,0.55), rgba(255,180,70,0) 45%),
-      radial-gradient(ellipse at 45% 50%, rgba(255,225,180,0.35), rgba(255,225,180,0) 50%),
-      radial-gradient(ellipse at 78% 30%, rgba(200,80,40,0.4), rgba(200,80,40,0) 55%),
-      linear-gradient(180deg, #3a1a18 0%, #5e2a20 40%, #94472a 70%, #c8722f 100%)`,
-    light: false,
-    // #c8722f (referencia) solo alcanza 3.6:1 con blanco; se oscurece a #b05e22
-    // para cumplir AA manteniendo el caracter calido del tema.
-    accent: '#b05e22',
-    accentText: '#ffffff'
-  }),
-
-  tierra: buildTheme({
-    background: `
-      radial-gradient(ellipse at 42% 55%, rgba(248,244,228,0.92), rgba(248,244,228,0) 50%),
-      radial-gradient(ellipse at 75% 30%, rgba(226,216,180,0.7), rgba(226,216,180,0) 55%),
-      linear-gradient(150deg, #b9b083 0%, #d8cfa0 28%, #efe9cf 52%, #cdbf90 78%, #a89a6a 100%)`,
-    // La escena de tierra es beige claro (#efe9cf al centro): con glass claro
-    // el texto blanco seria ilegible, por eso se trata como tema CLARO.
-    light: true,
-    accent: '#7a6a35',
-    accentText: '#ffffff'
-  }),
-
-  bosque: buildTheme({
-    background: `
-      radial-gradient(ellipse at 62% 30%, rgba(255,236,180,0.9), rgba(255,236,180,0) 45%),
-      radial-gradient(ellipse at 40% 70%, rgba(120,95,50,0.5), rgba(120,95,50,0) 55%),
-      linear-gradient(170deg, #7a5e30 0%, #a07d3e 25%, #c9a155 48%, #9c7838 72%, #5f4824 100%)`,
-    light: false,
-    accent: '#5f4824',
-    accentText: '#ffffff'
-  }),
-
   nubes: buildTheme({
     background: `
       radial-gradient(ellipse at 42% 55%, rgba(255,255,255,0.9), rgba(255,255,255,0) 50%),
