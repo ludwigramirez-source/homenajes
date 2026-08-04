@@ -480,20 +480,36 @@ const TributeCreationStudio = () => {
                     Anterior
                   </button>
 
-                  <button
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg font-heading font-position text-sm
-                      transition-smooth hover-lift press-scale border border-border text-foreground hover:bg-muted"
-                    onClick={() => {
-                      const wizardTabs = tabs?.filter(t => t?.id !== 'tributes');
-                      const currentIndex = wizardTabs?.findIndex(t => t?.id === activeTab);
-                      if (currentIndex < wizardTabs?.length - 1) {
-                        setActiveTab(wizardTabs?.[currentIndex + 1]?.id);
-                      }
-                    }}
-                    disabled={activeTab === tabs?.filter(t => t?.id !== 'tributes')?.slice(-1)?.[0]?.id}
-                  >
-                    Siguiente
-                  </button>
+                  {activeTab === tabs?.filter(t => t?.id !== 'tributes')?.slice(-1)?.[0]?.id ? (
+                    // Ultima pestana del wizard ("Titular de Cuenta"): no hay
+                    // siguiente paso al que navegar, asi que este boton hace lo
+                    // mismo que el boton "Crear Tributo"/"Guardar Cambios" del
+                    // header, en vez de quedar deshabilitado sin accion.
+                    <button
+                      className="flex items-center gap-2 px-4 py-2 rounded-lg font-heading font-bold text-sm
+                        transition-smooth hover-lift press-scale text-white"
+                      style={{ background: '#1a7472' }}
+                      onClick={() => handleSave(false)}
+                      disabled={isSaving}
+                    >
+                      <Icon name="Check" size={16} />
+                      {isSaving ? 'Guardando...' : (isEditMode ? 'Guardar Cambios' : 'Crear Tributo')}
+                    </button>
+                  ) : (
+                    <button
+                      className="flex items-center gap-2 px-4 py-2 rounded-lg font-heading font-position text-sm
+                        transition-smooth hover-lift press-scale border border-border text-foreground hover:bg-muted"
+                      onClick={() => {
+                        const wizardTabs = tabs?.filter(t => t?.id !== 'tributes');
+                        const currentIndex = wizardTabs?.findIndex(t => t?.id === activeTab);
+                        if (currentIndex < wizardTabs?.length - 1) {
+                          setActiveTab(wizardTabs?.[currentIndex + 1]?.id);
+                        }
+                      }}
+                    >
+                      Siguiente
+                    </button>
+                  )}
                 </div>
                 )}
               </div>

@@ -254,9 +254,41 @@ function commonCss() {
     '.page-dot.active { background: #f0c040; width: 22px; border-radius: 5px; }',
     // Body wrapper para reservar espacio del footer
     '.viewport { position: relative; width: 100%; height: 100%; padding-bottom: 100px; ',
-    '  -webkit-box-sizing: border-box; box-sizing: border-box; }'
+    '  -webkit-box-sizing: border-box; box-sizing: border-box; }',
+    // Lienzo virtual fijo 1920x1080: todo el layout (px absolutos, tamanos de
+    // fuente) se disena asumiendo esta resolucion exacta. html/body son 100%
+    // fluido (llenan el viewport real), pero si ese viewport real no es
+    // exactamente 1920x1080 (TV/monitor con otra resolucion, escalado del SO,
+    // ventana de navegador no maximizada) el contenido en px absolutos se
+    // desborda o queda mal ubicado. fitStageJs() escala .stage completo para
+    // que siempre quepa, sin afectar las mediciones de fitScriptJs (scrollWidth/
+    // clientWidth no cambian con transform, solo su representacion visual).
+    '.stage { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; ',
+    '  -webkit-transform-origin: 0 0; transform-origin: 0 0; }'
   ].join('\n');
 }
+
+// JS ES5 compartido (legacy y tematico): escala #stage (lienzo virtual fijo de
+// 1920x1080) para que quepa completo en el viewport real, sin importar la
+// resolucion/escalado real del dispositivo. Centrado si la proporcion no calza
+// exacto. Se re-ejecuta en resize (defensivo; en un kiosco fijo no deberia
+// disparar, pero no tiene costo dejarlo).
+var STAGE_FIT_JS =
+  'function fitStage() {' +
+  'var stage = document.getElementById("stage");' +
+  'if (!stage) return;' +
+  'var sx = window.innerWidth / 1920;' +
+  'var sy = window.innerHeight / 1080;' +
+  'var s = sx < sy ? sx : sy;' +
+  'if (!s || s <= 0) s = 1;' +
+  'var tx = Math.round((window.innerWidth - 1920 * s) / 2);' +
+  'var ty = Math.round((window.innerHeight - 1080 * s) / 2);' +
+  'var t = "translate(" + tx + "px," + ty + "px) scale(" + s + ")";' +
+  'stage.style.webkitTransform = t;' +
+  'stage.style.transform = t;' +
+  '}\n' +
+  'fitStage();\n' +
+  'window.onresize = fitStage;';
 
 function renderShell(opts) {
   // opts: { title, screen, nextUrl, body, totalScreens }
@@ -286,10 +318,13 @@ function renderShell(opts) {
     '<style type="text/css">\n' + commonCss() + '\n</style>\n' +
     '</head>\n' +
     '<body>\n' +
+    '<div class="stage" id="stage">\n' +
     '<div class="viewport">\n' +
     opts.body + '\n' +
     '</div>\n' +
     renderFooter(opts.screen, opts.totalScreens, opts.scheduleStart, opts.scheduleEnd) + '\n' +
+    '</div>\n' +
+    '<script type="text/javascript">\n' + STAGE_FIT_JS + '\n</scr' + 'ipt>\n' +
     '</body>\n' +
     '</html>';
 }
@@ -816,31 +851,35 @@ function themedCss(theme, screen, baseUrl) {
     '.t-eyebrow { font-weight: 600; font-size: 85px; line-height: 1.15; color: ' + theme.eyebrow + '; margin-bottom: 28px; }',
     '.t-emsg { font-weight: 600; font-size: 72px; line-height: 1.45; color: ' + theme.texto + '; ',
     '  max-height: 640px; overflow: hidden; }',
-    // ---- Pantalla 2 alternativa: tarjeta centrada (solo tema 'nubes',
-    // ver emotionalLayout:"centered" y renderThemedEmotional) ----
-    '.t-card2 { position: absolute; left: 0; right: 0; top: 40px; bottom: 118px; text-align: center; z-index: 3; }',
+    // ---- Pantalla 2 alternativa: tarjeta centrada (naturaleza, nubes, nino,
+    // nina, adulto - ver emotionalLayout:"centered" y renderThemedEmotional) ----
+    '.t-card2 { position: absolute; left: 0; right: 0; top: 24px; bottom: 118px; text-align: center; z-index: 3; }',
     // display:block + margin:0 auto (no inline-block) para que la foto quede
     // SIEMPRE en su propia linea, con la etiqueta/nombre/anos/mensaje debajo
     // (si fuera inline-block quedaria en la misma linea que la etiqueta,
     // lado a lado, en vez de apilada).
-    '.t-card2-photo { display: block; margin: 0 auto; width: 300px; height: 300px; border-radius: 16px; ',
+    // Foto 260 (no 300): con el mensaje ahora dinamico (biografia real de la
+    // familia, no un texto fijo corto) hace falta mas margen vertical para
+    // mensajes largos antes de que el auto-ajuste tenga que reducir la fuente
+    // al minimo; este recorte + margenes mas chicos abajo liberan ~70px.
+    '.t-card2-photo { display: block; margin: 0 auto; width: 260px; height: 260px; border-radius: 16px; ',
     '  border: 5px solid rgba(255,255,255,0.7); background-color: rgba(255,255,255,0.3); ',
     '  background-position: center top; background-repeat: no-repeat; ',
     '  -webkit-background-size: cover; background-size: cover; }',
-    '.t-card2-eyebrow { display: inline-block; margin-top: 18px; padding: 8px 26px; ',
+    '.t-card2-eyebrow { display: inline-block; margin-top: 14px; padding: 8px 26px; ',
     '  background: rgba(255,255,255,0.6); border-radius: 6px; ',
     '  font-family: ' + theme.fontBody + '; font-size: 26px; font-weight: 600; letter-spacing: 2px; ',
     '  text-transform: uppercase; color: ' + theme.eyebrow + '; }',
-    '.t-card2-name { margin-top: 22px; font-family: ' + theme.fontName + '; font-weight: ' + theme.nameWeight + '; ',
+    '.t-card2-name { margin-top: 18px; font-family: ' + theme.fontName + '; font-weight: ' + theme.nameWeight + '; ',
     '  font-size: 88px; line-height: 1.2; color: ' + theme.titulo + '; }',
-    '.t-card2-years { margin-top: 10px; font-family: ' + theme.fontBody + '; font-style: italic; ',
+    '.t-card2-years { margin-top: 8px; font-family: ' + theme.fontBody + '; font-style: italic; ',
     '  font-size: 40px; color: ' + theme.texto + '; }',
-    // max-height 330 (no 260): tras medir en 1920x1080 sobraban ~78px entre
-    // el pie de la tarjeta de mensaje y el area reservada del footer; se usa
-    // ese espacio para que el auto-ajuste (fits: tFitMsg) tenga mas margen
-    // antes de tener que reducir el tamano de fuente al minimo.
-    '.t-card2-msg { display: inline-block; margin-top: 26px; max-width: 1150px; max-height: 330px; ',
-    '  overflow: hidden; padding: 30px 46px; background: rgba(255,255,255,0.55); ',
+    // max-height 400 (antes 330): el mensaje ahora es la biografia libre que
+    // escribe la familia (antes era un texto fijo corto de la guia), asi que
+    // necesita mas margen antes de que el auto-ajuste (fits: tFitMsg) tenga
+    // que reducir el tamano de fuente al minimo.
+    '.t-card2-msg { display: inline-block; margin-top: 20px; max-width: 1150px; max-height: 400px; ',
+    '  overflow: hidden; padding: 26px 46px; background: rgba(255,255,255,0.55); ',
     '  border: 1px solid rgba(255,255,255,0.7); border-radius: 12px; ',
     '  font-family: ' + theme.fontBody + '; font-size: 40px; line-height: 1.5; color: ' + theme.texto + '; }',
     // max-height + overflow:hidden: le dan al auto-ajuste (modo 'h', id tQrMsg)
@@ -897,7 +936,11 @@ function themedCss(theme, screen, baseUrl) {
     '.footer-right { width: 33%; text-align: right; }',
     '.dot-indicator { display: inline-block; width: 12px; height: 12px; border-radius: 50%; ',
     '  background: rgba(255,255,255,0.4); margin-left: 6px; vertical-align: middle; }',
-    '.dot-indicator.active { background: #f0c040; width: 26px; border-radius: 6px; }'
+    '.dot-indicator.active { background: #f0c040; width: 26px; border-radius: 6px; }',
+    // Lienzo virtual fijo 1920x1080 (ver comentario en commonCss/.stage y
+    // STAGE_FIT_JS): mismo mecanismo para las plantillas tematicas.
+    '.stage { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; ',
+    '  -webkit-transform-origin: 0 0; transform-origin: 0 0; }'
   ].join('\n') + '\n' + themedArtCss(theme, screen, baseUrl) + '\n' + theme.particlesCss;
 }
 
@@ -1022,11 +1065,12 @@ function renderThemedEmotional(m, theme) {
 
   // Temas con emotionalLayout:'centered' (naturaleza, nubes, nino, nina,
   // adulto) usan una tarjeta unica centrada (foto+etiqueta+nombre+anos+
-  // mensaje en una sola columna) en vez del layout de dos columnas de los
-  // otros temas. El mensaje de la caja es copy fijo de la guia FINAL slides
-  // (no el emotionalMessage/biografia que escribe la familia, que en estos
-  // temas no se muestra en pantalla); la caja usa el color de acento del
-  // tema al 65% de transparencia.
+  // mensaje en una sola columna) en vez del layout de dos columnas legacy.
+  // El mensaje de la caja es el emotionalMessage/biografia que escribe la
+  // familia en el wizard (campo obligatorio) — NO texto fijo: el mockup de
+  // la guia mostraba un mensaje de ejemplo ahi, no copy universal (corregido
+  // tras observacion del cliente: el mensaje mostrado no coincidia con el
+  // que la familia dejo). La caja usa el color de acento del tema al 65%.
   if (theme.emotionalLayout === 'centered') {
     var boxBg = theme.msgBoxColor ? hexToRgba(theme.msgBoxColor, 0.65) : 'rgba(255,255,255,0.55)';
     var boxBorder = theme.msgBoxBorder || 'rgba(255,255,255,0.7)';
@@ -1036,9 +1080,7 @@ function renderThemedEmotional(m, theme) {
       '<div class="t-card2-name">' + escapeHtml(m.name) + '</div>' +
       '<div class="t-card2-years">' + yearsHtml(m) + '</div>' +
       '<div class="t-card2-msg" id="tFitMsg" style="background:' + boxBg + ';border-color:' + boxBorder + ';">' +
-      'Hay seres que no se van, solo se transforman en luz para guiarnos. ' +
-      'Con el coraz&oacute;n roto, pero agradecidos por cada segundo compartido, ' +
-      'su amor ser&aacute; nuestro refugio eterno.</div>' +
+      escapeHtml(m.emotionalMessage || '') + '</div>' +
       '</div>';
   }
 
@@ -1201,7 +1243,8 @@ function renderThemedShell(opts) {
     refresh = '<meta http-equiv="refresh" content="25; url=' + escapeHtml(opts.nextUrl) + '">';
   }
 
-  var script = FX_HELPERS_JS + '\n' +
+  var script = STAGE_FIT_JS + '\n' +
+    FX_HELPERS_JS + '\n' +
     '(function () {\n' + (theme.particlesJs || '') + '\n})();\n' +
     fitScriptJs(opts.fits);
 
@@ -1221,6 +1264,7 @@ function renderThemedShell(opts) {
     '<style type="text/css">\n' + themedCss(theme, opts.screen, opts.baseUrl) + '\n</style>\n' +
     '</head>\n' +
     '<body>\n' +
+    '<div class="stage" id="stage">\n' +
     (theme.bgType === 'png' ? '<div class="bg-art"></div>\n' : '') +
     '<div class="fx-layer" id="fxLayer">' + (theme.particlesHtml || '') + '</div>\n' +
     '<div class="viewport">\n' +
@@ -1228,6 +1272,7 @@ function renderThemedShell(opts) {
     themedLogoHtml(theme, opts.screen, opts.baseUrl) + '\n' +
     '</div>\n' +
     renderThemedFooter(opts.screen, opts.totalScreens, opts.scheduleStart, opts.scheduleEnd) + '\n' +
+    '</div>\n' +
     '<script type="text/javascript">\n' + script + '\n</scr' + 'ipt>\n' +
     '</body>\n' +
     '</html>';
