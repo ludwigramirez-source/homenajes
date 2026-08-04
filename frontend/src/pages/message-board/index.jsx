@@ -40,6 +40,24 @@ const statusOf = (c) => {
   return 'unmoderated';
 };
 
+// Numeros de pagina a mostrar alrededor de la actual, con "..." para saltos
+// (ej. [1, '…', 4, 5, 6, '…', 20]). Evita renderizar cientos de botones
+// cuando hay muchas paginas.
+const getPageNumbers = (current, total) => {
+  const delta = 1;
+  const pages = [];
+  const rangeStart = Math.max(2, current - delta);
+  const rangeEnd = Math.min(total - 1, current + delta);
+
+  pages.push(1);
+  if (rangeStart > 2) pages.push('…');
+  for (let i = rangeStart; i <= rangeEnd; i++) pages.push(i);
+  if (rangeEnd < total - 1) pages.push('…');
+  if (total > 1) pages.push(total);
+
+  return pages;
+};
+
 const MessageBoardPage = () => {
   const { user } = useAuth();
   const role = user?.role;
@@ -56,8 +74,9 @@ const MessageBoardPage = () => {
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
 
-  // Paginacion en cliente
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  // Paginacion en cliente (los mensajes ya vienen completos del servidor
+  // segun fecha/busqueda; el estado y la pagina se aplican en memoria).
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Accion en curso (aprobar/rechazar/eliminar) por id
   const [actingId, setActingId] = useState(null);
@@ -79,7 +98,7 @@ const MessageBoardPage = () => {
       if (search) params.search = search;
       const res = await condolencesService.getAll(params);
       setMessages(res?.data || []);
-      setVisibleCount(PAGE_SIZE);
+      setCurrentPage(1);
     } catch (e) {
       setError(e.response?.data?.error || 'Error cargando los mensajes');
     } finally {
@@ -114,7 +133,11 @@ const MessageBoardPage = () => {
     { key: 'unmoderated', label: 'Sin moderar', count: kpis.unmoderated }
   ];
 
-  const visible = filteredMessages.slice(0, visibleCount);
+  const totalPages = Math.max(1, Math.ceil(filteredMessages.length / PAGE_SIZE));
+  // Si un cambio de datos (ej. eliminar el ultimo mensaje de la ultima
+  // pagina) deja currentPage fuera de rango, se recorta al maximo valido.
+  const safePage = Math.min(currentPage, totalPages);
+  const visible = filteredMessages.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
   const hasFilters = statusFilter || range.from || range.to || search;
 
   const applyPreset = (days) => setRange(lastDays(days));
@@ -150,59 +173,65 @@ const MessageBoardPage = () => {
     <>
       <Helmet><title>Tablón de mensajes | SERCOFUN</title></Helmet>
       <div className="min-h-screen bg-background">
-        {/* Header teal */}
-        <div className="relative overflow-hidden sticky top-0 z-40"
-          style={{ background: 'linear-gradient(135deg, #1a7472 0%, #234b50 60%, #182e39 100%)' }}>
-          <div className="max-w-[1920px] mx-auto px-6 py-4 relative z-10">
-            <div className="flex items-center justify-between gap-4 flex-wrap">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full flex items-center justify-center border-2 border-white/30"
-                  style={{ background: 'rgba(255,255,255,0.15)' }}>
-                  <Icon name="MessageSquare" size={20} color="#ffffff" />
+        {/* Header + KPIs + Filtros: fijos juntos al hacer scroll, para que no
+            se pierdan de vista mientras se revisa la lista de mensajes. */}
+        <div className="sticky top-0 z-40">
+          {/* Header teal */}
+          <div className="relative overflow-hidden"
+            style={{ background: 'linear-gradient(135deg, #1a7472 0%, #234b50 60%, #182e39 100%)' }}>
+            <div className="max-w-[1920px] mx-auto px-6 py-4 relative z-10">
+              <div className="flex items-center justify-between gap-4 flex-wrap">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center border-2 border-white/30"
+                    style={{ background: 'rgba(255,255,255,0.15)' }}>
+                    <Icon name="MessageSquare" size={20} color="#ffffff" />
+                  </div>
+                  <div>
+                    <h1 className="text-xl md:text-2xl font-heading font-bold text-white">Tablón de mensajes</h1>
+                    <p className="text-xs text-white/70 font-body">Moderación y consulta de condolencias</p>
+                  </div>
                 </div>
-                <div>
-                  <h1 className="text-xl md:text-2xl font-heading font-bold text-white">Tablón de mensajes</h1>
-                  <p className="text-xs text-white/70 font-body">Moderación y consulta de condolencias</p>
-                </div>
+                <button
+                  type="button"
+                  onClick={load}
+                  disabled={loading}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-heading font-bold text-sm transition-smooth hover-lift press-scale text-primary disabled:opacity-60"
+                  style={{ background: '#ffffff' }}
+                >
+                  <Icon name="RefreshCw" size={16} color="#1a7472" className={loading ? 'animate-spin' : ''} />
+                  Refrescar
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={load}
-                disabled={loading}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-heading font-bold text-sm transition-smooth hover-lift press-scale text-primary disabled:opacity-60"
-                style={{ background: '#ffffff' }}
-              >
-                <Icon name="RefreshCw" size={16} color="#1a7472" className={loading ? 'animate-spin' : ''} />
-                Refrescar
-              </button>
             </div>
           </div>
-        </div>
 
-        <div className="max-w-[1920px] mx-auto px-6 py-6 space-y-6">
-          {/* KPIs */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <MetricCard label="Total mensajes" value={loading ? '…' : kpis.total} icon="MessageSquare" hint="Según los filtros actuales" />
-            <MetricCard label="Publicados" value={loading ? '…' : kpis.approved} icon="CheckCircle2" accent="#16a34a" />
-            <MetricCard label="Rechazados" value={loading ? '…' : kpis.rejected} icon="XCircle" accent="#e11d48" />
-            <MetricCard label="Sin moderar" value={loading ? '…' : kpis.unmoderated} icon="Clock" accent="#d97706" />
-          </div>
+          {/* KPIs + Filtros: fondo solido (no transparente) porque la lista
+              de mensajes hace scroll POR DEBAJO de este bloque. */}
+          <div className="bg-background border-b border-border shadow-elevation-md">
+            <div className="max-w-[1920px] mx-auto px-6 py-4 space-y-4">
+              {/* KPIs */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <MetricCard label="Total mensajes" value={loading ? '…' : kpis.total} icon="MessageSquare" hint="Según los filtros actuales" />
+                <MetricCard label="Publicados" value={loading ? '…' : kpis.approved} icon="CheckCircle2" accent="#16a34a" />
+                <MetricCard label="Rechazados" value={loading ? '…' : kpis.rejected} icon="XCircle" accent="#e11d48" />
+                <MetricCard label="Sin moderar" value={loading ? '…' : kpis.unmoderated} icon="Clock" accent="#d97706" />
+              </div>
 
-          {/* Filtros */}
-          <div className="bg-card rounded-lg border border-border shadow-elevation-md p-4">
-            <div className="flex items-center gap-2 mb-4 pb-3 border-b border-border">
-              <Icon name="Filter" size={16} className="text-muted-foreground" />
-              <h4 className="text-sm font-semibold text-foreground">Filtros</h4>
-            </div>
-            <div className="flex items-end gap-3 flex-wrap">
-              {/* Estado: segmentado con contadores */}
-              <div>
+              {/* Filtros */}
+              <div className="bg-card rounded-lg border border-border shadow-elevation-md p-4">
+                <div className="flex items-center gap-2 mb-4 pb-3 border-b border-border">
+                  <Icon name="Filter" size={16} className="text-muted-foreground" />
+                  <h4 className="text-sm font-semibold text-foreground">Filtros</h4>
+                </div>
+                <div className="flex items-end gap-3 flex-wrap">
+                  {/* Estado: segmentado con contadores */}
+                  <div>
                 <p className="text-sm font-semibold text-foreground mb-2">Estado</p>
                 <div className="flex items-center rounded-md border border-border overflow-hidden">
                   {statusButtons.map((b, i) => (
                     <button
                       key={b.key}
-                      onClick={() => { setStatusFilter(b.key); setVisibleCount(PAGE_SIZE); }}
+                      onClick={() => { setStatusFilter(b.key); setCurrentPage(1); }}
                       className={cn(
                         "px-3 py-2 text-sm transition-colors flex items-center gap-1.5",
                         statusFilter === b.key
@@ -272,8 +301,12 @@ const MessageBoardPage = () => {
               </div>
             </div>
           </div>
+          </div>
+        </div>
+        </div>
 
-          {/* Lista */}
+        <div className="max-w-[1920px] mx-auto px-6 py-6">
+          {/* Lista: unico bloque que hace scroll normal (el resto queda fijo arriba) */}
           <div className="bg-card rounded-lg border border-border shadow-elevation-md p-6 space-y-4">
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <div>
@@ -457,16 +490,46 @@ const MessageBoardPage = () => {
               </div>
             )}
 
-            {/* Cargar mas */}
-            {!loading && filteredMessages.length > visibleCount && (
-              <div className="pt-2 text-center">
-                <button
-                  onClick={() => setVisibleCount(v => v + PAGE_SIZE)}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm border border-border hover:bg-muted transition-colors text-foreground"
-                >
-                  <Icon name="ChevronDown" size={16} />
-                  Cargar más ({filteredMessages.length - visibleCount} restantes)
-                </button>
+            {/* Paginacion */}
+            {!loading && totalPages > 1 && (
+              <div className="pt-4 flex items-center justify-between gap-3 flex-wrap border-t border-border">
+                <p className="text-sm text-muted-foreground">
+                  Página {safePage} de {totalPages}
+                </p>
+                <div className="flex items-center gap-1 flex-wrap">
+                  <button
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={safePage === 1}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-sm border border-border hover:bg-muted transition-colors disabled:opacity-40 disabled:cursor-not-allowed text-foreground"
+                  >
+                    <Icon name="ChevronLeft" size={14} />
+                    Anterior
+                  </button>
+                  {getPageNumbers(safePage, totalPages).map((p, i) => (
+                    p === '…' ? (
+                      <span key={`ellipsis-${i}`} className="px-2 text-sm text-muted-foreground">…</span>
+                    ) : (
+                      <button
+                        key={p}
+                        onClick={() => setCurrentPage(p)}
+                        className={cn(
+                          "min-w-[34px] px-2 py-1.5 rounded-md text-sm transition-colors",
+                          p === safePage ? "bg-primary text-white" : "border border-border text-foreground hover:bg-muted"
+                        )}
+                      >
+                        {p}
+                      </button>
+                    )
+                  ))}
+                  <button
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={safePage === totalPages}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-sm border border-border hover:bg-muted transition-colors disabled:opacity-40 disabled:cursor-not-allowed text-foreground"
+                  >
+                    Siguiente
+                    <Icon name="ChevronRight" size={14} />
+                  </button>
+                </div>
               </div>
             )}
           </div>
