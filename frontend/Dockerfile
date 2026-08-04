@@ -31,6 +31,17 @@ RUN echo 'server { \
         try_files $uri $uri/ /index.html; \
     } \
     \
+    # index.html NUNCA se cachea: es el unico archivo que referencia el hash \
+    # del bundle JS/CSS del build actual. Sin esto, el navegador puede servir \
+    # un index.html viejo desde cache (apuntando a un bundle ya reemplazado) \
+    # y el usuario ve la version anterior del sitio tras cada deploy, aunque \
+    # el servidor ya tenga el codigo nuevo. \
+    location = /index.html { \
+        add_header Cache-Control "no-cache, no-store, must-revalidate"; \
+        add_header Pragma "no-cache"; \
+        expires 0; \
+    } \
+    \
     # Headers de seguridad \
     add_header X-Frame-Options "SAMEORIGIN" always; \
     add_header X-XSS-Protection "1; mode=block" always; \
