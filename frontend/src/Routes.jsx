@@ -18,6 +18,7 @@ import RoomsManagement from './pages/rooms-management';
 import UsersPage from './pages/users';
 import MessageBoard from './pages/message-board';
 import BooksPage from './pages/books';
+import MarketingContactsPage from './pages/marketing-contacts';
 import LlmSettings from './pages/llm-settings';
 import EmailSettingsPage from './pages/email-settings';
 import DigitalDisplayScreen from './pages/digital-display-screen';
@@ -50,6 +51,7 @@ const Routes = () => {
               <Route path="/salas" element={<ProtectedRoute roles={['admin']}><RoomsManagement /></ProtectedRoute>} />
               <Route path="/tablon" element={<MessageBoard />} />
               <Route path="/books" element={<BooksPage />} />
+              <Route path="/marketing" element={<MarketingContactsPage />} />
               {/* Sistema: solo superadministrador */}
               <Route path="/usuarios" element={<ProtectedRoute roles={['admin']}><UsersPage /></ProtectedRoute>} />
               <Route path="/llm" element={<ProtectedRoute roles={['admin']}><LlmSettings /></ProtectedRoute>} />

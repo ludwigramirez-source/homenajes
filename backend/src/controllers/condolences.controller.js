@@ -1,3 +1,4 @@
+const ExcelJS = require('exceljs');
 const db = require('../config/database');
 const llmService = require('../services/llm.service');
 
@@ -110,7 +111,7 @@ const submit = async (req, res, next) => {
 const getAll = async (req, res, next) => {
   try {
     const {
-      memorial_id, marketing_consent, status, from, to, search,
+      memorial_id, marketing_consent, status, from, to, search, location_id,
       limit = 200, offset = 0
     } = req.query;
 
@@ -121,8 +122,12 @@ const getAll = async (req, res, next) => {
         m.deceased_name,
         m.template_id,
         m.deceased_document_id,
+        m.family_contact_name,
+        m.family_contact_email,
+        m.family_contact_phone,
         r.name as room_name,
-        l.name as location_name
+        l.name as location_name,
+        l.id as location_id
       FROM condolences c
       JOIN memorials m ON c.memorial_id = m.id
       JOIN rooms r ON m.room_id = r.id
@@ -153,11 +158,15 @@ const getAll = async (req, res, next) => {
     }
     if (search) {
       params.push(`%${search}%`);
-      query += ` AND (c.sender_name ILIKE $${params.length} OR c.sender_email ILIKE $${params.length} OR c.message ILIKE $${params.length} OR m.deceased_name ILIKE $${params.length} OR m.deceased_document_id ILIKE $${params.length})`;
+      query += ` AND (c.sender_name ILIKE $${params.length} OR c.sender_email ILIKE $${params.length} OR c.sender_phone ILIKE $${params.length} OR c.message ILIKE $${params.length} OR m.deceased_name ILIKE $${params.length} OR m.deceased_document_id ILIKE $${params.length} OR m.family_contact_name ILIKE $${params.length} OR l.name ILIKE $${params.length})`;
     }
     if (marketing_consent !== undefined) {
       params.push(marketing_consent === 'true');
       query += ` AND c.marketing_consent = $${params.length}`;
+    }
+    if (location_id) {
+      params.push(location_id);
+      query += ` AND l.id = $${params.length}`;
     }
 
     params.push(parseInt(limit));
@@ -211,6 +220,161 @@ const moderate = async (req, res, next) => {
     }
 
     res.json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// PATCH /:id/contact - editar datos de contacto y/o consentimiento de
+// marketing (p. ej. corregir un correo mal escrito, o desmarcar el
+// consentimiento para excluir a alguien de futuras campañas sin borrar su
+// mensaje de condolencia).
+// admin/supervisor: cualquier condolencia. operator: solo las de su sede.
+const updateContact = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { sender_name, sender_email, sender_phone, marketing_consent } = req.body;
+
+    if (sender_name !== undefined && !String(sender_name).trim()) {
+      return res.status(400).json({ success: false, error: 'El nombre no puede estar vacío' });
+    }
+    if (sender_email !== undefined) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(String(sender_email).trim())) {
+        return res.status(400).json({ success: false, error: 'Email inválido' });
+      }
+    }
+
+    if (req.user.role === 'operator') {
+      const check = await db.query(`
+        SELECT c.id FROM condolences c
+        JOIN memorials m ON c.memorial_id = m.id
+        JOIN rooms r ON m.room_id = r.id
+        WHERE c.id = $1 AND r.location_id = $2
+      `, [id, req.user.location_id || '00000000-0000-0000-0000-000000000000']);
+      if (check.rows.length === 0) {
+        return res.status(403).json({ success: false, error: 'No puedes editar contactos de otra sede' });
+      }
+    }
+
+    const fields = [];
+    const params = [];
+    if (sender_name !== undefined) { params.push(String(sender_name).trim()); fields.push(`sender_name = $${params.length}`); }
+    if (sender_email !== undefined) { params.push(String(sender_email).trim()); fields.push(`sender_email = $${params.length}`); }
+    if (sender_phone !== undefined) { params.push(sender_phone ? String(sender_phone).trim() : null); fields.push(`sender_phone = $${params.length}`); }
+    if (marketing_consent !== undefined) { params.push(marketing_consent === true || marketing_consent === 'true'); fields.push(`marketing_consent = $${params.length}`); }
+
+    if (fields.length === 0) {
+      return res.status(400).json({ success: false, error: 'Nada para actualizar' });
+    }
+
+    params.push(id);
+    const result = await db.query(`
+      UPDATE condolences SET ${fields.join(', ')}
+      WHERE id = $${params.length}
+      RETURNING id, sender_name, sender_email, sender_phone, marketing_consent
+    `, params);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Condolencia no encontrada' });
+    }
+
+    res.json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// GET /condolences/export/marketing — exporta a Excel (.xlsx) la base de
+// contactos que autorizaron el uso de sus datos para marketing (checkbox del
+// formulario público al dejar condolencias). Mismos filtros de fecha/sede/
+// búsqueda que el Tablón, pero SIEMPRE forzado a marketing_consent = true:
+// nunca se exportan contactos que no autorizaron, sin importar el rol.
+// Incluye el titular de cuenta del homenaje como referencia.
+const exportMarketingExcel = async (req, res, next) => {
+  try {
+    const { from, to, search, location_id } = req.query;
+
+    let query = `
+      SELECT
+        c.sender_name, c.sender_email, c.sender_phone, c.created_at,
+        m.deceased_name, m.deceased_document_id,
+        m.family_contact_name, m.family_contact_email, m.family_contact_phone,
+        r.name as room_name, l.name as location_name
+      FROM condolences c
+      JOIN memorials m ON c.memorial_id = m.id
+      JOIN rooms r ON m.room_id = r.id
+      JOIN locations l ON r.location_id = l.id
+      WHERE c.marketing_consent = true
+    `;
+    const params = [];
+    if (req.user && req.user.role === 'operator') {
+      params.push(req.user.location_id || '00000000-0000-0000-0000-000000000000');
+      query += ` AND r.location_id = $${params.length}`;
+    }
+    if (from) {
+      params.push(from + ' 00:00:00');
+      query += ` AND c.created_at >= $${params.length}`;
+    }
+    if (to) {
+      params.push(to + ' 23:59:59');
+      query += ` AND c.created_at <= $${params.length}`;
+    }
+    if (location_id) {
+      params.push(location_id);
+      query += ` AND l.id = $${params.length}`;
+    }
+    if (search) {
+      params.push(`%${search}%`);
+      query += ` AND (c.sender_name ILIKE $${params.length} OR c.sender_email ILIKE $${params.length} OR c.sender_phone ILIKE $${params.length} OR m.deceased_name ILIKE $${params.length} OR m.family_contact_name ILIKE $${params.length} OR l.name ILIKE $${params.length})`;
+    }
+    query += ' ORDER BY c.created_at DESC';
+
+    const result = await db.query(query, params);
+
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'SERCOFUN Los Olivos';
+    workbook.created = new Date();
+    const sheet = workbook.addWorksheet('Contactos de marketing');
+
+    sheet.columns = [
+      { header: 'Nombre', key: 'nombre', width: 26 },
+      { header: 'Email', key: 'email', width: 30 },
+      { header: 'Teléfono', key: 'telefono', width: 16 },
+      { header: 'Fecha del mensaje', key: 'fecha', width: 20 },
+      { header: 'Difunto (homenaje)', key: 'difunto', width: 26 },
+      { header: 'Documento difunto', key: 'documento', width: 18 },
+      { header: 'Sede', key: 'sede', width: 20 },
+      { header: 'Sala', key: 'sala', width: 20 },
+      { header: 'Titular de cuenta', key: 'titular', width: 26 },
+      { header: 'Email titular', key: 'titular_email', width: 30 },
+      { header: 'Teléfono titular', key: 'titular_telefono', width: 18 }
+    ];
+    sheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    sheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A7472' } };
+    sheet.views = [{ state: 'frozen', ySplit: 1 }];
+
+    result.rows.forEach((c) => {
+      sheet.addRow({
+        nombre: c.sender_name,
+        email: c.sender_email,
+        telefono: c.sender_phone || '',
+        fecha: c.created_at ? new Date(c.created_at).toLocaleString('es-CO') : '',
+        difunto: c.deceased_name || '',
+        documento: c.deceased_document_id || '',
+        sede: c.location_name || '',
+        sala: c.room_name || '',
+        titular: c.family_contact_name || '',
+        titular_email: c.family_contact_email || '',
+        titular_telefono: c.family_contact_phone || ''
+      });
+    });
+
+    const filename = `contactos_marketing_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    await workbook.xlsx.write(res);
+    res.end();
   } catch (error) {
     next(error);
   }
@@ -284,4 +448,7 @@ const getPublicByMemorial = async (req, res, next) => {
   }
 };
 
-module.exports = { submit, getAll, getByMemorial, getPublicByMemorial, moderate, remove };
+module.exports = {
+  submit, getAll, getByMemorial, getPublicByMemorial, moderate, remove,
+  updateContact, exportMarketingExcel
+};

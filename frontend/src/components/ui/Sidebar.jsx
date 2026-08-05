@@ -24,7 +24,8 @@ const NAV_GROUPS = [
       { label: 'Centro de operaciones', path: '/operations-control-center', icon: 'Activity', match: ['/operations-control-center'] },
       { label: 'Análisis detallado', path: '/analytics-hub', icon: 'BarChart3', match: ['/analytics-hub'] },
       { label: 'Rendimiento por sede', path: '/location-performance', icon: 'MapPin', match: ['/location-performance'] },
-      { label: 'Monitoreo técnico', path: '/system-health-monitor', icon: 'Server', match: ['/system-health-monitor'], roles: ['admin'] }
+      { label: 'Monitoreo técnico', path: '/system-health-monitor', icon: 'Server', match: ['/system-health-monitor'], roles: ['admin'] },
+      { label: 'Contactos de Marketing', path: '/marketing', icon: 'Contact', match: ['/marketing'] }
     ]
   },
   {

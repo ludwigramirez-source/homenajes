@@ -107,7 +107,13 @@ export const condolencesService = {
     api.get(`/condolences/public/${memorialId}`, { params: { limit } }).then(r => r.data),
   // Moderacion manual desde el Tablon: action = 'approve' | 'reject'
   moderate: (id, action) => api.patch(`/condolences/${id}/moderation`, { action }).then(r => r.data),
-  remove: (id) => api.delete(`/condolences/${id}`).then(r => r.data)
+  remove: (id) => api.delete(`/condolences/${id}`).then(r => r.data),
+  // Editar datos de contacto / consentimiento de marketing (Contactos de Marketing).
+  updateContact: (id, payload) => api.patch(`/condolences/${id}/contact`, payload).then(r => r.data),
+  // Exporta a Excel (.xlsx) los contactos que autorizaron marketing. Devuelve
+  // el Blob listo para descargar (ver marketing-contacts/index.jsx).
+  exportMarketing: (params = {}) =>
+    api.get('/condolences/export/marketing', { params, responseType: 'blob' }).then(r => r.data)
 };
 
 // ============ LLM (moderacion automatica con IA) ============
