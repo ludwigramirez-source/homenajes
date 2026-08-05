@@ -359,22 +359,31 @@ function saveBookPdf(memorialId, buffer) {
   return fullPath;
 }
 
-// Cuerpo HTML del correo que acompana el PDF adjunto.
-function buildEmailHtml(memorial) {
+function escapeHtml(s) {
+  return String(s || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// Texto por defecto del correo (editable desde el modal de envio en el panel).
+function defaultEmailMessage(memorial) {
   const name = memorial.deceased_name || '';
-  return `
-    <div style="font-family: Georgia, 'Times New Roman', serif; color: #333;">
-      <p>Estimada familia,</p>
-      <p>
-        Adjuntamos el libro de condolencias con los mensajes de cariño y apoyo
-        recibidos durante el homenaje de <strong>${name}</strong>.
-      </p>
-      <p>
-        Con nuestro más sentido acompañamiento,<br/>
-        Los Olivos · SERCOFUN
-      </p>
-    </div>
-  `;
+  return `Estimada familia,\n\nAdjuntamos el libro de condolencias con los mensajes de cariño y apoyo recibidos durante el homenaje de ${name}.\n\nCon nuestro más sentido acompañamiento,\nLos Olivos · SERCOFUN`;
+}
+
+// Cuerpo HTML del correo que acompana el PDF adjunto. `message` es texto
+// plano (viene del textarea del modal de envio o del texto por defecto);
+// se escapa y cada linea en blanco separa parrafos.
+function buildEmailHtml(memorial, message) {
+  const text = message || defaultEmailMessage(memorial);
+  const html = text
+    .split(/\n{2,}/)
+    .map((para) => `<p>${escapeHtml(para).replace(/\n/g, '<br/>')}</p>`)
+    .join('\n');
+  return `<div style="font-family: Georgia, 'Times New Roman', serif; color: #333;">${html}</div>`;
 }
 
 // Logica compartida de generar + guardar + registrar + enviar el book de un
@@ -382,13 +391,37 @@ function buildEmailHtml(memorial) {
 // scheduler automatico (jobs/bookScheduler.js) para que el comportamiento sea
 // identico en ambos casos.
 //
-// Precondicion: el llamador ya valido que memorial.family_contact_email existe.
+// Precondicion: el llamador ya valido que hay al menos un destinatario
+// (recipientEmails, o memorial.family_contact_email como fallback).
 // condolences: TODAS las condolencias del memorial (se filtran aqui por 'approved').
+// recipientEmails/subject/message: overrides opcionales del modal de envio
+// manual (staff puede agregar destinatarios extra y editar asunto/texto).
 //
 // Devuelve la fila final de book_sends (status 'sent' o 'failed').
-async function processAndSendBook(memorial, condolences, { triggerType, triggeredBy } = {}) {
+async function processAndSendBook(memorial, condolences, {
+  triggerType, triggeredBy, recipientEmails, subject, message
+} = {}) {
   const approved = (condolences || []).filter((c) => c.moderation_status === 'approved');
-  const recipientEmail = memorial.family_contact_email;
+  const recipients = (Array.isArray(recipientEmails) && recipientEmails.filter(Boolean).length > 0)
+    ? recipientEmails.filter(Boolean)
+    : (memorial.family_contact_email ? [memorial.family_contact_email] : []);
+  const recipientEmail = recipients.join(', ');
+
+  if (recipients.length === 0) {
+    const insertResult = await db.query(`
+      INSERT INTO book_sends (
+        memorial_id, status, recipient_email, pdf_path, message_count,
+        error_message, trigger_type, triggered_by
+      )
+      VALUES ($1, 'failed', NULL, NULL, $2, $3, $4, $5)
+      RETURNING *
+    `, [
+      memorial.id, approved.length,
+      'El homenaje no tiene correo de titular configurado y no se indicaron destinatarios',
+      triggerType || 'manual', triggeredBy || null
+    ]);
+    return insertResult.rows[0];
+  }
 
   let pdfPath = null;
   let pdfBuffer = null;
@@ -428,8 +461,8 @@ async function processAndSendBook(memorial, condolences, { triggerType, triggere
   try {
     await emailService.sendMail({
       to: recipientEmail,
-      subject: `Libro de condolencias — ${memorial.deceased_name || ''}`,
-      html: buildEmailHtml(memorial),
+      subject: subject || `Libro de condolencias — ${memorial.deceased_name || ''}`,
+      html: buildEmailHtml(memorial, message),
       attachments: [{
         filename: `Libro-de-condolencias-${(memorial.deceased_name || 'homenaje').replace(/[^a-zA-Z0-9-_ ]/g, '').trim() || 'homenaje'}.pdf`,
         content: pdfBuffer

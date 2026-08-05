@@ -13,8 +13,12 @@ export const booksService = {
   // Listado de envios (con scoping de sede por rol, igual que condolences)
   getAll: (params = {}) => api.get('/books', { params }).then(r => r.data),
 
-  // Envio manual / reenvio de un homenaje puntual
-  send: (memorialId) => api.post(`/books/${memorialId}/send`).then(r => r.data),
+  // Envio manual / reenvio de un homenaje puntual. payload opcional:
+  // { recipient_emails: string[], subject, message } - ver modal de envio.
+  send: (memorialId, payload = {}) => api.post(`/books/${memorialId}/send`, payload).then(r => r.data),
+
+  // Historial completo de intentos de envio de un homenaje.
+  history: (memorialId) => api.get(`/books/${memorialId}/history`).then(r => r.data),
 
   // Vista previa del book de un homenaje: genera el PDF al vuelo (sin
   // guardarlo ni enviar correo) y lo abre en una pestaña nueva usando un

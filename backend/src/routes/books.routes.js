@@ -18,6 +18,10 @@ router.post('/:memorialId/send', authenticate, authorize('admin', 'supervisor', 
 // rol autenticado, igual que la descarga (operator solo su sede, en el controller)
 router.get('/:memorialId/preview', authenticate, controller.preview);
 
+// Historial de intentos de envio de un homenaje - cualquier rol autenticado
+// (operator solo su sede, validado en el controller)
+router.get('/:memorialId/history', authenticate, controller.history);
+
 // Descarga del PDF ya generado - cualquier rol autenticado (mismo scoping de sede)
 router.get('/:id/download', authenticate, controller.download);
 
