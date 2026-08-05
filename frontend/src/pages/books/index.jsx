@@ -387,6 +387,7 @@ const BooksPage = () => {
                       <th className="text-left font-medium px-4 py-2.5">Sede / Sala</th>
                       <th className="text-left font-medium px-4 py-2.5">Fin del homenaje</th>
                       <th className="text-right font-medium px-4 py-2.5">Mensajes</th>
+                      <th className="text-right font-medium px-4 py-2.5">Imágenes</th>
                       <th className="text-left font-medium px-4 py-2.5">Estado del book</th>
                       <th className="text-right font-medium px-4 py-2.5">Acciones</th>
                     </tr>
@@ -430,6 +431,25 @@ const BooksPage = () => {
                                 title={`${t.unmoderated_message_count} mensaje(s) sin moderar (no se incluyen en el book)`}
                               >
                                 <Icon name="Clock" size={11} />{t.unmoderated_message_count}
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            {t.total_photo_count > 0 ? (
+                              <span
+                                className="inline-flex items-center gap-1 text-foreground"
+                                title={[
+                                  t.has_main_photo ? '1 foto principal' : null,
+                                  t.condolence_photo_count > 0 ? `${t.condolence_photo_count} en mensajes` : null
+                                ].filter(Boolean).join(' + ')}
+                              >
+                                <Icon name="Image" size={13} className="text-muted-foreground" />
+                                {t.total_photo_count}
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 text-muted-foreground" title="Sin fotos">
+                                <Icon name="ImageOff" size={13} />
+                                0
                               </span>
                             )}
                           </td>

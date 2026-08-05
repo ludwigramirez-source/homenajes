@@ -148,12 +148,15 @@ const MEMORIAL_BOOK_SELECT = `
     m.schedule_end,
     m.family_contact_email,
     m.active,
+    (m.photo_url IS NOT NULL) as has_main_photo,
     r.name as room_name,
     r.code as room_code,
     l.id as location_id,
     l.name as location_name,
     COALESCE(cc.approved_count, 0) as approved_message_count,
     COALESCE(cc.unmoderated_count, 0) as unmoderated_message_count,
+    COALESCE(cc.photo_count, 0) as condolence_photo_count,
+    COALESCE(cc.photo_count, 0) + CASE WHEN m.photo_url IS NOT NULL THEN 1 ELSE 0 END as total_photo_count,
     COALESCE(sc.attempts, 0) as send_attempts_count,
     EXISTS(
       SELECT 1 FROM book_sends bs WHERE bs.memorial_id = m.id AND bs.trigger_type = 'auto'
@@ -179,7 +182,15 @@ const MEMORIAL_BOOK_SELECT = `
   LEFT JOIN LATERAL (
     SELECT
       COUNT(*) FILTER (WHERE c.moderation_status = 'approved')::int as approved_count,
-      COUNT(*) FILTER (WHERE c.moderation_status = 'unmoderated')::int as unmoderated_count
+      COUNT(*) FILTER (WHERE c.moderation_status = 'unmoderated')::int as unmoderated_count,
+      -- Fotos de mensajes APROBADOS (hasta 2 c/u, file1/file2): son las que
+      -- realmente se incluyen en el book (ver book.service#drawCondolenceBlock).
+      COALESCE(SUM(
+        CASE WHEN c.moderation_status = 'approved' THEN
+          (CASE WHEN c.file1_url IS NOT NULL THEN 1 ELSE 0 END) +
+          (CASE WHEN c.file2_url IS NOT NULL THEN 1 ELSE 0 END)
+        ELSE 0 END
+      ), 0)::int as photo_count
     FROM condolences c WHERE c.memorial_id = m.id
   ) cc ON true
   WHERE 1=1
