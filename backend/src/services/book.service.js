@@ -37,11 +37,11 @@ const MESSAGE_BOX_OPACITY = 0.25;
 // Texto institucional definitivo (de `Texto final.docx`, tomado como fuente
 // de verdad segun el brief aunque el mockup visual diga "Unidad de Apoyo al
 // Duelo" en vez de "Unidad de Apoyo Emocional" - pendiente de confirmar con
-// quien aprobo el copy). Se deja tal cual, incluido el probable typo
-// "intension" (por "intencion"), sin corregir unilateralmente.
+// quien aprobo el copy). "intension" corregido a "intencion" por indicacion
+// del cliente.
 const ALIVIA_PARAGRAPHS = [
   'Cuando la vida pueda tornarse frágil, lo más valioso es contar con un apoyo que nos pueda aliviar en medio de la adversidad.',
-  'Por eso en nuestra Unidad de Apoyo Emocional, queremos ser ese apoyo que guía con intensión y profundo respeto.'
+  'Por eso en nuestra Unidad de Apoyo Emocional, queremos ser ese apoyo que guía con intención y profundo respeto.'
 ];
 
 // ---------- Geometria de pagina (media carta, igual que los PNG de fondo) ----------
