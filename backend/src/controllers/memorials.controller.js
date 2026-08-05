@@ -3,6 +3,15 @@ const db = require('../config/database');
 // Plantillas visuales validas para el display (misma whitelist que el view).
 const VALID_TEMPLATE_IDS = ['default', 'nino', 'nina', 'nubes', 'naturaleza', 'adulto'];
 
+// Extrae el año de una fecha "AAAA-MM-DD" por texto (sin pasar por Date, para
+// no depender de ninguna zona horaria). birth_year/death_year son lo unico
+// que se muestra en pantalla/book; se derivan siempre de birth_date/death_date.
+const yearFromDate = (dateStr) => {
+  if (!dateStr) return null;
+  const y = parseInt(String(dateStr).slice(0, 4), 10);
+  return Number.isFinite(y) ? y : null;
+};
+
 const getAll = async (req, res, next) => {
   try {
     const { active, location_id, room_id } = req.query;
@@ -95,7 +104,7 @@ const getById = async (req, res, next) => {
 const create = async (req, res, next) => {
   try {
     const {
-      room_id, deceased_name, birth_year, death_year, photo_url,
+      room_id, deceased_name, birth_date, death_date, photo_url,
       emotional_message, qr_message, template_id, schedule_start, schedule_end,
       exequias_venue_name, exequias_datetime,
       final_destination_venue_name, final_destination_datetime,
@@ -120,7 +129,7 @@ const create = async (req, res, next) => {
 
     const result = await db.query(`
       INSERT INTO memorials (
-        room_id, deceased_name, birth_year, death_year, photo_url,
+        room_id, deceased_name, birth_year, death_year, birth_date, death_date, photo_url,
         emotional_message, qr_message, template_id, schedule_start, schedule_end,
         active, created_by,
         exequias_venue_name, exequias_datetime,
@@ -129,12 +138,13 @@ const create = async (req, res, next) => {
         family_contact_name, family_contact_phone, family_contact_email, billing_address,
         deceased_document_id, family_contact_document_id, is_religious
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, true, $11, $12, $13, $14, $15,
-              COALESCE($16::time, '08:00'::time), COALESCE($17::time, '23:00'::time),
-              $18, $19, $20, $21, $22, $23, $24)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, true, $13, $14, $15, $16, $17,
+              COALESCE($18::time, '08:00'::time), COALESCE($19::time, '23:00'::time),
+              $20, $21, $22, $23, $24, $25, $26)
       RETURNING *
     `, [
-      room_id, deceased_name, birth_year, death_year, photo_url,
+      room_id, deceased_name, yearFromDate(birth_date), yearFromDate(death_date),
+      birth_date || null, death_date || null, photo_url,
       emotional_message, qr_message, template_id || 'default',
       schedule_start, schedule_end, req.user.id,
       exequias_venue_name || null,
@@ -162,7 +172,7 @@ const update = async (req, res, next) => {
   try {
     const { id } = req.params;
     const {
-      deceased_name, birth_year, death_year, photo_url,
+      deceased_name, birth_date, death_date, photo_url,
       emotional_message, qr_message, template_id, schedule_start, schedule_end, active,
       exequias_venue_name, exequias_datetime,
       final_destination_venue_name, final_destination_datetime,
@@ -184,30 +194,32 @@ const update = async (req, res, next) => {
       SET deceased_name = COALESCE($1, deceased_name),
           birth_year = COALESCE($2, birth_year),
           death_year = COALESCE($3, death_year),
-          photo_url = COALESCE($4, photo_url),
-          emotional_message = COALESCE($5, emotional_message),
-          qr_message = COALESCE($6, qr_message),
-          template_id = COALESCE($7, template_id),
-          schedule_start = COALESCE($8, schedule_start),
-          schedule_end = COALESCE($9, schedule_end),
-          active = COALESCE($10, active),
-          exequias_venue_name = COALESCE($11, exequias_venue_name),
-          exequias_datetime = COALESCE($12, exequias_datetime),
-          final_destination_venue_name = COALESCE($13, final_destination_venue_name),
-          final_destination_datetime = COALESCE($14, final_destination_datetime),
-          daily_hours_start = COALESCE($15::time, daily_hours_start),
-          daily_hours_end = COALESCE($16::time, daily_hours_end),
-          family_contact_name = COALESCE($17, family_contact_name),
-          family_contact_phone = COALESCE($18, family_contact_phone),
-          family_contact_email = COALESCE($19, family_contact_email),
-          billing_address = COALESCE($20, billing_address),
-          deceased_document_id = COALESCE($21, deceased_document_id),
-          family_contact_document_id = COALESCE($22, family_contact_document_id),
-          is_religious = COALESCE($23, is_religious)
-      WHERE id = $24
+          birth_date = COALESCE($4, birth_date),
+          death_date = COALESCE($5, death_date),
+          photo_url = COALESCE($6, photo_url),
+          emotional_message = COALESCE($7, emotional_message),
+          qr_message = COALESCE($8, qr_message),
+          template_id = COALESCE($9, template_id),
+          schedule_start = COALESCE($10, schedule_start),
+          schedule_end = COALESCE($11, schedule_end),
+          active = COALESCE($12, active),
+          exequias_venue_name = COALESCE($13, exequias_venue_name),
+          exequias_datetime = COALESCE($14, exequias_datetime),
+          final_destination_venue_name = COALESCE($15, final_destination_venue_name),
+          final_destination_datetime = COALESCE($16, final_destination_datetime),
+          daily_hours_start = COALESCE($17::time, daily_hours_start),
+          daily_hours_end = COALESCE($18::time, daily_hours_end),
+          family_contact_name = COALESCE($19, family_contact_name),
+          family_contact_phone = COALESCE($20, family_contact_phone),
+          family_contact_email = COALESCE($21, family_contact_email),
+          billing_address = COALESCE($22, billing_address),
+          deceased_document_id = COALESCE($23, deceased_document_id),
+          family_contact_document_id = COALESCE($24, family_contact_document_id),
+          is_religious = COALESCE($25, is_religious)
+      WHERE id = $26
       RETURNING *
     `, [
-      deceased_name, birth_year, death_year, photo_url,
+      deceased_name, yearFromDate(birth_date), yearFromDate(death_date), birth_date, death_date, photo_url,
       emotional_message, qr_message, template_id,
       schedule_start, schedule_end, active,
       exequias_venue_name, exequias_datetime,

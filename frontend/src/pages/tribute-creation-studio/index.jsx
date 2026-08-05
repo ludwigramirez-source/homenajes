@@ -20,12 +20,14 @@ const toLocalDatetimeInput = (iso) => {
   const pad = (n) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
-const toLocalDateInput = (iso) => {
-  if (!iso) return '';
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '';
-  const pad = (n) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+// Para columnas DATE (sin hora ni zona horaria) el backend devuelve
+// "AAAA-MM-DD" o un ISO con hora en punto UTC ("...T00:00:00.000Z"). Tomar
+// solo los primeros 10 caracteres evita pasar por new Date(...).getDate(),
+// que en un navegador con huso horario negativo (Bogota, UTC-5) puede
+// retroceder un dia al convertir la medianoche UTC a hora local.
+const toLocalDateInput = (val) => {
+  if (!val) return '';
+  return String(val).slice(0, 10);
 };
 
 const TributeCreationStudio = () => {
@@ -41,11 +43,12 @@ const TributeCreationStudio = () => {
   const [formData, setFormData] = useState({
     // Información del difunto
     fullName: '',
-    // Solo se guarda el año (memorials.birth_year/death_year): en toda la
-    // app (pantalla, book, listados) unicamente se muestra el año, nunca
-    // dia/mes, asi que el formulario pide directamente el año.
-    birthYear: '',
-    deathYear: '',
+    // Fecha completa (memorials.birth_date/death_date). El año se deriva en
+    // el backend (birth_year/death_year) porque es lo unico que se muestra
+    // en la pantalla, el book y los listados - pero la fecha completa queda
+    // guardada y editable aqui.
+    birthDate: '',
+    deathDate: '',
     deceasedDocumentId: '',
     biography: '',
     photo: null,
@@ -118,8 +121,10 @@ const TributeCreationStudio = () => {
         setFormData(prev => ({
           ...prev,
           fullName: m.deceased_name || '',
-          birthYear: m.birth_year ? String(m.birth_year) : '',
-          deathYear: m.death_year ? String(m.death_year) : '',
+          // Si por alguna razon aun no hay birth_date/death_date (memorial muy
+          // viejo sin backfill), se cae al 01/01 del año como ultimo recurso.
+          birthDate: m.birth_date ? toLocalDateInput(m.birth_date) : (m.birth_year ? `${m.birth_year}-01-01` : ''),
+          deathDate: m.death_date ? toLocalDateInput(m.death_date) : (m.death_year ? `${m.death_year}-01-01` : ''),
           deceasedDocumentId: m.deceased_document_id || '',
           biography: m.emotional_message || '',
           photo: null, // no reasignamos File; conservamos URL existente abajo
@@ -182,8 +187,8 @@ const TributeCreationStudio = () => {
     
     // Validaciones básicas
     if (!formData?.fullName?.trim()) newErrors.fullName = 'El nombre completo es requerido';
-    if (!formData?.birthYear) newErrors.birthYear = 'El año de nacimiento es requerido';
-    if (!formData?.deathYear) newErrors.deathYear = 'El año de fallecimiento es requerido';
+    if (!formData?.birthDate) newErrors.birthDate = 'La fecha de nacimiento es requerida';
+    if (!formData?.deathDate) newErrors.deathDate = 'La fecha de fallecimiento es requerida';
     if (!formData?.templateId) newErrors.templateId = 'Selecciona una plantilla';
     if (!formData?.funeralHome) newErrors.funeralHome = 'Debe seleccionar una funeraria';
     if (!formData?.room) newErrors.room = 'Debe seleccionar una sala';
@@ -212,11 +217,7 @@ const TributeCreationStudio = () => {
         photoUrl = uploadResp?.data?.photo_url || null;
       }
 
-      // 2) birth_year / death_year: el formulario ya captura directamente el año.
-      const birthYear = formData?.birthYear ? parseInt(formData.birthYear, 10) : null;
-      const deathYear = formData?.deathYear ? parseInt(formData.deathYear, 10) : null;
-
-      // 3) Si el usuario no especifico horarios del display, usamos ingreso/salida
+      // 2) Si el usuario no especifico horarios del display, usamos ingreso/salida
       //    como ventana del homenaje. Si tampoco hay ingreso/salida, usamos 30 dias.
       const now = new Date();
       const scheduleStart = formData?.serviceStartDate
@@ -229,8 +230,10 @@ const TributeCreationStudio = () => {
       const payload = {
         room_id: formData?.room,
         deceased_name: formData?.fullName,
-        birth_year: birthYear,
-        death_year: deathYear,
+        // El backend deriva birth_year/death_year (lo unico que se muestra
+        // en pantalla/book) a partir de estas fechas completas.
+        birth_date: formData?.birthDate || null,
+        death_date: formData?.deathDate || null,
         deceased_document_id: formData?.deceasedDocumentId || null,
         photo_url: photoUrl,
         emotional_message: formData?.biography
@@ -279,7 +282,7 @@ const TributeCreationStudio = () => {
 
   const getTabValidationStatus = (tabId) => {
     const tabErrors = {
-      deceased: ['fullName', 'birthYear', 'deathYear'],
+      deceased: ['fullName', 'birthDate', 'deathDate'],
       template: ['templateId'],
       location: ['funeralHome', 'room'],
       account: ['familyContactName', 'familyContactEmail']

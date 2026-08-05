@@ -201,6 +201,29 @@ const createTables = async () => {
     `);
     console.log('[MIGRATE] Columna is_religious agregada a "memorials"');
 
+    // ========== ALTER: memorials: fecha completa de nacimiento/fallecimiento ==========
+    // birth_year/death_year (arriba) siguen siendo lo unico que se muestra en
+    // la pantalla, el book y los listados - pero el formulario de creacion
+    // ahora pide la fecha completa (dia/mes/año) y queda guardada aqui para
+    // poder editarla despues. DATE (sin hora ni zona horaria) evita cualquier
+    // desfase de huso horario al guardar/leer.
+    await client.query(`
+      ALTER TABLE memorials
+        ADD COLUMN IF NOT EXISTS birth_date DATE,
+        ADD COLUMN IF NOT EXISTS death_date DATE
+    `);
+    // Backfill para homenajes ya creados: no se conoce su dia/mes real, asi
+    // que se completa con 01/01 del año que ya tenian guardado.
+    await client.query(`
+      UPDATE memorials SET birth_date = make_date(birth_year, 1, 1)
+      WHERE birth_year IS NOT NULL AND birth_date IS NULL
+    `);
+    await client.query(`
+      UPDATE memorials SET death_date = make_date(death_year, 1, 1)
+      WHERE death_year IS NOT NULL AND death_date IS NULL
+    `);
+    console.log('[MIGRATE] Columnas birth_date/death_date agregadas a "memorials" (backfill 01/01 desde el año)');
+
     // ========== TABLA: condolences (Condolencias) ==========
     await client.query(`
       CREATE TABLE IF NOT EXISTS condolences (

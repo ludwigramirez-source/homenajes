@@ -60,27 +60,21 @@ const DeceasedInfoForm = ({ formData, errors, updateFormData }) => {
         </div>
 
         <Input
-          type="number"
-          label="Año de Nacimiento"
-          placeholder="Ej: 1955"
-          min="1900"
-          max={new Date().getFullYear()}
-          value={formData?.birthYear}
-          onChange={(e) => updateFormData('birthYear', e?.target?.value)}
-          error={errors?.birthYear}
-          description="Solo el año: es lo único que se muestra en la pantalla y el book"
+          type="date"
+          label="Fecha de Nacimiento"
+          value={formData?.birthDate}
+          onChange={(e) => updateFormData('birthDate', e?.target?.value)}
+          error={errors?.birthDate}
+          description="En la pantalla y el book solo se muestra el año"
           required
         />
 
         <Input
-          type="number"
-          label="Año de Fallecimiento"
-          placeholder="Ej: 2026"
-          min="1900"
-          max={new Date().getFullYear()}
-          value={formData?.deathYear}
-          onChange={(e) => updateFormData('deathYear', e?.target?.value)}
-          error={errors?.deathYear}
+          type="date"
+          label="Fecha de Fallecimiento"
+          value={formData?.deathDate}
+          onChange={(e) => updateFormData('deathDate', e?.target?.value)}
+          error={errors?.deathDate}
           required
         />
 
