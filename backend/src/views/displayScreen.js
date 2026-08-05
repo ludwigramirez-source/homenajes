@@ -931,6 +931,13 @@ function themedCss(theme, screen, baseUrl) {
     '.t-v2-row { font-size: 30px; line-height: 1.7; color: ' + theme.titulo + '; white-space: nowrap; overflow: hidden; }',
     '.t-v2-lbl { font-weight: 700; }',
     '.t-v2-val { font-weight: 500; }',
+    // Exequias / Destino Final: el nombre del lugar es texto libre (puede ser
+    // largo, ej. "Cremacion Jardines del Renacer") y ya no cabe en una sola
+    // linea junto con la hora. Se envuelve en hasta 2 lineas y la hora baja a
+    // su propia linea, mas grande, para darle enfasis.
+    '.t-v2-venue-row { font-size: 30px; line-height: 1.4; color: ' + theme.titulo + '; ',
+    '  white-space: normal; word-wrap: break-word; overflow: hidden; max-height: 130px; margin-top: 4px; }',
+    '.t-v2-venue-time { display: block; font-weight: 800; font-size: 36px; margin-top: 6px; color: ' + theme.titulo + '; }',
     // ---- Pantalla 3: mensajes ----
     '.t-msg-head { text-align: center; padding: 36px 40px 20px; }',
     '.t-msg-eyebrow { font-size: 36px; font-weight: 600; color: ' + theme.eyebrow + '; }',
@@ -1020,8 +1027,17 @@ function renderThemedServiceV2(m, theme) {
   var destTime = timeOnly12h(m.finalDestinationDatetime);
   var homenaje = formatDateLong(m.scheduleStart) || 'Por confirmar';
   var despedida = formatDateLong(m.scheduleEnd) || 'Por confirmar';
-  var exequias = escapeHtml(m.exequiasVenue || 'Por confirmar') + (exqTime ? ' ' + exqTime : '');
-  var destino = escapeHtml(m.finalDestinationVenue || 'Por confirmar') + (destTime ? ' ' + destTime : '');
+  var exequiasVenue = escapeHtml(m.exequiasVenue || 'Por confirmar');
+  var destinoVenue = escapeHtml(m.finalDestinationVenue || 'Por confirmar');
+
+  // Nombre del lugar y hora en lineas separadas: el nombre es texto libre y
+  // puede ser largo, y asi la hora queda mas visible en vez de perderse al
+  // final de una linea larga.
+  function venueBlock(label, venue, time) {
+    return '<div class="t-v2-venue-row"><span class="t-v2-lbl">' + label + ':</span> <span class="t-v2-val">' + venue + '</span>' +
+      (time ? '<span class="t-v2-venue-time">' + time + '</span>' : '') +
+      '</div>';
+  }
 
   return '<div class="t-v2-wrap"><table style="width:100%;height:100%;border-collapse:collapse;"><tr><td style="vertical-align:middle;">' +
     relig +
@@ -1032,11 +1048,11 @@ function renderThemedServiceV2(m, theme) {
     '<table class="t-v2-grid"><tr>' +
       '<td class="t-v2-col">' +
         '<div class="t-v2-row"><span class="t-v2-lbl">Homenaje:</span> <span class="t-v2-val">' + escapeHtml(homenaje) + '</span></div>' +
-        '<div class="t-v2-row"><span class="t-v2-lbl">Exequias:</span> <span class="t-v2-val">' + exequias + '</span></div>' +
+        venueBlock('Exequias', exequiasVenue, exqTime) +
       '</td>' +
       '<td class="t-v2-col">' +
         '<div class="t-v2-row"><span class="t-v2-lbl">Despedida:</span> <span class="t-v2-val">' + escapeHtml(despedida) + '</span></div>' +
-        '<div class="t-v2-row"><span class="t-v2-lbl">Destino Final:</span> <span class="t-v2-val">' + destino + '</span></div>' +
+        venueBlock('Destino Final', destinoVenue, destTime) +
       '</td>' +
     '</tr></table>' +
   '</td></tr></table></div>';
