@@ -5,6 +5,29 @@ const db = require('../config/database');
 const emailService = require('../services/email.service');
 const bookService = require('../services/book.service');
 
+// Carga un memorial + location_id, validando el scoping de sede de 'operator'.
+// Devuelve el memorial o null si ya se respondio con un error (404/403).
+async function loadMemorialScoped(req, res, memorialId) {
+  const result = await db.query(`
+    SELECT m.*, r.location_id
+    FROM memorials m
+    JOIN rooms r ON m.room_id = r.id
+    WHERE m.id = $1
+  `, [memorialId]);
+
+  if (result.rows.length === 0) {
+    res.status(404).json({ success: false, error: 'Homenaje no encontrado' });
+    return null;
+  }
+
+  const memorial = result.rows[0];
+  if (req.user.role === 'operator' && memorial.location_id !== req.user.location_id) {
+    res.status(403).json({ success: false, error: 'No puedes acceder al book de un homenaje de otra sede' });
+    return null;
+  }
+  return memorial;
+}
+
 // ---------- Configuracion SMTP ----------
 
 // Nunca se expone smtp_password en texto plano, solo has_password (bool).
@@ -199,6 +222,35 @@ const send = async (req, res, next) => {
   }
 };
 
+// GET /api/books/:memorialId/preview
+// Genera el PDF del book al vuelo (mismo contenido que produciria un envio:
+// mensajes aprobados a la fecha) y lo devuelve inline, SIN guardarlo en disco
+// ni registrar una fila en book_sends ni enviar correo - es solo para
+// visualizar/descargar desde el listado de homenajes antes de que el book
+// se envie automaticamente (o para revisarlo de nuevo despues).
+const preview = async (req, res, next) => {
+  try {
+    const { memorialId } = req.params;
+    const memorial = await loadMemorialScoped(req, res, memorialId);
+    if (!memorial) return; // loadMemorialScoped ya respondio el error
+
+    const condolencesResult = await db.query(
+      `SELECT * FROM condolences WHERE memorial_id = $1 AND moderation_status = 'approved' ORDER BY created_at DESC`,
+      [memorialId]
+    );
+
+    const pdfBuffer = await bookService.generateBookPdf(memorial, condolencesResult.rows);
+
+    const safeName = (memorial.deceased_name || 'homenaje')
+      .replace(/[^a-zA-Z0-9-_ ]/g, '').trim() || 'homenaje';
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="Libro-${safeName}.pdf"`);
+    res.send(pdfBuffer);
+  } catch (error) {
+    next(error);
+  }
+};
+
 // GET /api/books/:id/download
 const download = async (req, res, next) => {
   try {
@@ -235,4 +287,4 @@ const download = async (req, res, next) => {
   }
 };
 
-module.exports = { getSettings, updateSettings, testSettings, getAll, send, download };
+module.exports = { getSettings, updateSettings, testSettings, getAll, send, preview, download };

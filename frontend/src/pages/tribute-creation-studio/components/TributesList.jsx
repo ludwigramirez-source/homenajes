@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { memorialsService } from '../../../services/api';
+import { booksService } from '../../../services/booksService';
 import Icon from '../../../components/AppIcon';
 import { cn } from '../../../utils/cn';
 import { useTableSort, SortTh } from '../../../components/ui/sortable';
@@ -31,6 +32,7 @@ const TributesList = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [copiedId, setCopiedId] = useState(null);
+  const [bookLoadingId, setBookLoadingId] = useState(null);
   // Filtro rapido: 'all' | 'active' | 'inactive'
   const [filter, setFilter] = useState('all');
 
@@ -69,6 +71,18 @@ const TributesList = () => {
     } catch (e) {
       // Fallback: prompt para que copien manualmente
       window.prompt('Copia la URL:', url);
+    }
+  };
+
+  const viewBook = async (t) => {
+    try {
+      setBookLoadingId(t.id);
+      const safeName = (t.deceased_name || 'homenaje').trim().replace(/[^a-zA-Z0-9]+/g, '_');
+      await booksService.preview(t.id, `libro_condolencias_${safeName}.pdf`);
+    } catch (e) {
+      alert('Error generando el book: ' + (e.message || 'Error desconocido'));
+    } finally {
+      setBookLoadingId(null);
     }
   };
 
@@ -272,6 +286,15 @@ const TributesList = () => {
                       >
                         <Icon name="ExternalLink" size={16} />
                       </a>
+                      <button
+                        onClick={() => viewBook(t)}
+                        disabled={bookLoadingId === t.id}
+                        className="p-2 rounded-md hover:bg-muted transition-colors text-foreground disabled:opacity-50"
+                        title="Ver book (PDF) de este homenaje"
+                      >
+                        <Icon name={bookLoadingId === t.id ? 'Loader' : 'BookOpen'} size={16}
+                          className={bookLoadingId === t.id ? 'animate-spin' : ''} />
+                      </button>
                       <button
                         onClick={() => copyUrl(displayUrl, t.id)}
                         className={cn(

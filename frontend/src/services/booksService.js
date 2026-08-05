@@ -16,6 +16,61 @@ export const booksService = {
   // Envio manual / reenvio de un homenaje puntual
   send: (memorialId) => api.post(`/books/${memorialId}/send`).then(r => r.data),
 
+  // Vista previa del book de un homenaje: genera el PDF al vuelo (sin
+  // guardarlo ni enviar correo) y lo abre en una pestaña nueva usando un
+  // blob autenticado (un <a href> directo no podria mandar el Bearer token).
+  // El propio visor de PDF del navegador permite descargarlo si hace falta.
+  //
+  // window.open() se llama ANTES del await/fetch, sincrono con el click: los
+  // navegadores solo permiten abrir pestañas sin bloquearlas como popup si el
+  // open() ocurre en la misma tarea del gesto del usuario. Se abre una
+  // pestaña en blanco de inmediato y se le asigna la URL del PDF cuando
+  // termina el fetch autenticado.
+  preview: async (memorialId, filename) => {
+    const newTab = window.open('', '_blank');
+
+    let response;
+    try {
+      const token = localStorage.getItem('sercofun_token');
+      response = await fetch(`${API_URL}/api/books/${memorialId}/preview`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
+    } catch (err) {
+      if (newTab) newTab.close();
+      throw err;
+    }
+
+    if (!response.ok) {
+      if (newTab) newTab.close();
+      let error = 'No se pudo generar el book';
+      try {
+        const data = await response.json();
+        error = data?.error || error;
+      } catch {
+        // La respuesta no era JSON; se conserva el mensaje generico.
+      }
+      throw new Error(error);
+    }
+
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+
+    if (newTab) {
+      newTab.location.href = url;
+    } else {
+      // Bloqueado igual (algunos navegadores bloquean hasta el open() vacio): descarga directa.
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename || `libro-condolencias-${memorialId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    }
+    // Revocar despues de un momento: la pestaña nueva ya tiene el PDF
+    // cargado en memoria; revocar de inmediato lo rompe mientras aun carga.
+    setTimeout(() => URL.revokeObjectURL(url), 30000);
+  },
+
   // Descarga autenticada del PDF ya generado: hace fetch con el mismo Bearer token
   // que usa el resto de la app, arma un blob y dispara la descarga en el navegador.
   download: async (id, filename) => {
