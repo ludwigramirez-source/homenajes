@@ -31,13 +31,19 @@ const getAll = async (req, res, next) => {
     `;
 
     const params = [];
+    // El operador de sede SOLO ve homenajes de su propia sede (ignora
+    // cualquier location_id que venga por query string, para que no pueda
+    // pedir explicitamente los de otra sede).
+    if (req.user && req.user.role === 'operator') {
+      params.push(req.user.location_id || '00000000-0000-0000-0000-000000000000');
+      query += ` AND l.id = $${params.length}`;
+    } else if (location_id) {
+      params.push(location_id);
+      query += ` AND l.id = $${params.length}`;
+    }
     if (active !== undefined) {
       params.push(active === 'true');
       query += ` AND m.active = $${params.length}`;
-    }
-    if (location_id) {
-      params.push(location_id);
-      query += ` AND l.id = $${params.length}`;
     }
     if (room_id) {
       params.push(room_id);
@@ -62,6 +68,7 @@ const getById = async (req, res, next) => {
         m.*,
         r.name as room_name,
         r.code as room_code,
+        l.id as location_id,
         l.name as location_name,
         l.city as location_city,
         u.full_name as created_by_name
@@ -74,6 +81,11 @@ const getById = async (req, res, next) => {
 
     if (memorialResult.rows.length === 0) {
       return res.status(404).json({ success: false, error: 'Homenaje no encontrado' });
+    }
+
+    // El operador de sede solo puede ver/editar homenajes de su propia sede.
+    if (req.user.role === 'operator' && memorialResult.rows[0].location_id !== req.user.location_id) {
+      return res.status(403).json({ success: false, error: 'No tienes acceso a homenajes de otra sede' });
     }
 
     const condolencesResult = await db.query(
@@ -125,6 +137,15 @@ const create = async (req, res, next) => {
         success: false,
         error: 'template_id invalido. Valores permitidos: ' + VALID_TEMPLATE_IDS.join(', ')
       });
+    }
+
+    // El operador de sede solo puede crear homenajes en salas de su propia
+    // sede (evita que por error asigne el homenaje a otra sede).
+    if (req.user.role === 'operator') {
+      const roomCheck = await db.query('SELECT location_id FROM rooms WHERE id = $1', [room_id]);
+      if (roomCheck.rows.length === 0 || roomCheck.rows[0].location_id !== req.user.location_id) {
+        return res.status(403).json({ success: false, error: 'Solo puedes crear homenajes en tu sede asignada' });
+      }
     }
 
     const result = await db.query(`
@@ -187,6 +208,19 @@ const update = async (req, res, next) => {
         success: false,
         error: 'template_id invalido. Valores permitidos: ' + VALID_TEMPLATE_IDS.join(', ')
       });
+    }
+
+    // El operador de sede solo puede editar homenajes de su propia sede.
+    if (req.user.role === 'operator') {
+      const check = await db.query(`
+        SELECT r.location_id FROM memorials m JOIN rooms r ON m.room_id = r.id WHERE m.id = $1
+      `, [id]);
+      if (check.rows.length === 0) {
+        return res.status(404).json({ success: false, error: 'Homenaje no encontrado' });
+      }
+      if (check.rows[0].location_id !== req.user.location_id) {
+        return res.status(403).json({ success: false, error: 'Solo puedes editar homenajes de tu sede asignada' });
+      }
     }
 
     const result = await db.query(`

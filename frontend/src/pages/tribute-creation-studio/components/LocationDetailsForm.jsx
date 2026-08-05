@@ -1,12 +1,20 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import Select from '../../../components/ui/Select';
 import Input from '../../../components/ui/Input';
+import { useAuth } from '../../../context/AuthContext';
 import {
   locationsService,
   roomsService
 } from '../../../services/api';
 
 const LocationDetailsForm = ({ formData, errors, updateFormData }) => {
+  const { user } = useAuth();
+  // El operador de sede solo puede crear/editar homenajes en su propia sede
+  // (el backend tambien lo valida; esto evita que ni siquiera intente
+  // elegir otra sede en el formulario).
+  const isOperator = user?.role === 'operator';
+  const operatorLocationId = user?.location_id || '';
+
   const [locations, setLocations] = useState([]);
   const [rooms, setRooms] = useState([]);
   const [loadingRooms, setLoadingRooms] = useState(false);
@@ -25,6 +33,14 @@ const LocationDetailsForm = ({ formData, errors, updateFormData }) => {
     })();
     return () => { cancelled = true; };
   }, []);
+
+  // Si es operador de sede, precargar automaticamente su sede asignada
+  // (solo si el formulario aun no tiene una funeraria elegida, ej. al crear).
+  useEffect(() => {
+    if (isOperator && operatorLocationId && !formData?.funeralHome) {
+      updateFormData('funeralHome', operatorLocationId);
+    }
+  }, [isOperator, operatorLocationId, formData?.funeralHome]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Cuando cambia la funeraria, cargar las salas correspondientes (cascada).
   useEffect(() => {
@@ -54,10 +70,10 @@ const LocationDetailsForm = ({ formData, errors, updateFormData }) => {
     }
   }, [formData?.funeralHome]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const locationOptions = useMemo(
-    () => locations.map(l => ({ value: l.id, label: `${l.name} (${l.city})` })),
-    [locations]
-  );
+  const locationOptions = useMemo(() => {
+    const visible = isOperator ? locations.filter(l => l.id === operatorLocationId) : locations;
+    return visible.map(l => ({ value: l.id, label: `${l.name} (${l.city})` }));
+  }, [locations, isOperator, operatorLocationId]);
   const roomTypeLabel = (t) => ({
     ejecutiva: 'Ejecutiva', presidencial: 'Presidencial', vip: 'VIP'
   }[t] || '');
@@ -84,7 +100,9 @@ const LocationDetailsForm = ({ formData, errors, updateFormData }) => {
           onChange={(value) => updateFormData('funeralHome', value)}
           error={errors?.funeralHome}
           required
-          searchable
+          searchable={!isOperator}
+          disabled={isOperator}
+          description={isOperator ? 'Tu usuario solo puede crear/editar homenajes en esta sede' : undefined}
         />
 
         <Select
