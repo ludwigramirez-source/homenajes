@@ -74,14 +74,17 @@ const Sidebar = ({ mobileOpen, onClose }) => {
         )}
         style={{ background: '#1a7472' }}
       >
-        {/* Marca: solo el logo (ya contiene el nombre) + bajada, centrados */}
+        {/* Marca: solo el logo (ya contiene el nombre) + bajada, centrados.
+            El logo enlaza al Resumen ejecutivo (home por defecto del panel). */}
         <div className="px-5 py-5 border-b border-white/15 text-center">
-          <img
-            src="/logo-los-olivos-blanco.png"
-            alt="Los Olivos"
-            className="mx-auto w-auto"
-            style={{ height: '48px', maxWidth: '170px', objectFit: 'contain' }}
-          />
+          <Link to="/executive-overview" className="inline-block">
+            <img
+              src="/logo-los-olivos-blanco.png"
+              alt="Los Olivos"
+              className="mx-auto w-auto"
+              style={{ height: '48px', maxWidth: '170px', objectFit: 'contain' }}
+            />
+          </Link>
           <p className="text-xs text-white/65 mt-2 font-body">Homenajes web</p>
         </div>
 
