@@ -41,8 +41,11 @@ const TributeCreationStudio = () => {
   const [formData, setFormData] = useState({
     // Información del difunto
     fullName: '',
-    birthDate: '',
-    deathDate: '',
+    // Solo se guarda el año (memorials.birth_year/death_year): en toda la
+    // app (pantalla, book, listados) unicamente se muestra el año, nunca
+    // dia/mes, asi que el formulario pide directamente el año.
+    birthYear: '',
+    deathYear: '',
     deceasedDocumentId: '',
     biography: '',
     photo: null,
@@ -115,8 +118,8 @@ const TributeCreationStudio = () => {
         setFormData(prev => ({
           ...prev,
           fullName: m.deceased_name || '',
-          birthDate: m.birth_year ? `${m.birth_year}-01-01` : '',
-          deathDate: m.death_year ? `${m.death_year}-01-01` : '',
+          birthYear: m.birth_year ? String(m.birth_year) : '',
+          deathYear: m.death_year ? String(m.death_year) : '',
           deceasedDocumentId: m.deceased_document_id || '',
           biography: m.emotional_message || '',
           photo: null, // no reasignamos File; conservamos URL existente abajo
@@ -179,8 +182,8 @@ const TributeCreationStudio = () => {
     
     // Validaciones básicas
     if (!formData?.fullName?.trim()) newErrors.fullName = 'El nombre completo es requerido';
-    if (!formData?.birthDate) newErrors.birthDate = 'La fecha de nacimiento es requerida';
-    if (!formData?.deathDate) newErrors.deathDate = 'La fecha de fallecimiento es requerida';
+    if (!formData?.birthYear) newErrors.birthYear = 'El año de nacimiento es requerido';
+    if (!formData?.deathYear) newErrors.deathYear = 'El año de fallecimiento es requerido';
     if (!formData?.templateId) newErrors.templateId = 'Selecciona una plantilla';
     if (!formData?.funeralHome) newErrors.funeralHome = 'Debe seleccionar una funeraria';
     if (!formData?.room) newErrors.room = 'Debe seleccionar una sala';
@@ -209,9 +212,9 @@ const TributeCreationStudio = () => {
         photoUrl = uploadResp?.data?.photo_url || null;
       }
 
-      // 2) Calcular birth_year / death_year a partir de las fechas del form.
-      const birthYear = formData?.birthDate ? new Date(formData.birthDate).getFullYear() : null;
-      const deathYear = formData?.deathDate ? new Date(formData.deathDate).getFullYear() : null;
+      // 2) birth_year / death_year: el formulario ya captura directamente el año.
+      const birthYear = formData?.birthYear ? parseInt(formData.birthYear, 10) : null;
+      const deathYear = formData?.deathYear ? parseInt(formData.deathYear, 10) : null;
 
       // 3) Si el usuario no especifico horarios del display, usamos ingreso/salida
       //    como ventana del homenaje. Si tampoco hay ingreso/salida, usamos 30 dias.
@@ -276,7 +279,7 @@ const TributeCreationStudio = () => {
 
   const getTabValidationStatus = (tabId) => {
     const tabErrors = {
-      deceased: ['fullName', 'birthDate', 'deathDate'],
+      deceased: ['fullName', 'birthYear', 'deathYear'],
       template: ['templateId'],
       location: ['funeralHome', 'room'],
       account: ['familyContactName', 'familyContactEmail']

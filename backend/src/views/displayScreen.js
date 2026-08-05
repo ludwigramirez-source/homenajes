@@ -71,10 +71,35 @@ function format12h(hhmm) {
   return h12 + ':' + m + ' ' + ampm;
 }
 
+// El servidor Node corre en UTC (el contenedor no fija TZ), pero todas las
+// fechas/horas que carga el staff en el wizard son hora de Colombia. Sin esto,
+// new Date(iso).getHours() devuelve la hora UTC (5 horas adelantada) en vez de
+// la hora de Bogota, que es justo el bug reportado ("el formulario muestra
+// 4:00 p.m. y la pantalla muestra 9:00 p.m."). Se arma una fecha "disfrazada"
+// cuyos getters de hora local devuelven los componentes vistos en Bogota,
+// sin importar en que zona horaria corra el proceso de Node.
+var BOGOTA_TZ = 'America/Bogota';
+function toZonedDate(d, timeZone) {
+  var parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: timeZone,
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+    hour12: false
+  }).formatToParts(d).reduce(function (acc, p) { acc[p.type] = p.value; return acc; }, {});
+  // hour12:false devuelve "24" a medianoche en vez de "00" en algunos motores ICU.
+  var hour = parseInt(parts.hour, 10);
+  if (hour === 24) hour = 0;
+  return new Date(
+    parseInt(parts.year, 10), parseInt(parts.month, 10) - 1, parseInt(parts.day, 10),
+    hour, parseInt(parts.minute, 10), parseInt(parts.second, 10)
+  );
+}
+
 function formatDateTime(iso) {
   if (!iso) return { date: '', time: '' };
-  var d = new Date(iso);
-  if (isNaN(d.getTime())) return { date: '', time: '' };
+  var raw = new Date(iso);
+  if (isNaN(raw.getTime())) return { date: '', time: '' };
+  var d = toZonedDate(raw, BOGOTA_TZ);
   var date = SPANISH_DAYS[d.getDay()] + ' ' + d.getDate() + ' de ' +
              SPANISH_MONTHS[d.getMonth()] + ' de ' + d.getFullYear();
   var hour = d.getHours();
@@ -89,8 +114,9 @@ function formatDateTime(iso) {
 // Formato de la guia de estilo: "Sabado 03 de Enero de 2026" (dia con cero).
 function formatDateLong(iso) {
   if (!iso) return '';
-  var d = new Date(iso);
-  if (isNaN(d.getTime())) return '';
+  var raw = new Date(iso);
+  if (isNaN(raw.getTime())) return '';
+  var d = toZonedDate(raw, BOGOTA_TZ);
   var day = d.getDate();
   if (day < 10) day = '0' + day;
   return SPANISH_DAYS[d.getDay()] + ' ' + day + ' de ' +
@@ -100,8 +126,9 @@ function formatDateLong(iso) {
 // Solo la hora ("2:00 p.m") de un datetime ISO, reutilizando format12h.
 function timeOnly12h(iso) {
   if (!iso) return '';
-  var d = new Date(iso);
-  if (isNaN(d.getTime())) return '';
+  var raw = new Date(iso);
+  if (isNaN(raw.getTime())) return '';
+  var d = toZonedDate(raw, BOGOTA_TZ);
   var hh = d.getHours();
   var mm = d.getMinutes();
   var hhmm = (hh < 10 ? '0' : '') + hh + ':' + (mm < 10 ? '0' : '') + mm;
