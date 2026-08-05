@@ -1,5 +1,16 @@
-// Generacion y gestion en disco del "book" (PDF con los mensajes de
-// condolencia aprobados) de un homenaje.
+// Generacion y gestion en disco del "book" (PDF conmemorativo) de un homenaje.
+//
+// Diseno segun `GUIA BOOK - Proyecto Tributo.pdf`: 4 secciones, cada una a
+// tamano media carta (5.5 x 8.5 in = 396 x 612 pt a 72ppi, igual que los PNG
+// de fondo suministrados, asi que se dibujan a escala 1:1):
+//   1. Obituario (foto + nombre + anios) sobre plantilla-obituario-bg.png
+//   2. Mensaje de la familia sobre plantilla-mensaje-familia-bg.png
+//   3. Mensajes de allegados (con hasta 2 fotos c/u) sobre plantilla-general-bg.png,
+//      paginados dinamicamente segun el contenido de cada mensaje
+//   4. Panel institucional de Alivia sobre plantilla-general-bg.png
+// Los colores/fondos son fijos de marca (Alivia + Los Olivos): ya NO varian
+// por template_id del homenaje (el libro no representa el mismo tema visual
+// que la pantalla TV, es un documento de marca aparte).
 //
 // El PDF NUNCA se guarda bajo UPLOAD_DIR (esa carpeta se sirve publicamente
 // via express.static sin auth) sino en BOOKS_STORAGE_DIR, una carpeta nueva
@@ -14,30 +25,54 @@ const emailService = require('./email.service');
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(__dirname, '../../uploads');
 const BOOKS_STORAGE_DIR = process.env.BOOKS_STORAGE_DIR || path.join(__dirname, '../../storage/books');
+const ASSETS_DIR = path.join(__dirname, '../assets/book');
+const FONTS_DIR = path.join(__dirname, '../assets/fonts');
 
-// Paleta por template_id del memorial (mismos colores que
-// frontend/src/pages/memorial-form/themes.js) para que el book se sienta
-// parte del mismo homenaje. id desconocido -> 'default'.
-const TEMPLATE_COLORS = {
-  default: { accent: '#f0c040', base: '#1a7472' },
-  // Paleta segun la guia FINAL slides. Los fondos "4 elementos" (agua/aire/
-  // fuego/tierra/bosque) se retiraron por completo: ya no hay homenajes
-  // activos usandolos.
-  nino: { accent: '#182939', base: '#1a7472' },
-  nina: { accent: '#511633', base: '#1a7472' },
-  nubes: { accent: '#182939', base: '#1a7472' },
-  naturaleza: { accent: '#3c5c46', base: '#1a7472' },
-  adulto: { accent: '#382b22', base: '#1a7472' }
-};
+// ---------- Paleta y tipografia (fijas, marca Alivia/Los Olivos) ----------
+const TEAL = '#337D7C';
+const TEXT_DARK = '#3C3C3B';
+const WHITE = '#FFFFFF';
+const MESSAGE_BOX_OPACITY = 0.25;
 
-function getTemplateColors(templateId) {
-  return TEMPLATE_COLORS[templateId] || TEMPLATE_COLORS.default;
+// Texto institucional definitivo (de `Texto final.docx`, tomado como fuente
+// de verdad segun el brief aunque el mockup visual diga "Unidad de Apoyo al
+// Duelo" en vez de "Unidad de Apoyo Emocional" - pendiente de confirmar con
+// quien aprobo el copy). Se deja tal cual, incluido el probable typo
+// "intension" (por "intencion"), sin corregir unilateralmente.
+const ALIVIA_PARAGRAPHS = [
+  'Cuando la vida pueda tornarse frágil, lo más valioso es contar con un apoyo que nos pueda aliviar en medio de la adversidad.',
+  'Por eso en nuestra Unidad de Apoyo Emocional, queremos ser ese apoyo que guía con intensión y profundo respeto.'
+];
+
+// ---------- Geometria de pagina (media carta, igual que los PNG de fondo) ----------
+const PAGE_WIDTH = 396;
+const PAGE_HEIGHT = 612;
+const CONTENT_MARGIN = 30;
+const CONTENT_WIDTH = PAGE_WIDTH - CONTENT_MARGIN * 2;
+
+// Columnas del bloque de cada mensaje de condolencia (seccion 3)
+const LEFT_COL_WIDTH = 195;
+const COL_GAP = 12;
+const RIGHT_COL_WIDTH = CONTENT_WIDTH - LEFT_COL_WIDTH - COL_GAP;
+const PHOTO_SIZE = 61;
+const PHOTO_GAP = 6;
+const MSG_BOX_PADDING = 10;
+const MSG_TOP_START = 40;
+const MSG_BLOCK_GAP = 20;
+// Deja libre la franja de olas teal del pie de plantilla-general-bg.png.
+const MSG_BOTTOM_SAFE = 46;
+
+function assetPath(name) {
+  return path.join(ASSETS_DIR, name);
 }
 
-// Asegura que la carpeta de almacenamiento de books exista.
-function ensureBooksStorageDir() {
-  fs.mkdirSync(BOOKS_STORAGE_DIR, { recursive: true });
-  return BOOKS_STORAGE_DIR;
+function registerFonts(doc) {
+  doc.registerFont('Raleway-Medium', path.join(FONTS_DIR, 'Raleway-Medium.ttf'));
+  doc.registerFont('Raleway-Bold', path.join(FONTS_DIR, 'Raleway-Bold.ttf'));
+}
+
+function drawBackground(doc, filename) {
+  doc.image(assetPath(filename), 0, 0, { width: PAGE_WIDTH, height: PAGE_HEIGHT });
 }
 
 // Descarga una imagen a Buffer. Soporta rutas relativas locales
@@ -74,206 +109,241 @@ async function fetchImageBuffer(photoUrl) {
     if (!fs.existsSync(localPath)) return null;
     return fs.readFileSync(localPath);
   } catch (err) {
-    console.error('[BOOK] No se pudo descargar la foto del memorial:', err.message);
+    console.error('[BOOK] No se pudo descargar una imagen del book:', err.message);
     return null;
   }
 }
 
-const PAGE_MARGIN = 56;
+// Asegura que la carpeta de almacenamiento de books exista.
+function ensureBooksStorageDir() {
+  fs.mkdirSync(BOOKS_STORAGE_DIR, { recursive: true });
+  return BOOKS_STORAGE_DIR;
+}
 
-// Dibuja el pie de pagina (numero de pagina + marca) en la posicion actual.
-function drawFooter(doc, colors, pageNumber) {
-  const bottom = doc.page.height - 40;
-  doc.fontSize(8)
-    .font('Times-Roman')
-    .fillColor('#888888')
-    .text('Los Olivos · SERCOFUN', PAGE_MARGIN, bottom, {
-      width: doc.page.width - PAGE_MARGIN * 2,
-      align: 'left'
+function formatYears(memorial) {
+  const b = memorial.birth_year;
+  const d = memorial.death_year;
+  if (b && d) return `${b} - ${d}`;
+  if (b) return `${b}`;
+  if (d) return `${d}`;
+  return '';
+}
+
+// Dibuja una imagen recortada tipo "cover" (llena el rectangulo destino
+// manteniendo proporcion, recortando el sobrante) dentro de un rectangulo
+// con esquinas redondeadas. valign 'top' prioriza la parte superior de la
+// foto (donde tipicamente esta la cara), igual que el recorte usado en la
+// pantalla TV.
+function drawCoverImage(doc, buffer, x, y, w, h, radius, valign) {
+  doc.save();
+  if (radius) doc.roundedRect(x, y, w, h, radius).clip();
+  else doc.rect(x, y, w, h).clip();
+  doc.image(buffer, x, y, { cover: [w, h], align: 'center', valign: valign || 'center' });
+  doc.restore();
+}
+
+// ---------- Seccion 1: Obituario ----------
+async function drawObituarioPage(doc, memorial) {
+  drawBackground(doc, 'plantilla-obituario-bg.png');
+
+  doc.font('Raleway-Bold').fontSize(15).fillColor(WHITE)
+    .text('En memoria de', 0, 96, { width: PAGE_WIDTH, align: 'center' });
+
+  doc.font('Raleway-Medium').fontSize(19).fillColor(WHITE)
+    .text(memorial.deceased_name || '', CONTENT_MARGIN, 124, {
+      width: CONTENT_WIDTH, align: 'center'
     });
-  doc.fontSize(8)
-    .fillColor('#888888')
-    .text(String(pageNumber), PAGE_MARGIN, bottom, {
-      width: doc.page.width - PAGE_MARGIN * 2,
-      align: 'right'
+
+  const photoW = 210;
+  const photoH = 256;
+  const photoX = (PAGE_WIDTH - photoW) / 2;
+  const photoY = 190;
+  const photoBuffer = await fetchImageBuffer(memorial.photo_url);
+  if (photoBuffer) {
+    try {
+      drawCoverImage(doc, photoBuffer, photoX, photoY, photoW, photoH, 6, 'top');
+    } catch (err) {
+      console.error('[BOOK] No se pudo dibujar la foto del obituario:', err.message);
+    }
+  }
+
+  const years = formatYears(memorial);
+  if (years) {
+    doc.font('Raleway-Medium').fontSize(13).fillColor(WHITE)
+      .text(years, 0, photoY + photoH + 16, { width: PAGE_WIDTH, align: 'center' });
+  }
+}
+
+// ---------- Seccion 2: Mensaje de la familia ----------
+function drawFamilyMessagePage(doc, memorial) {
+  drawBackground(doc, 'plantilla-mensaje-familia-bg.png');
+
+  const leafW = 42;
+  const leafH = 37;
+  doc.image(assetPath('decoracion-hoja.png'), (PAGE_WIDTH - leafW) / 2, 92, {
+    width: leafW, height: leafH
+  });
+
+  const textMargin = 55;
+  doc.font('Raleway-Medium').fontSize(11).fillColor(TEXT_DARK)
+    .text(memorial.emotional_message || '', textMargin, 150, {
+      width: PAGE_WIDTH - textMargin * 2,
+      align: 'center'
     });
 }
 
-function formatDate(date) {
-  try {
-    return new Date(date).toLocaleDateString('es-CO', {
-      year: 'numeric', month: 'long', day: 'numeric'
-    });
-  } catch (_) {
-    return '';
+// ---------- Seccion 3: Mensajes de allegados (con fotos) ----------
+
+// Precalcula la altura que ocupara el bloque de un mensaje, sin dibujarlo,
+// para decidir si cabe en la pagina actual antes de escribir nada.
+function measureCondolenceBlock(doc, c) {
+  const lineGap = 3;
+  doc.font('Raleway-Bold').fontSize(9);
+  const labelLineH = doc.currentLineHeight() + lineGap;
+  let leftH = labelLineH * 3; // Nombre / Correo / Numero
+  leftH += labelLineH; // "Mensaje:"
+
+  doc.font('Raleway-Medium').fontSize(9);
+  const textWidth = LEFT_COL_WIDTH - MSG_BOX_PADDING * 2;
+  const msgTextHeight = doc.heightOfString(c.message || '', { width: textWidth });
+  const boxHeight = msgTextHeight + MSG_BOX_PADDING * 2;
+  leftH += 4 + boxHeight;
+
+  const photos = [c.file1_url, c.file2_url].filter(Boolean);
+  let rightH = 0;
+  if (photos.length > 0) {
+    rightH = doc.currentLineHeight() + 4 + PHOTO_SIZE;
   }
+
+  return { height: Math.max(leftH, rightH), boxHeight, photos };
+}
+
+async function drawCondolenceBlock(doc, c, y, measured) {
+  const leftX = CONTENT_MARGIN;
+  const rightX = CONTENT_MARGIN + LEFT_COL_WIDTH + COL_GAP;
+  let ly = y;
+
+  function labelValueLine(label, value) {
+    doc.font('Raleway-Bold').fontSize(9).fillColor(TEXT_DARK)
+      .text(label + ' ', leftX, ly, { continued: true, width: LEFT_COL_WIDTH });
+    doc.font('Raleway-Medium').fontSize(9).fillColor(TEXT_DARK)
+      .text(value || '—');
+    ly = doc.y + 3;
+  }
+
+  labelValueLine('Nombre:', c.sender_name);
+  labelValueLine('Correo:', c.sender_email);
+  labelValueLine('Número:', c.sender_phone);
+
+  doc.font('Raleway-Bold').fontSize(9).fillColor(TEXT_DARK)
+    .text('Mensaje:', leftX, ly, { width: LEFT_COL_WIDTH });
+  ly = doc.y + 4;
+
+  doc.save();
+  doc.fillOpacity(MESSAGE_BOX_OPACITY).fillColor(TEAL)
+    .rect(leftX, ly, LEFT_COL_WIDTH, measured.boxHeight).fill();
+  doc.restore();
+
+  doc.font('Raleway-Medium').fontSize(9).fillColor(TEXT_DARK)
+    .text(c.message || '', leftX + MSG_BOX_PADDING, ly + MSG_BOX_PADDING, {
+      width: LEFT_COL_WIDTH - MSG_BOX_PADDING * 2
+    });
+
+  if (measured.photos.length > 0) {
+    doc.font('Raleway-Medium').fontSize(8).fillColor(TEXT_DARK)
+      .text(c.sender_name || '', rightX, y, { width: RIGHT_COL_WIDTH });
+    const photoY = doc.y + 4;
+    let px = rightX;
+    for (const url of measured.photos) {
+      const buffer = await fetchImageBuffer(url);
+      if (buffer) {
+        try {
+          drawCoverImage(doc, buffer, px, photoY, PHOTO_SIZE, PHOTO_SIZE, 4, 'center');
+        } catch (err) {
+          console.error('[BOOK] No se pudo dibujar una foto de condolencia:', err.message);
+        }
+      }
+      px += PHOTO_SIZE + PHOTO_GAP;
+    }
+  }
+}
+
+async function drawCondolencePages(doc, approved) {
+  if (approved.length === 0) {
+    doc.addPage();
+    drawBackground(doc, 'plantilla-general-bg.png');
+    doc.font('Raleway-Medium').fontSize(11).fillColor(TEXT_DARK)
+      .text('Aún no hay mensajes de condolencia para este homenaje.', CONTENT_MARGIN,
+        PAGE_HEIGHT / 2 - 8, { width: CONTENT_WIDTH, align: 'center' });
+    return;
+  }
+
+  let y = 0;
+  let pageOpen = false;
+  for (const c of approved) {
+    const measured = measureCondolenceBlock(doc, c);
+    if (!pageOpen || y + measured.height > PAGE_HEIGHT - MSG_BOTTOM_SAFE) {
+      doc.addPage();
+      drawBackground(doc, 'plantilla-general-bg.png');
+      y = MSG_TOP_START;
+      pageOpen = true;
+    }
+    await drawCondolenceBlock(doc, c, y, measured);
+    y += measured.height + MSG_BLOCK_GAP;
+  }
+}
+
+// ---------- Seccion 4: Panel institucional de Alivia ----------
+function drawAliviaPage(doc) {
+  doc.addPage();
+  drawBackground(doc, 'plantilla-general-bg.png');
+
+  const logoW = 150;
+  const logoH = 98;
+  const logoY = 70;
+  doc.image(assetPath('logo-alivia.png'), (PAGE_WIDTH - logoW) / 2, logoY, {
+    width: logoW, height: logoH
+  });
+
+  const textMargin = 60;
+  doc.font('Raleway-Medium').fontSize(10).fillColor(TEXT_DARK)
+    .text(ALIVIA_PARAGRAPHS[0], textMargin, logoY + logoH + 22, {
+      width: PAGE_WIDTH - textMargin * 2, align: 'center'
+    });
+  doc.moveDown(0.8);
+  doc.font('Raleway-Medium').fontSize(10).fillColor(TEXT_DARK)
+    .text(ALIVIA_PARAGRAPHS[1], textMargin, doc.y, {
+      width: PAGE_WIDTH - textMargin * 2, align: 'center'
+    });
+
+  const qrW = 160;
+  const qrH = Math.round(qrW * (387 / 359));
+  const qrY = doc.y + 22;
+  doc.image(assetPath('qr-alivia-agendamiento.png'), (PAGE_WIDTH - qrW) / 2, qrY, {
+    width: qrW, height: qrH
+  });
 }
 
 // Genera el PDF del libro de condolencias. Devuelve una Promise<Buffer>.
 // Filtra por moderation_status = 'approved' EL MISMO (no confia en el caller).
 async function generateBookPdf(memorial, condolences) {
   const approved = (condolences || []).filter((c) => c.moderation_status === 'approved');
-  const colors = getTemplateColors(memorial.template_id);
 
-  const doc = new PDFDocument({ size: 'A4', margin: PAGE_MARGIN, bufferPages: true });
+  const doc = new PDFDocument({ size: [PAGE_WIDTH, PAGE_HEIGHT], margin: 0, bufferPages: true });
+  registerFonts(doc);
+
   const chunks = [];
   doc.on('data', (chunk) => chunks.push(chunk));
-
   const donePromise = new Promise((resolve, reject) => {
     doc.on('end', () => resolve(Buffer.concat(chunks)));
     doc.on('error', reject);
   });
 
-  // ---------- PORTADA ----------
-  const bandHeight = doc.page.height * 0.15;
-  doc.rect(0, 0, doc.page.width, bandHeight).fill(colors.accent);
-  doc.fillColor('#ffffff')
-    .font('Times-Bold')
-    .fontSize(20)
-    .text('En memoria de', 0, bandHeight / 2 - 12, {
-      width: doc.page.width,
-      align: 'center'
-    });
-
-  let cursorY = bandHeight + 40;
-
-  // Foto (si existe y se puede descargar)
-  const photoBuffer = await fetchImageBuffer(memorial.photo_url);
-  if (photoBuffer) {
-    try {
-      const photoSize = 180;
-      const photoX = (doc.page.width - photoSize) / 2;
-      doc.save();
-      doc.circle(doc.page.width / 2, cursorY + photoSize / 2, photoSize / 2).clip();
-      doc.image(photoBuffer, photoX, cursorY, { width: photoSize, height: photoSize });
-      doc.restore();
-      cursorY += photoSize + 30;
-    } catch (err) {
-      console.error('[BOOK] No se pudo dibujar la foto en el PDF:', err.message);
-    }
-  }
-
-  doc.fillColor('#222222')
-    .font('Times-Bold')
-    .fontSize(28)
-    .text(memorial.deceased_name || '', PAGE_MARGIN, cursorY, {
-      width: doc.page.width - PAGE_MARGIN * 2,
-      align: 'center'
-    });
-  cursorY = doc.y + 8;
-
-  const years = [memorial.birth_year, memorial.death_year].filter((y) => y !== null && y !== undefined && y !== '');
-  if (years.length > 0) {
-    doc.font('Times-Roman')
-      .fontSize(16)
-      .fillColor('#555555')
-      .text(years.join(' — '), PAGE_MARGIN, cursorY, {
-        width: doc.page.width - PAGE_MARGIN * 2,
-        align: 'center'
-      });
-    cursorY = doc.y + 20;
-  } else {
-    cursorY += 20;
-  }
-
-  if (memorial.emotional_message) {
-    doc.font('Times-Italic')
-      .fontSize(12)
-      .fillColor('#444444')
-      .text(memorial.emotional_message, PAGE_MARGIN + 40, cursorY, {
-        width: doc.page.width - (PAGE_MARGIN + 40) * 2,
-        align: 'center'
-      });
-  }
-
-  doc.font('Times-Roman')
-    .fontSize(8)
-    .fillColor('#888888')
-    .text(
-      'Los Olivos · SERCOFUN — generado el ' + formatDate(new Date()),
-      PAGE_MARGIN,
-      doc.page.height - 40,
-      { width: doc.page.width - PAGE_MARGIN * 2, align: 'center' }
-    );
-
-  // ---------- PAGINAS DE MENSAJES ----------
+  await drawObituarioPage(doc, memorial);
   doc.addPage();
-  let pageNumber = 2;
-
-  const contentWidth = doc.page.width - PAGE_MARGIN * 2;
-  const bottomLimit = doc.page.height - 70;
-
-  function ensureSpace(neededHeight) {
-    if (doc.y + neededHeight > bottomLimit) {
-      drawFooter(doc, colors, pageNumber);
-      doc.addPage();
-      pageNumber += 1;
-      drawHeaderIfNeeded();
-    }
-  }
-
-  let headerDrawnOnPage = false;
-  function drawHeaderIfNeeded() {
-    if (headerDrawnOnPage) return;
-    headerDrawnOnPage = true;
-  }
-
-  // Encabezado principal (solo primera pagina de mensajes)
-  doc.font('Times-Bold')
-    .fontSize(18)
-    .fillColor('#222222')
-    .text(`Mensajes de condolencia (${approved.length})`, PAGE_MARGIN, PAGE_MARGIN);
-  const headerBottomY = doc.y + 6;
-  doc.moveTo(PAGE_MARGIN, headerBottomY)
-    .lineTo(PAGE_MARGIN + contentWidth, headerBottomY)
-    .lineWidth(2)
-    .strokeColor(colors.accent)
-    .stroke();
-  doc.moveDown(1.5);
-
-  if (approved.length === 0) {
-    doc.font('Times-Italic')
-      .fontSize(12)
-      .fillColor('#666666')
-      .text('Aún no hay mensajes publicados para este homenaje.', PAGE_MARGIN, doc.y + 20, {
-        width: contentWidth,
-        align: 'center'
-      });
-  } else {
-    for (const c of approved) {
-      // Estimar altura necesaria antes de escribir (nombre + fecha + mensaje + separador)
-      doc.font('Times-Roman').fontSize(11);
-      const messageHeight = doc.heightOfString(c.message || '', { width: contentWidth });
-      const neededHeight = 18 + messageHeight + 16;
-      ensureSpace(neededHeight);
-
-      const rowY = doc.y;
-      doc.font('Times-Bold')
-        .fontSize(12)
-        .fillColor('#222222')
-        .text(c.sender_name || 'Anonimo', PAGE_MARGIN, rowY, { continued: false, width: contentWidth - 120 });
-
-      doc.font('Times-Roman')
-        .fontSize(9)
-        .fillColor('#999999')
-        .text(formatDate(c.created_at), PAGE_MARGIN, rowY, { width: contentWidth, align: 'right' });
-
-      doc.font('Times-Roman')
-        .fontSize(11)
-        .fillColor('#333333')
-        .text(c.message || '', PAGE_MARGIN, doc.y + 4, { width: contentWidth });
-
-      const sepY = doc.y + 10;
-      doc.moveTo(PAGE_MARGIN, sepY)
-        .lineTo(PAGE_MARGIN + contentWidth, sepY)
-        .lineWidth(0.5)
-        .strokeColor('#dddddd')
-        .stroke();
-      doc.y = sepY + 12;
-    }
-  }
-
-  drawFooter(doc, colors, pageNumber);
+  drawFamilyMessagePage(doc, memorial);
+  await drawCondolencePages(doc, approved);
+  drawAliviaPage(doc);
 
   doc.end();
   return donePromise;
