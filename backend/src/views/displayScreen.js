@@ -933,11 +933,11 @@ function themedCss(theme, screen, baseUrl) {
     '.t-v2-val { font-weight: 500; }',
     // Exequias / Destino Final: el nombre del lugar es texto libre (puede ser
     // largo, ej. "Cremacion Jardines del Renacer") y ya no cabe en una sola
-    // linea junto con la hora. Se envuelve en hasta 2 lineas y la hora baja a
-    // su propia linea, mas grande, para darle enfasis.
+    // linea junto con la hora. Se envuelve en hasta 2 lineas; la hora baja a
+    // su propia fila "Hora: ..." con el mismo estilo que Homenaje/Despedida
+    // (sin enfasis especial, misma etiqueta en negrita + valor normal).
     '.t-v2-venue-row { font-size: 30px; line-height: 1.4; color: ' + theme.titulo + '; ',
     '  white-space: normal; word-wrap: break-word; overflow: hidden; max-height: 130px; margin-top: 4px; }',
-    '.t-v2-venue-time { display: block; font-weight: 800; font-size: 36px; margin-top: 6px; color: ' + theme.titulo + '; }',
     // ---- Pantalla 3: mensajes ----
     '.t-msg-head { text-align: center; padding: 36px 40px 20px; }',
     '.t-msg-eyebrow { font-size: 36px; font-weight: 600; color: ' + theme.eyebrow + '; }',
@@ -1034,9 +1034,8 @@ function renderThemedServiceV2(m, theme) {
   // puede ser largo, y asi la hora queda mas visible en vez de perderse al
   // final de una linea larga.
   function venueBlock(label, venue, time) {
-    return '<div class="t-v2-venue-row"><span class="t-v2-lbl">' + label + ':</span> <span class="t-v2-val">' + venue + '</span>' +
-      (time ? '<span class="t-v2-venue-time">' + time + '</span>' : '') +
-      '</div>';
+    return '<div class="t-v2-venue-row"><span class="t-v2-lbl">' + label + ':</span> <span class="t-v2-val">' + venue + '</span></div>' +
+      (time ? '<div class="t-v2-row"><span class="t-v2-lbl">Hora:</span> <span class="t-v2-val">' + time + '</span></div>' : '');
   }
 
   return '<div class="t-v2-wrap"><table style="width:100%;height:100%;border-collapse:collapse;"><tr><td style="vertical-align:middle;">' +
