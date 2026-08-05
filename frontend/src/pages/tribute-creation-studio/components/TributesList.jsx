@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { memorialsService } from '../../../services/api';
 import { booksService } from '../../../services/booksService';
 import Icon from '../../../components/AppIcon';
+import MetricCard from '../../../components/analytics/MetricCard';
 import { cn } from '../../../utils/cn';
 import { useTableSort, SortTh } from '../../../components/ui/sortable';
 import { usePagination, Pagination } from '../../../components/ui/pagination';
@@ -36,6 +37,16 @@ const TributesList = () => {
   const [bookLoadingId, setBookLoadingId] = useState(null);
   // Filtro rapido: 'all' | 'active' | 'inactive'
   const [filter, setFilter] = useState('all');
+  const [range, setRange] = useState({ from: '', to: '' });
+  const [searchInput, setSearchInput] = useState('');
+  const [search, setSearch] = useState('');
+
+  // Debounce 400ms para la busqueda, igual que Tablon/Books.
+  const debounceRef = useRef(null);
+  useEffect(() => {
+    debounceRef.current = setTimeout(() => setSearch(searchInput.trim().toLowerCase()), 400);
+    return () => clearTimeout(debounceRef.current);
+  }, [searchInput]);
 
   const load = async () => {
     try {
@@ -54,16 +65,36 @@ const TributesList = () => {
   useEffect(() => { load(); }, []);
 
   // Filtrado en cliente para tener feedback instantaneo.
-  const filteredTributes = tributes.filter(t => {
-    if (filter === 'active') return t.active;
-    if (filter === 'inactive') return !t.active;
+  const filteredTributes = useMemo(() => tributes.filter(t => {
+    if (filter === 'active' && !t.active) return false;
+    if (filter === 'inactive' && t.active) return false;
+    if (range.from && (!t.schedule_start || new Date(t.schedule_start) < new Date(range.from + 'T00:00:00'))) return false;
+    if (range.to && (!t.schedule_start || new Date(t.schedule_start) > new Date(range.to + 'T23:59:59'))) return false;
+    if (search) {
+      const haystack = `${t.deceased_name || ''} ${t.deceased_document_id || ''} ${t.location_name || ''} ${t.room_name || ''}`.toLowerCase();
+      if (!haystack.includes(search)) return false;
+    }
     return true;
-  });
+  }), [tributes, filter, range, search]);
   // Ordenamiento por columna (sobre la lista ya filtrada).
   const { sorted: sortedTributes, sort, toggle } = useTableSort(filteredTributes, SORT_ACCESSORS);
   const { page, setPage, totalPages, pageItems } = usePagination(sortedTributes);
   const activeCount = tributes.filter(t => t.active).length;
   const inactiveCount = tributes.length - activeCount;
+  const totalMessages = useMemo(
+    () => tributes.reduce((sum, t) => sum + (Number(t.condolence_count) || 0), 0),
+    [tributes]
+  );
+
+  const applyPreset = (days) => {
+    const to = new Date();
+    const from = new Date();
+    from.setDate(from.getDate() - days);
+    const fmt = (d) => d.toISOString().slice(0, 10);
+    setRange({ from: fmt(from), to: fmt(to) });
+    setPage(1);
+  };
+  const clearRange = () => { setRange({ from: '', to: '' }); setPage(1); };
 
   const copyUrl = async (url, id) => {
     try {
@@ -132,6 +163,7 @@ const TributesList = () => {
     { key: 'active', label: 'Activos', count: activeCount },
     { key: 'inactive', label: 'Inactivos', count: inactiveCount }
   ];
+  const hasFilters = filter !== 'all' || range.from || range.to || search;
 
   return (
     <div className="space-y-4">
@@ -139,44 +171,106 @@ const TributesList = () => {
         <div>
           <h3 className="text-lg font-semibold text-foreground">Tributos creados</h3>
           <p className="text-sm text-muted-foreground">
-            {tributes.length} {tributes.length === 1 ? 'homenaje registrado' : 'homenajes registrados'}
-            {activeCount > 0 && ` · ${activeCount} ${activeCount === 1 ? 'activo' : 'activos'}`}
+            {filteredTributes.length} {filteredTributes.length === 1 ? 'homenaje' : 'homenajes'}
+            {hasFilters ? ' con los filtros aplicados' : ' registrados'}
           </p>
         </div>
+        <button
+          onClick={load}
+          className="flex items-center gap-2 px-3 py-2 rounded-md text-sm border border-border hover:bg-muted transition-colors"
+        >
+          <Icon name="RefreshCw" size={14} />
+          Refrescar
+        </button>
+      </div>
 
-        <div className="flex items-center gap-3 flex-wrap">
-          {/* Filtro segmentado */}
-          <div className="flex items-center rounded-md border border-border overflow-hidden">
-            {filterButtons.map((b, i) => (
-              <button
-                key={b.key}
-                onClick={() => { setFilter(b.key); setPage(1); }}
-                className={cn(
-                  "px-3 py-2 text-sm transition-colors flex items-center gap-1.5",
-                  filter === b.key
-                    ? "bg-primary text-white"
-                    : "bg-transparent text-foreground hover:bg-muted",
-                  i > 0 && "border-l border-border"
-                )}
-              >
-                {b.label}
-                <span className={cn(
-                  "text-xs px-1.5 py-0.5 rounded-full",
-                  filter === b.key ? "bg-white/20" : "bg-muted"
-                )}>
-                  {b.count}
-                </span>
-              </button>
-            ))}
+      {/* KPIs */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <MetricCard label="Total homenajes" value={tributes.length} icon="BookOpen" hint="Registrados en el sistema" />
+        <MetricCard label="Activos" value={activeCount} icon="CheckCircle2" accent="#16a34a" />
+        <MetricCard label="Inactivos" value={inactiveCount} icon="PowerOff" accent="#6b7280" />
+        <MetricCard label="Mensajes recibidos" value={totalMessages} icon="MessageCircle" accent="#337d7c" />
+      </div>
+
+      {/* Filtros */}
+      <div className="bg-card rounded-lg border border-border shadow-elevation-md p-4">
+        <div className="flex items-center gap-2 mb-4 pb-3 border-b border-border">
+          <Icon name="Filter" size={16} className="text-muted-foreground" />
+          <h4 className="text-sm font-semibold text-foreground">Filtros</h4>
+        </div>
+        <div className="flex items-end gap-3 flex-wrap">
+          <div>
+            <p className="text-sm font-semibold text-foreground mb-2">Estado</p>
+            <div className="flex items-center rounded-md border border-border overflow-hidden">
+              {filterButtons.map((b, i) => (
+                <button
+                  key={b.key}
+                  onClick={() => { setFilter(b.key); setPage(1); }}
+                  className={cn(
+                    "px-3 py-2 text-sm transition-colors flex items-center gap-1.5",
+                    filter === b.key
+                      ? "bg-primary text-white"
+                      : "bg-transparent text-foreground hover:bg-muted",
+                    i > 0 && "border-l border-border"
+                  )}
+                >
+                  {b.label}
+                  <span className={cn(
+                    "text-xs px-1.5 py-0.5 rounded-full",
+                    filter === b.key ? "bg-white/20" : "bg-muted"
+                  )}>
+                    {b.count}
+                  </span>
+                </button>
+              ))}
+            </div>
           </div>
 
-          <button
-            onClick={load}
-            className="flex items-center gap-2 px-3 py-2 rounded-md text-sm border border-border hover:bg-muted transition-colors"
-          >
-            <Icon name="RefreshCw" size={14} />
-            Refrescar
-          </button>
+          <div>
+            <p className="text-sm font-semibold text-foreground mb-2">Ingreso</p>
+            <div className="flex items-center gap-2 flex-wrap">
+              <input type="date" value={range.from} max={range.to || undefined}
+                onChange={(e) => { setRange(r => ({ ...r, from: e.target.value })); setPage(1); }}
+                className="px-2 py-2 rounded-md border border-border bg-background text-sm" />
+              <span className="text-muted-foreground">—</span>
+              <input type="date" value={range.to} min={range.from || undefined}
+                onChange={(e) => { setRange(r => ({ ...r, to: e.target.value })); setPage(1); }}
+                className="px-2 py-2 rounded-md border border-border bg-background text-sm" />
+              <div className="flex items-center rounded-md overflow-hidden border border-border">
+                <button onClick={() => applyPreset(7)}
+                  className="px-3 py-2 text-sm text-foreground hover:bg-muted transition-colors">7 días</button>
+                <button onClick={() => applyPreset(30)}
+                  className="px-3 py-2 text-sm text-foreground hover:bg-muted transition-colors border-l border-border">30 días</button>
+              </div>
+              {(range.from || range.to) && (
+                <button onClick={clearRange} title="Quitar filtro de fechas"
+                  className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+                  <Icon name="X" size={14} />
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="flex-1 min-w-[220px]">
+            <p className="text-sm font-semibold text-foreground mb-2">Búsqueda</p>
+            <div className="relative">
+              <Icon name="Search" size={14}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+              <input
+                type="text"
+                value={searchInput}
+                onChange={(e) => { setSearchInput(e.target.value); setPage(1); }}
+                placeholder="Difunto, documento, sede o sala..."
+                className="w-full pl-9 pr-8 py-2 rounded-md border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+              {searchInput && (
+                <button onClick={() => setSearchInput('')} title="Limpiar"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                  <Icon name="X" size={14} />
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 

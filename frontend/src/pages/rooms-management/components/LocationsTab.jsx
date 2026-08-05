@@ -1,8 +1,9 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { locationsService } from '../../../services/api';
 import Icon from '../../../components/AppIcon';
 import Input from '../../../components/ui/Input';
 import Button from '../../../components/ui/Button';
+import MetricCard from '../../../components/analytics/MetricCard';
 import { cn } from '../../../utils/cn';
 import Modal from './Modal';
 import { useTableSort, SortTh } from '../../../components/ui/sortable';
@@ -23,6 +24,16 @@ const LocationsTab = ({ registerCreate }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [query, setQuery] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  // Filtro rapido: 'all' | 'active' | 'inactive'
+  const [filterActive, setFilterActive] = useState('all');
+
+  // Debounce 400ms para la busqueda, igual que Tablon/Books/Tributos.
+  const debounceRef = useRef(null);
+  useEffect(() => {
+    debounceRef.current = setTimeout(() => setQuery(searchInput.trim().toLowerCase()), 400);
+    return () => clearTimeout(debounceRef.current);
+  }, [searchInput]);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null); // null = crear, objeto = editar
@@ -114,18 +125,32 @@ const LocationsTab = ({ registerCreate }) => {
     }
   };
 
-  // Filtro por texto (nombre, ciudad o direccion) + ordenamiento por columna.
+  // Filtro por estado + texto (nombre, ciudad o direccion) + ordenamiento por columna.
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return locations;
-    return locations.filter(l =>
-      (l.name || '').toLowerCase().includes(q) ||
-      (l.city || '').toLowerCase().includes(q) ||
-      (l.address || '').toLowerCase().includes(q)
-    );
-  }, [locations, query]);
+    return locations.filter(l => {
+      if (filterActive === 'active' && !l.active) return false;
+      if (filterActive === 'inactive' && l.active) return false;
+      if (query) {
+        const haystack = `${l.name || ''} ${l.city || ''} ${l.address || ''}`.toLowerCase();
+        if (!haystack.includes(query)) return false;
+      }
+      return true;
+    });
+  }, [locations, query, filterActive]);
   const { sorted, sort, toggle } = useTableSort(filtered, LOC_SORT_ACCESSORS);
   const { page, setPage, totalPages, pageItems } = usePagination(sorted);
+  const activeLocationsCount = locations.filter(l => l.active).length;
+  const inactiveLocationsCount = locations.length - activeLocationsCount;
+  const totalRooms = useMemo(
+    () => locations.reduce((sum, l) => sum + (Number(l.room_count) || 0), 0),
+    [locations]
+  );
+
+  const activeButtons = [
+    { key: 'all', label: 'Todas', count: locations.length },
+    { key: 'active', label: 'Activas', count: activeLocationsCount },
+    { key: 'inactive', label: 'Inactivas', count: inactiveLocationsCount }
+  ];
 
   return (
     <div className="space-y-4">
@@ -137,26 +162,79 @@ const LocationsTab = ({ registerCreate }) => {
             {loading ? 'Cargando...' : `${filtered.length} de ${locations.length} ${locations.length === 1 ? 'sede' : 'sedes'}`}
           </p>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <div className="relative">
-            <Icon name="Search" size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => { setQuery(e.target.value); setPage(1); }}
-              placeholder="Buscar sede o ciudad..."
-              className="pl-9 pr-3 py-2 rounded-md border border-border bg-background text-sm w-60 focus:outline-none focus:ring-2 focus:ring-primary/30"
-            />
+        <button
+          type="button"
+          onClick={openCreate}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-semibold text-white transition-colors"
+          style={{ background: '#1a7472' }}
+        >
+          <Icon name="Plus" size={16} color="#ffffff" />
+          Nueva sede
+        </button>
+      </div>
+
+      {/* KPIs */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <MetricCard label="Total sedes" value={locations.length} icon="Building2" hint="Registradas en el sistema" />
+        <MetricCard label="Activas" value={activeLocationsCount} icon="CheckCircle2" accent="#16a34a" />
+        <MetricCard label="Inactivas" value={inactiveLocationsCount} icon="PowerOff" accent="#6b7280" />
+        <MetricCard label="Total salas" value={totalRooms} icon="Home" accent="#337d7c" />
+      </div>
+
+      {/* Filtros */}
+      <div className="bg-card rounded-lg border border-border shadow-elevation-md p-4">
+        <div className="flex items-center gap-2 mb-4 pb-3 border-b border-border">
+          <Icon name="Filter" size={16} className="text-muted-foreground" />
+          <h4 className="text-sm font-semibold text-foreground">Filtros</h4>
+        </div>
+        <div className="flex items-end gap-3 flex-wrap">
+          <div>
+            <p className="text-sm font-semibold text-foreground mb-2">Estado</p>
+            <div className="flex items-center rounded-md border border-border overflow-hidden">
+              {activeButtons.map((b, i) => (
+                <button
+                  key={b.key}
+                  onClick={() => { setFilterActive(b.key); setPage(1); }}
+                  className={cn(
+                    "px-3 py-2 text-sm transition-colors flex items-center gap-1.5",
+                    filterActive === b.key
+                      ? "bg-primary text-white"
+                      : "bg-transparent text-foreground hover:bg-muted",
+                    i > 0 && "border-l border-border"
+                  )}
+                >
+                  {b.label}
+                  <span className={cn(
+                    "text-xs px-1.5 py-0.5 rounded-full",
+                    filterActive === b.key ? "bg-white/20" : "bg-muted"
+                  )}>
+                    {b.count}
+                  </span>
+                </button>
+              ))}
+            </div>
           </div>
-          <button
-            type="button"
-            onClick={openCreate}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-semibold text-white transition-colors"
-            style={{ background: '#1a7472' }}
-          >
-            <Icon name="Plus" size={16} color="#ffffff" />
-            Nueva sede
-          </button>
+
+          <div className="flex-1 min-w-[220px]">
+            <p className="text-sm font-semibold text-foreground mb-2">Búsqueda</p>
+            <div className="relative">
+              <Icon name="Search" size={14}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+              <input
+                type="text"
+                value={searchInput}
+                onChange={(e) => { setSearchInput(e.target.value); setPage(1); }}
+                placeholder="Buscar sede, ciudad o dirección..."
+                className="w-full pl-9 pr-8 py-2 rounded-md border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+              {searchInput && (
+                <button onClick={() => setSearchInput('')} title="Limpiar"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                  <Icon name="X" size={14} />
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 

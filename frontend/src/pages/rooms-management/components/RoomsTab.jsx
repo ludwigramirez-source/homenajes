@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { locationsService, roomsService } from '../../../services/api';
 import Icon from '../../../components/AppIcon';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
 import Button from '../../../components/ui/Button';
+import MetricCard from '../../../components/analytics/MetricCard';
 import { cn } from '../../../utils/cn';
 import Modal from './Modal';
 import { useTableSort, SortTh } from '../../../components/ui/sortable';
@@ -45,6 +46,17 @@ const RoomsTab = ({ registerCreate }) => {
   const [error, setError] = useState(null);
   const [filterSede, setFilterSede] = useState('');
   const [filterType, setFilterType] = useState('');
+  // Filtro rapido: 'all' | 'active' | 'inactive'
+  const [filterActive, setFilterActive] = useState('all');
+  const [searchInput, setSearchInput] = useState('');
+  const [search, setSearch] = useState('');
+
+  // Debounce 400ms para la busqueda, igual que Tablon/Books/Tributos.
+  const debounceRef = useRef(null);
+  useEffect(() => {
+    debounceRef.current = setTimeout(() => setSearch(searchInput.trim().toLowerCase()), 400);
+    return () => clearTimeout(debounceRef.current);
+  }, [searchInput]);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -94,13 +106,25 @@ const RoomsTab = ({ registerCreate }) => {
     return rooms.filter(r => {
       if (filterSede && r.location_id !== filterSede) return false;
       if (filterType && r.room_type !== filterType) return false;
+      if (filterActive === 'active' && !r.active) return false;
+      if (filterActive === 'inactive' && r.active) return false;
+      if (search) {
+        const haystack = `${r.name || ''} ${r.code || ''} ${r.location_name || ''}`.toLowerCase();
+        if (!haystack.includes(search)) return false;
+      }
       return true;
     });
-  }, [rooms, filterSede, filterType]);
+  }, [rooms, filterSede, filterType, filterActive, search]);
 
   // Ordenamiento por columna sobre la lista filtrada.
   const { sorted, sort, toggle } = useTableSort(filtered, ROOM_SORT_ACCESSORS);
   const { page, setPage, totalPages, pageItems } = usePagination(sorted);
+  const activeRoomsCount = rooms.filter(r => r.active).length;
+  const inactiveRoomsCount = rooms.length - activeRoomsCount;
+  const totalCapacity = useMemo(
+    () => rooms.reduce((sum, r) => sum + (Number(r.capacity) || 0), 0),
+    [rooms]
+  );
 
   // Sugiere un codigo unico: <SLUG>-<ABBR>-<NN> contando las salas existentes
   // de esa sede y tipo.
@@ -214,6 +238,12 @@ const RoomsTab = ({ registerCreate }) => {
     }
   };
 
+  const activeButtons = [
+    { key: 'all', label: 'Todas', count: rooms.length },
+    { key: 'active', label: 'Activas', count: activeRoomsCount },
+    { key: 'inactive', label: 'Inactivas', count: inactiveRoomsCount }
+  ];
+
   return (
     <div className="space-y-4">
       {/* Toolbar SIEMPRE visible (no depende del estado de carga) */}
@@ -224,32 +254,103 @@ const RoomsTab = ({ registerCreate }) => {
             {loading ? 'Cargando...' : `${filtered.length} de ${rooms.length} ${rooms.length === 1 ? 'sala' : 'salas'}`}
           </p>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <select
-            value={filterSede}
-            onChange={(e) => { setFilterSede(e.target.value); setPage(1); }}
-            className="px-3 py-2 rounded-md border border-border bg-background text-sm"
-          >
-            <option value="">Todas las sedes</option>
-            {locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
-          </select>
-          <select
-            value={filterType}
-            onChange={(e) => { setFilterType(e.target.value); setPage(1); }}
-            className="px-3 py-2 rounded-md border border-border bg-background text-sm"
-          >
-            <option value="">Todos los tipos</option>
-            {ROOM_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-          </select>
-          <button
-            type="button"
-            onClick={openCreate}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-semibold text-white transition-colors"
-            style={{ background: '#1a7472' }}
-          >
-            <Icon name="Plus" size={16} color="#ffffff" />
-            Nueva sala
-          </button>
+        <button
+          type="button"
+          onClick={openCreate}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-semibold text-white transition-colors"
+          style={{ background: '#1a7472' }}
+        >
+          <Icon name="Plus" size={16} color="#ffffff" />
+          Nueva sala
+        </button>
+      </div>
+
+      {/* KPIs */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <MetricCard label="Total salas" value={rooms.length} icon="Home" hint="Registradas en el sistema" />
+        <MetricCard label="Activas" value={activeRoomsCount} icon="CheckCircle2" accent="#16a34a" />
+        <MetricCard label="Inactivas" value={inactiveRoomsCount} icon="PowerOff" accent="#6b7280" />
+        <MetricCard label="Capacidad total" value={totalCapacity} icon="Users" accent="#337d7c" />
+      </div>
+
+      {/* Filtros */}
+      <div className="bg-card rounded-lg border border-border shadow-elevation-md p-4">
+        <div className="flex items-center gap-2 mb-4 pb-3 border-b border-border">
+          <Icon name="Filter" size={16} className="text-muted-foreground" />
+          <h4 className="text-sm font-semibold text-foreground">Filtros</h4>
+        </div>
+        <div className="flex items-end gap-3 flex-wrap">
+          <div>
+            <p className="text-sm font-semibold text-foreground mb-2">Estado</p>
+            <div className="flex items-center rounded-md border border-border overflow-hidden">
+              {activeButtons.map((b, i) => (
+                <button
+                  key={b.key}
+                  onClick={() => { setFilterActive(b.key); setPage(1); }}
+                  className={cn(
+                    "px-3 py-2 text-sm transition-colors flex items-center gap-1.5",
+                    filterActive === b.key
+                      ? "bg-primary text-white"
+                      : "bg-transparent text-foreground hover:bg-muted",
+                    i > 0 && "border-l border-border"
+                  )}
+                >
+                  {b.label}
+                  <span className={cn(
+                    "text-xs px-1.5 py-0.5 rounded-full",
+                    filterActive === b.key ? "bg-white/20" : "bg-muted"
+                  )}>
+                    {b.count}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <p className="text-sm font-semibold text-foreground mb-2">Sede</p>
+            <select
+              value={filterSede}
+              onChange={(e) => { setFilterSede(e.target.value); setPage(1); }}
+              className="px-3 py-2 rounded-md border border-border bg-background text-sm"
+            >
+              <option value="">Todas las sedes</option>
+              {locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+            </select>
+          </div>
+
+          <div>
+            <p className="text-sm font-semibold text-foreground mb-2">Tipo</p>
+            <select
+              value={filterType}
+              onChange={(e) => { setFilterType(e.target.value); setPage(1); }}
+              className="px-3 py-2 rounded-md border border-border bg-background text-sm"
+            >
+              <option value="">Todos los tipos</option>
+              {ROOM_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+            </select>
+          </div>
+
+          <div className="flex-1 min-w-[220px]">
+            <p className="text-sm font-semibold text-foreground mb-2">Búsqueda</p>
+            <div className="relative">
+              <Icon name="Search" size={14}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+              <input
+                type="text"
+                value={searchInput}
+                onChange={(e) => { setSearchInput(e.target.value); setPage(1); }}
+                placeholder="Nombre, código o sede..."
+                className="w-full pl-9 pr-8 py-2 rounded-md border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+              {searchInput && (
+                <button onClick={() => setSearchInput('')} title="Limpiar"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                  <Icon name="X" size={14} />
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
