@@ -63,15 +63,11 @@ const getDisplay = async (req, res, next) => {
         r.code as room_code,
         l.name as location_name,
         l.city as location_city,
-        ev.name as exequias_venue_name,
-        fd.name as final_destination_venue_name,
         TO_CHAR(m.daily_hours_start, 'HH24:MI') as daily_hours_start_str,
         TO_CHAR(m.daily_hours_end, 'HH24:MI') as daily_hours_end_str
       FROM memorials m
       JOIN rooms r ON m.room_id = r.id
       JOIN locations l ON r.location_id = l.id
-      LEFT JOIN ceremony_venues ev ON m.exequias_venue_id = ev.id
-      LEFT JOIN ceremony_venues fd ON m.final_destination_venue_id = fd.id
       WHERE (r.code = UPPER($1) OR r.id::text = $1)
         AND m.active = true
         AND CURRENT_TIMESTAMP BETWEEN m.schedule_start AND m.schedule_end

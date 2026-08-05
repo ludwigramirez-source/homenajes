@@ -105,6 +105,30 @@ const createTables = async () => {
     `);
     console.log('[MIGRATE] Columnas exequias/destino final agregadas a "memorials"');
 
+    // ========== ALTER: memorials: exequias/destino final pasan a texto libre ==========
+    // Antes "Lugar de Exequias" y "Destino Final" se elegian de un catalogo
+    // (ceremony_venues), pero es impracticable mantener ahi todas las
+    // iglesias/cementerios del pais: ahora quien crea el tributo los escribe
+    // directamente. Se agregan columnas de texto (las *_venue_id viejas se
+    // dejan sin usar, no se botan, por si acaso) y se hace backfill desde el
+    // catalogo para no perder el valor de los homenajes ya creados.
+    await client.query(`
+      ALTER TABLE memorials
+        ADD COLUMN IF NOT EXISTS exequias_venue_name VARCHAR(200),
+        ADD COLUMN IF NOT EXISTS final_destination_venue_name VARCHAR(200)
+    `);
+    await client.query(`
+      UPDATE memorials m SET exequias_venue_name = ev.name
+      FROM ceremony_venues ev
+      WHERE m.exequias_venue_id = ev.id AND m.exequias_venue_name IS NULL
+    `);
+    await client.query(`
+      UPDATE memorials m SET final_destination_venue_name = fd.name
+      FROM ceremony_venues fd
+      WHERE m.final_destination_venue_id = fd.id AND m.final_destination_venue_name IS NULL
+    `);
+    console.log('[MIGRATE] Exequias/destino final migrados a texto libre en "memorials"');
+
     // ========== ALTER: users: rol auditor + sede asignada ==========
     // Ampliar los roles permitidos para incluir 'auditor'. Se recrea el CHECK.
     try {

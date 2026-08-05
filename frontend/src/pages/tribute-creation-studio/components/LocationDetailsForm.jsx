@@ -3,33 +3,24 @@ import Select from '../../../components/ui/Select';
 import Input from '../../../components/ui/Input';
 import {
   locationsService,
-  roomsService,
-  ceremonyVenuesService
+  roomsService
 } from '../../../services/api';
 
 const LocationDetailsForm = ({ formData, errors, updateFormData }) => {
   const [locations, setLocations] = useState([]);
   const [rooms, setRooms] = useState([]);
-  const [exequiasVenues, setExequiasVenues] = useState([]);
-  const [destinoVenues, setDestinoVenues] = useState([]);
   const [loadingRooms, setLoadingRooms] = useState(false);
 
-  // Cargar funerarias (locations) y catalogos de venues una sola vez.
+  // Cargar funerarias (locations) una sola vez.
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const [locs, exq, dest] = await Promise.all([
-          locationsService.getAll(),
-          ceremonyVenuesService.getAll({ kind: 'exequias' }),
-          ceremonyVenuesService.getAll({ kind: 'destino_final' })
-        ]);
+        const locs = await locationsService.getAll();
         if (cancelled) return;
         setLocations(locs?.data || []);
-        setExequiasVenues(exq?.data || []);
-        setDestinoVenues(dest?.data || []);
       } catch (e) {
-        console.error('Error cargando catalogos:', e);
+        console.error('Error cargando funerarias:', e);
       }
     })();
     return () => { cancelled = true; };
@@ -77,15 +68,6 @@ const LocationDetailsForm = ({ formData, errors, updateFormData }) => {
     }),
     [rooms]
   );
-  const exequiasOptions = useMemo(
-    () => exequiasVenues.map(v => ({ value: v.id, label: v.name })),
-    [exequiasVenues]
-  );
-  const destinoOptions = useMemo(
-    () => destinoVenues.map(v => ({ value: v.id, label: v.name })),
-    [destinoVenues]
-  );
-
   return (
     <div className="space-y-6">
       <div>
@@ -165,15 +147,14 @@ const LocationDetailsForm = ({ formData, errors, updateFormData }) => {
       <div className="pt-2">
         <h4 className="text-sm font-semibold text-foreground mb-3">Ceremonias y Destino Final</h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Select
+          <Input
+            type="text"
             label="Lugar de Exequias"
-            placeholder="Seleccione un lugar"
-            options={exequiasOptions}
-            value={formData?.exequiasVenueId}
-            onChange={(value) => updateFormData('exequiasVenueId', value)}
-            error={errors?.exequiasVenueId}
+            placeholder="Ej: Capilla San José, Iglesia La Merced..."
+            value={formData?.exequiasVenue}
+            onChange={(e) => updateFormData('exequiasVenue', e?.target?.value)}
+            error={errors?.exequiasVenue}
             description="Capilla, iglesia u oratorio donde se realiza la ceremonia"
-            searchable
           />
 
           <Input
@@ -184,15 +165,14 @@ const LocationDetailsForm = ({ formData, errors, updateFormData }) => {
             error={errors?.exequiasDatetime}
           />
 
-          <Select
+          <Input
+            type="text"
             label="Destino Final"
-            placeholder="Seleccione un destino"
-            options={destinoOptions}
-            value={formData?.finalDestinationVenueId}
-            onChange={(value) => updateFormData('finalDestinationVenueId', value)}
-            error={errors?.finalDestinationVenueId}
+            placeholder="Ej: Cementerio Jardines de Paz, Crematorio Los Olivos..."
+            value={formData?.finalDestinationVenue}
+            onChange={(e) => updateFormData('finalDestinationVenue', e?.target?.value)}
+            error={errors?.finalDestinationVenue}
             description="Crematorio o cementerio"
-            searchable
           />
 
           <Input

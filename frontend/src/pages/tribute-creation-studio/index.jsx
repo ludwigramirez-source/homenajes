@@ -63,10 +63,11 @@ const TributeCreationStudio = () => {
     dailyHoursStart: '08:00',
     dailyHoursEnd: '23:00',
 
-    // Ceremonias y destino final (catalogos en BD: ceremony_venues)
-    exequiasVenueId: '',
+    // Ceremonias y destino final (texto libre: no hay catalogo posible de
+    // todas las iglesias/cementerios del pais, lo escribe quien crea el tributo)
+    exequiasVenue: '',
     exequiasDatetime: '',
-    finalDestinationVenueId: '',
+    finalDestinationVenue: '',
     finalDestinationDatetime: '',
 
     // Titular de cuenta (se persiste en memorials.family_contact_*)
@@ -134,9 +135,9 @@ const TributeCreationStudio = () => {
           dailyHoursStart: toTimeInput(m.daily_hours_start) || '08:00',
           dailyHoursEnd: toTimeInput(m.daily_hours_end) || '23:00',
 
-          exequiasVenueId: m.exequias_venue_id || '',
+          exequiasVenue: m.exequias_venue_name || '',
           exequiasDatetime: toLocalDatetimeInput(m.exequias_datetime),
-          finalDestinationVenueId: m.final_destination_venue_id || '',
+          finalDestinationVenue: m.final_destination_venue_name || '',
           finalDestinationDatetime: toLocalDatetimeInput(m.final_destination_datetime),
 
           // Datos del titular: estos no se precargaban antes (de ahi el bug
@@ -235,9 +236,9 @@ const TributeCreationStudio = () => {
         is_religious: !!formData?.isReligious,
         schedule_start: scheduleStart,
         schedule_end: scheduleEnd,
-        exequias_venue_id: formData?.exequiasVenueId || null,
+        exequias_venue_name: formData?.exequiasVenue?.trim() || null,
         exequias_datetime: toIsoOrNull(formData?.exequiasDatetime),
-        final_destination_venue_id: formData?.finalDestinationVenueId || null,
+        final_destination_venue_name: formData?.finalDestinationVenue?.trim() || null,
         final_destination_datetime: toIsoOrNull(formData?.finalDestinationDatetime),
         daily_hours_start: formData?.dailyHoursStart || null,
         daily_hours_end: formData?.dailyHoursEnd || null,

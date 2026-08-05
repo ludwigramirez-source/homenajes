@@ -110,38 +110,6 @@ const seedDatabase = async () => {
     }
     console.log(`[SEED] ${totalSedes} sedes nuevas, ${totalRooms} salas nuevas creadas`);
 
-    // ========== CATALOGO: CEREMONY VENUES (exequias y destino final) ==========
-    // Venues globales (sin location_id) que aplican para todas las sedes.
-    const venues = [
-      { name: 'Capilla de Los Olivos', kind: 'exequias' },
-      { name: 'Capilla Sercofun Norte', kind: 'exequias' },
-      { name: 'Iglesia San Francisco', kind: 'exequias' },
-      { name: 'Iglesia La Ermita', kind: 'exequias' },
-      { name: 'Crematorio Los Olivos', kind: 'destino_final' },
-      { name: 'Cementerio Central', kind: 'destino_final' },
-      { name: 'Cementerio Metropolitano del Sur', kind: 'destino_final' },
-      { name: 'Cementerio Jardines del Recuerdo', kind: 'destino_final' }
-    ];
-
-    const venueIds = {};
-    for (const v of venues) {
-      const existing = await client.query(
-        'SELECT id FROM ceremony_venues WHERE name = $1 AND location_id IS NULL',
-        [v.name]
-      );
-      if (existing.rows.length > 0) {
-        venueIds[v.name] = existing.rows[0].id;
-        continue;
-      }
-      const insert = await client.query(`
-        INSERT INTO ceremony_venues (name, kind, location_id, active)
-        VALUES ($1, $2, NULL, true)
-        RETURNING id
-      `, [v.name, v.kind]);
-      venueIds[v.name] = insert.rows[0].id;
-    }
-    console.log(`[SEED] ${venues.length} venues de ceremonia creados`);
-
     // Nota: ya no se crea un homenaje demo (Pedro Rojas). Los homenajes reales
     // se crean desde el modulo de creacion de tributos. Las salas quedan
     // "disponibles" hasta que se les asigne un homenaje activo.

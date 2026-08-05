@@ -14,14 +14,10 @@ const getAll = async (req, res, next) => {
         r.code as room_code,
         l.name as location_name,
         l.city as location_city,
-        ev.name as exequias_venue_name,
-        fd.name as final_destination_venue_name,
         (SELECT COUNT(*) FROM condolences WHERE memorial_id = m.id) as condolence_count
       FROM memorials m
       JOIN rooms r ON m.room_id = r.id
       JOIN locations l ON r.location_id = l.id
-      LEFT JOIN ceremony_venues ev ON m.exequias_venue_id = ev.id
-      LEFT JOIN ceremony_venues fd ON m.final_destination_venue_id = fd.id
       WHERE 1=1
     `;
 
@@ -59,14 +55,10 @@ const getById = async (req, res, next) => {
         r.code as room_code,
         l.name as location_name,
         l.city as location_city,
-        ev.name as exequias_venue_name,
-        fd.name as final_destination_venue_name,
         u.full_name as created_by_name
       FROM memorials m
       JOIN rooms r ON m.room_id = r.id
       JOIN locations l ON r.location_id = l.id
-      LEFT JOIN ceremony_venues ev ON m.exequias_venue_id = ev.id
-      LEFT JOIN ceremony_venues fd ON m.final_destination_venue_id = fd.id
       LEFT JOIN users u ON m.created_by = u.id
       WHERE m.id = $1
     `, [id]);
@@ -105,8 +97,8 @@ const create = async (req, res, next) => {
     const {
       room_id, deceased_name, birth_year, death_year, photo_url,
       emotional_message, qr_message, template_id, schedule_start, schedule_end,
-      exequias_venue_id, exequias_datetime,
-      final_destination_venue_id, final_destination_datetime,
+      exequias_venue_name, exequias_datetime,
+      final_destination_venue_name, final_destination_datetime,
       daily_hours_start, daily_hours_end,
       family_contact_name, family_contact_phone, family_contact_email, billing_address,
       deceased_document_id, family_contact_document_id, is_religious
@@ -131,8 +123,8 @@ const create = async (req, res, next) => {
         room_id, deceased_name, birth_year, death_year, photo_url,
         emotional_message, qr_message, template_id, schedule_start, schedule_end,
         active, created_by,
-        exequias_venue_id, exequias_datetime,
-        final_destination_venue_id, final_destination_datetime,
+        exequias_venue_name, exequias_datetime,
+        final_destination_venue_name, final_destination_datetime,
         daily_hours_start, daily_hours_end,
         family_contact_name, family_contact_phone, family_contact_email, billing_address,
         deceased_document_id, family_contact_document_id, is_religious
@@ -145,9 +137,9 @@ const create = async (req, res, next) => {
       room_id, deceased_name, birth_year, death_year, photo_url,
       emotional_message, qr_message, template_id || 'default',
       schedule_start, schedule_end, req.user.id,
-      exequias_venue_id || null,
+      exequias_venue_name || null,
       exequias_datetime || null,
-      final_destination_venue_id || null,
+      final_destination_venue_name || null,
       final_destination_datetime || null,
       daily_hours_start || null,
       daily_hours_end || null,
@@ -172,8 +164,8 @@ const update = async (req, res, next) => {
     const {
       deceased_name, birth_year, death_year, photo_url,
       emotional_message, qr_message, template_id, schedule_start, schedule_end, active,
-      exequias_venue_id, exequias_datetime,
-      final_destination_venue_id, final_destination_datetime,
+      exequias_venue_name, exequias_datetime,
+      final_destination_venue_name, final_destination_datetime,
       daily_hours_start, daily_hours_end,
       family_contact_name, family_contact_phone, family_contact_email, billing_address,
       deceased_document_id, family_contact_document_id, is_religious
@@ -199,9 +191,9 @@ const update = async (req, res, next) => {
           schedule_start = COALESCE($8, schedule_start),
           schedule_end = COALESCE($9, schedule_end),
           active = COALESCE($10, active),
-          exequias_venue_id = COALESCE($11, exequias_venue_id),
+          exequias_venue_name = COALESCE($11, exequias_venue_name),
           exequias_datetime = COALESCE($12, exequias_datetime),
-          final_destination_venue_id = COALESCE($13, final_destination_venue_id),
+          final_destination_venue_name = COALESCE($13, final_destination_venue_name),
           final_destination_datetime = COALESCE($14, final_destination_datetime),
           daily_hours_start = COALESCE($15::time, daily_hours_start),
           daily_hours_end = COALESCE($16::time, daily_hours_end),
@@ -218,8 +210,8 @@ const update = async (req, res, next) => {
       deceased_name, birth_year, death_year, photo_url,
       emotional_message, qr_message, template_id,
       schedule_start, schedule_end, active,
-      exequias_venue_id, exequias_datetime,
-      final_destination_venue_id, final_destination_datetime,
+      exequias_venue_name, exequias_datetime,
+      final_destination_venue_name, final_destination_datetime,
       daily_hours_start, daily_hours_end,
       family_contact_name, family_contact_phone, family_contact_email, billing_address,
       deceased_document_id, family_contact_document_id,

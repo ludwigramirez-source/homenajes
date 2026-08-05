@@ -136,14 +136,6 @@ export const usersService = {
   remove: (id) => api.delete(`/users/${id}`).then(r => r.data)
 };
 
-// ============ CEREMONY VENUES (lugares de exequias y destino final) ============
-export const ceremonyVenuesService = {
-  // params: { kind?: 'exequias'|'destino_final', location_id?: uuid }
-  getAll: (params = {}) => api.get('/ceremony-venues', { params }).then(r => r.data),
-  create: (data) => api.post('/ceremony-venues', data).then(r => r.data),
-  remove: (id) => api.delete(`/ceremony-venues/${id}`).then(r => r.data)
-};
-
 // ============ ANALYTICS ============
 export const analyticsService = {
   executive: (params = {}) => api.get('/analytics/executive', { params }).then(r => r.data),
