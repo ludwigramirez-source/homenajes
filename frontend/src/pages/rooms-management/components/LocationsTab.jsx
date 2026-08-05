@@ -6,6 +6,7 @@ import Button from '../../../components/ui/Button';
 import { cn } from '../../../utils/cn';
 import Modal from './Modal';
 import { useTableSort, SortTh } from '../../../components/ui/sortable';
+import { usePagination, Pagination } from '../../../components/ui/pagination';
 
 const emptyForm = { name: '', city: '', address: '', phone: '' };
 
@@ -124,6 +125,7 @@ const LocationsTab = ({ registerCreate }) => {
     );
   }, [locations, query]);
   const { sorted, sort, toggle } = useTableSort(filtered, LOC_SORT_ACCESSORS);
+  const { page, setPage, totalPages, pageItems } = usePagination(sorted);
 
   return (
     <div className="space-y-4">
@@ -141,7 +143,7 @@ const LocationsTab = ({ registerCreate }) => {
             <input
               type="text"
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(e) => { setQuery(e.target.value); setPage(1); }}
               placeholder="Buscar sede o ciudad..."
               className="pl-9 pr-3 py-2 rounded-md border border-border bg-background text-sm w-60 focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
@@ -172,6 +174,7 @@ const LocationsTab = ({ registerCreate }) => {
       )}
 
       {!loading && (
+      <>
       <div className="overflow-x-auto border border-border rounded-lg">
         <table className="w-full text-sm">
           <thead className="bg-muted/40 text-muted-foreground">
@@ -190,7 +193,7 @@ const LocationsTab = ({ registerCreate }) => {
                 {locations.length === 0 ? 'No hay sedes. Crea la primera.' : 'No hay sedes que coincidan.'}
               </td></tr>
             )}
-            {sorted.map(loc => (
+            {pageItems.map(loc => (
               <tr key={loc.id} className="border-t border-border hover:bg-muted/20 transition-colors">
                 <td className="px-4 py-3">
                   <div className="font-medium text-foreground">{loc.name}</div>
@@ -231,6 +234,8 @@ const LocationsTab = ({ registerCreate }) => {
           </tbody>
         </table>
       </div>
+      <Pagination page={page} totalPages={totalPages} onChange={setPage} />
+      </>
       )}
 
       <Modal

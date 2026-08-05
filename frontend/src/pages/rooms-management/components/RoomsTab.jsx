@@ -7,6 +7,7 @@ import Button from '../../../components/ui/Button';
 import { cn } from '../../../utils/cn';
 import Modal from './Modal';
 import { useTableSort, SortTh } from '../../../components/ui/sortable';
+import { usePagination, Pagination } from '../../../components/ui/pagination';
 
 const ROOM_SORT_ACCESSORS = {
   name: (r) => r.name,
@@ -99,6 +100,7 @@ const RoomsTab = ({ registerCreate }) => {
 
   // Ordenamiento por columna sobre la lista filtrada.
   const { sorted, sort, toggle } = useTableSort(filtered, ROOM_SORT_ACCESSORS);
+  const { page, setPage, totalPages, pageItems } = usePagination(sorted);
 
   // Sugiere un codigo unico: <SLUG>-<ABBR>-<NN> contando las salas existentes
   // de esa sede y tipo.
@@ -225,7 +227,7 @@ const RoomsTab = ({ registerCreate }) => {
         <div className="flex items-center gap-2 flex-wrap">
           <select
             value={filterSede}
-            onChange={(e) => setFilterSede(e.target.value)}
+            onChange={(e) => { setFilterSede(e.target.value); setPage(1); }}
             className="px-3 py-2 rounded-md border border-border bg-background text-sm"
           >
             <option value="">Todas las sedes</option>
@@ -233,7 +235,7 @@ const RoomsTab = ({ registerCreate }) => {
           </select>
           <select
             value={filterType}
-            onChange={(e) => setFilterType(e.target.value)}
+            onChange={(e) => { setFilterType(e.target.value); setPage(1); }}
             className="px-3 py-2 rounded-md border border-border bg-background text-sm"
           >
             <option value="">Todos los tipos</option>
@@ -265,6 +267,7 @@ const RoomsTab = ({ registerCreate }) => {
       )}
 
       {!loading && (
+      <>
       <div className="overflow-x-auto border border-border rounded-lg">
         <table className="w-full text-sm">
           <thead className="bg-muted/40 text-muted-foreground">
@@ -282,7 +285,7 @@ const RoomsTab = ({ registerCreate }) => {
             {sorted.length === 0 && (
               <tr><td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">No hay salas que coincidan.</td></tr>
             )}
-            {sorted.map(room => (
+            {pageItems.map(room => (
               <tr key={room.id} className="border-t border-border hover:bg-muted/20 transition-colors">
                 <td className="px-4 py-3 font-medium text-foreground">{room.name}</td>
                 <td className="px-4 py-3">
@@ -323,6 +326,8 @@ const RoomsTab = ({ registerCreate }) => {
           </tbody>
         </table>
       </div>
+      <Pagination page={page} totalPages={totalPages} onChange={setPage} />
+      </>
       )}
 
       <Modal

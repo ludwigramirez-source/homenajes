@@ -5,6 +5,7 @@ import { booksService } from '../../../services/booksService';
 import Icon from '../../../components/AppIcon';
 import { cn } from '../../../utils/cn';
 import { useTableSort, SortTh } from '../../../components/ui/sortable';
+import { usePagination, Pagination } from '../../../components/ui/pagination';
 
 // Accesores para ordenar (numericos devuelven Number; el resto texto).
 const SORT_ACCESSORS = {
@@ -60,6 +61,7 @@ const TributesList = () => {
   });
   // Ordenamiento por columna (sobre la lista ya filtrada).
   const { sorted: sortedTributes, sort, toggle } = useTableSort(filteredTributes, SORT_ACCESSORS);
+  const { page, setPage, totalPages, pageItems } = usePagination(sortedTributes);
   const activeCount = tributes.filter(t => t.active).length;
   const inactiveCount = tributes.length - activeCount;
 
@@ -148,7 +150,7 @@ const TributesList = () => {
             {filterButtons.map((b, i) => (
               <button
                 key={b.key}
-                onClick={() => setFilter(b.key)}
+                onClick={() => { setFilter(b.key); setPage(1); }}
                 className={cn(
                   "px-3 py-2 text-sm transition-colors flex items-center gap-1.5",
                   filter === b.key
@@ -199,7 +201,7 @@ const TributesList = () => {
                 </td>
               </tr>
             ) : null}
-            {sortedTributes.map(t => {
+            {pageItems.map(t => {
               // Usamos el codigo de sala (amigable) en la URL en vez del UUID.
               const roomRef = t.room_code || t.room_id;
               const displayUrl = `${window.location.origin}/digital-display-screen/${roomRef}`;
@@ -320,6 +322,8 @@ const TributesList = () => {
           </tbody>
         </table>
       </div>
+
+      <Pagination page={page} totalPages={totalPages} onChange={setPage} />
     </div>
   );
 };
