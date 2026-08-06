@@ -260,7 +260,11 @@ function commonCss() {
     '.footer-table { width: 100%; height: 100%; border-collapse: collapse; }',
     '.footer-table td { vertical-align: middle; color: #ffffff; }',
     // Horario a la izquierda, alineado a la izquierda y centrado verticalmente.
-    '.footer-left { width: 33%; font-size: 19px; opacity: 0.78; text-align: left; }',
+    // Se desplaza un poco arriba/derecha (position:relative, no flex) porque
+    // en la resolucion final de los TV LG el texto quedaba pisando el
+    // decorador de la esquina inferior izquierda del arte de la plantilla.
+    '.footer-left { width: 33%; font-size: 19px; opacity: 0.78; text-align: left; ',
+    '  position: relative; left: 22px; top: -12px; }',
     '.footer-center { width: 34%; text-align: center; }',
     '.footer-center .brand { font-weight: bold; font-size: 18px; letter-spacing: 3px; ',
     '  font-family: "Spectral", Georgia, "Times New Roman", serif; }',
@@ -967,7 +971,11 @@ function themedCss(theme, screen, baseUrl) {
     '  padding: 10px 36px; height: 100px; z-index: 5; }',
     '.footer-table { width: 100%; height: 100%; border-collapse: collapse; }',
     '.footer-table td { vertical-align: middle; color: #ffffff; }',
-    '.footer-left { width: 33%; font-size: 19px; opacity: 0.85; text-align: left; font-weight: 500; }',
+    // Mismo ajuste que el footer legacy: un poco arriba/derecha para no pisar
+    // el decorador de esquina del arte de la plantilla en la resolucion real
+    // de los TV LG (position:relative, nada de flex/transform 3D).
+    '.footer-left { width: 33%; font-size: 19px; opacity: 0.85; text-align: left; font-weight: 500; ',
+    '  position: relative; left: 22px; top: -12px; }',
     '.footer-center { width: 34%; text-align: center; }',
     '.footer-center .brand { font-weight: bold; font-size: 18px; letter-spacing: 3px; }',
     '.footer-center .tagline { font-size: 13px; opacity: 0.8; margin-top: 4px; text-align: center; }',
@@ -1033,6 +1041,7 @@ function renderThemedServiceV2(m, theme) {
 
   var exqTime = timeOnly12h(m.exequiasDatetime);
   var destTime = timeOnly12h(m.finalDestinationDatetime);
+  var salidaTime = timeOnly12h(m.scheduleEnd);
   var homenaje = formatDateLong(m.scheduleStart) || 'Por confirmar';
   var despedida = formatDateLong(m.scheduleEnd) || 'Por confirmar';
   var exequiasVenue = escapeHtml(m.exequiasVenue || 'Por confirmar');
@@ -1040,10 +1049,13 @@ function renderThemedServiceV2(m, theme) {
 
   // Nombre del lugar y hora en lineas separadas: el nombre es texto libre y
   // puede ser largo, y asi la hora queda mas visible en vez de perderse al
-  // final de una linea larga.
-  function venueBlock(label, venue, time) {
-    return '<div class="t-v2-venue-row"><span class="t-v2-lbl">' + label + ':</span> <span class="t-v2-val">' + venue + '</span></div>' +
-      (time ? '<div class="t-v2-row"><span class="t-v2-lbl">Hora:</span> <span class="t-v2-val">' + time + '</span></div>' : '');
+  // final de una linea larga. La etiqueta de la hora incluye el nombre del
+  // dato ("Hora de Exequias" / "Hora de Destino Final") para que no quede
+  // ambigua estando lejos de su etiqueta de lugar.
+  function venueBlock(label, venue, time, extraSpace) {
+    var spaceStyle = extraSpace ? ' style="margin-top:26px;"' : '';
+    return '<div class="t-v2-venue-row"' + spaceStyle + '><span class="t-v2-lbl">' + label + ':</span> <span class="t-v2-val">' + venue + '</span></div>' +
+      (time ? '<div class="t-v2-row"' + spaceStyle + '><span class="t-v2-lbl">Hora de ' + label + ':</span> <span class="t-v2-val">' + time + '</span></div>' : '');
   }
 
   return '<div class="t-v2-wrap"><table style="width:100%;height:100%;border-collapse:collapse;"><tr><td style="vertical-align:middle;">' +
@@ -1053,13 +1065,18 @@ function renderThemedServiceV2(m, theme) {
     '<div class="t-v2-sub">Cada vida deja una huella &uacute;nica.<br>' +
       'Gracias por acompa&ntilde;arnos a honrar, recordar y agradecer su historia.</div>' +
     '<table class="t-v2-grid"><tr>' +
+      // Columna izquierda: 3 datos (Homenaje / Exequias / Hora de Exequias).
+      // La derecha tiene 4 (se agrega "Hora de salida"), asi que aca se usa
+      // mas espacio entre lineas (extraSpace) para que ambos bloques de texto
+      // terminen ocupando una altura similar y se vean simetricos.
       '<td class="t-v2-col">' +
         '<div class="t-v2-row"><span class="t-v2-lbl">Homenaje:</span> <span class="t-v2-val">' + escapeHtml(homenaje) + '</span></div>' +
-        venueBlock('Exequias', exequiasVenue, exqTime) +
+        venueBlock('Exequias', exequiasVenue, exqTime, true) +
       '</td>' +
       '<td class="t-v2-col">' +
         '<div class="t-v2-row"><span class="t-v2-lbl">Despedida:</span> <span class="t-v2-val">' + escapeHtml(despedida) + '</span></div>' +
-        venueBlock('Destino Final', destinoVenue, destTime) +
+        (salidaTime ? '<div class="t-v2-row"><span class="t-v2-lbl">Hora de salida:</span> <span class="t-v2-val">' + salidaTime + '</span></div>' : '') +
+        venueBlock('Destino Final', destinoVenue, destTime, false) +
       '</td>' +
     '</tr></table>' +
   '</td></tr></table></div>';
