@@ -122,6 +122,7 @@ const create = async (req, res, next) => {
       final_destination_venue_name, final_destination_datetime,
       daily_hours_start, daily_hours_end,
       family_contact_name, family_contact_phone, family_contact_email, billing_address,
+      billing_neighborhood,
       deceased_document_id, family_contact_document_id, is_religious
     } = req.body;
 
@@ -157,11 +158,12 @@ const create = async (req, res, next) => {
         final_destination_venue_name, final_destination_datetime,
         daily_hours_start, daily_hours_end,
         family_contact_name, family_contact_phone, family_contact_email, billing_address,
+        billing_neighborhood,
         deceased_document_id, family_contact_document_id, is_religious
       )
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, true, $13, $14, $15, $16, $17,
               COALESCE($18::time, '08:00'::time), COALESCE($19::time, '23:00'::time),
-              $20, $21, $22, $23, $24, $25, $26)
+              $20, $21, $22, $23, $24, $25, $26, $27)
       RETURNING *
     `, [
       room_id, deceased_name, yearFromDate(birth_date), yearFromDate(death_date),
@@ -178,6 +180,7 @@ const create = async (req, res, next) => {
       family_contact_phone || null,
       family_contact_email || null,
       billing_address || null,
+      billing_neighborhood || null,
       deceased_document_id || null,
       family_contact_document_id || null,
       !!is_religious
@@ -199,6 +202,7 @@ const update = async (req, res, next) => {
       final_destination_venue_name, final_destination_datetime,
       daily_hours_start, daily_hours_end,
       family_contact_name, family_contact_phone, family_contact_email, billing_address,
+      billing_neighborhood,
       deceased_document_id, family_contact_document_id, is_religious
     } = req.body;
 
@@ -247,10 +251,11 @@ const update = async (req, res, next) => {
           family_contact_phone = COALESCE($20, family_contact_phone),
           family_contact_email = COALESCE($21, family_contact_email),
           billing_address = COALESCE($22, billing_address),
-          deceased_document_id = COALESCE($23, deceased_document_id),
-          family_contact_document_id = COALESCE($24, family_contact_document_id),
-          is_religious = COALESCE($25, is_religious)
-      WHERE id = $26
+          billing_neighborhood = COALESCE($23, billing_neighborhood),
+          deceased_document_id = COALESCE($24, deceased_document_id),
+          family_contact_document_id = COALESCE($25, family_contact_document_id),
+          is_religious = COALESCE($26, is_religious)
+      WHERE id = $27
       RETURNING *
     `, [
       deceased_name, yearFromDate(birth_date), yearFromDate(death_date), birth_date, death_date, photo_url,
@@ -260,6 +265,7 @@ const update = async (req, res, next) => {
       final_destination_venue_name, final_destination_datetime,
       daily_hours_start, daily_hours_end,
       family_contact_name, family_contact_phone, family_contact_email, billing_address,
+      billing_neighborhood,
       deceased_document_id, family_contact_document_id,
       (is_religious === undefined ? null : !!is_religious),
       id

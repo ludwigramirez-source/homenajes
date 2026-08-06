@@ -56,16 +56,29 @@ const AccountHolderForm = ({ formData, errors, updateFormData }) => {
           required
         />
 
-        <div className="md:col-span-2">
-          <label className="text-sm font-medium text-foreground block mb-2">
-            Dirección de Facturación
-          </label>
-          <textarea
-            className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            placeholder="Calle, número, ciudad, código postal..."
-            value={formData?.billingAddress}
-            onChange={(e) => updateFormData('billingAddress', e?.target?.value)}
-            rows={3}
+        {/* Fila propia (independiente del auto-flow del grid padre) para que
+            Dirección y Barrio siempre queden pareados, sin importar cuantos
+            campos los precedan. */}
+        <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="text-sm font-medium text-foreground block mb-2">
+              Dirección de Facturación
+            </label>
+            <textarea
+              className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              placeholder="Calle, número, ciudad, código postal..."
+              value={formData?.billingAddress}
+              onChange={(e) => updateFormData('billingAddress', e?.target?.value)}
+              rows={3}
+            />
+          </div>
+
+          <Input
+            label="Barrio"
+            placeholder="Ej: El Poblado"
+            value={formData?.billingNeighborhood}
+            onChange={(e) => updateFormData('billingNeighborhood', e?.target?.value)}
+            error={errors?.billingNeighborhood}
           />
         </div>
 

@@ -181,6 +181,14 @@ const createTables = async () => {
     `);
     console.log('[MIGRATE] Columnas horario diario + titular agregadas a "memorials"');
 
+    // Barrio de la direccion de facturacion: se agrega despues, por eso va
+    // en su propio ALTER. Nullable: los homenajes existentes quedan en blanco.
+    await client.query(`
+      ALTER TABLE memorials
+        ADD COLUMN IF NOT EXISTS billing_neighborhood VARCHAR(150)
+    `);
+    console.log('[MIGRATE] Columna "billing_neighborhood" agregada a "memorials"');
+
     // ========== ALTER: memorials: documento de identidad (difunto y titular) ==========
     // Desambigua homonimos y permite cruzar informacion con un CRM externo.
     // SENSIBLE: nunca se expone en rutas publicas (formulario, display SSR,

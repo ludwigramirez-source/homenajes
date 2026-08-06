@@ -81,7 +81,8 @@ const TributeCreationStudio = () => {
     familyContactDocumentId: '',
     familyContactPhone: '',
     familyContactEmail: '',
-    billingAddress: ''
+    billingAddress: '',
+    billingNeighborhood: ''
   });
 
   const [errors, setErrors] = useState({});
@@ -154,7 +155,8 @@ const TributeCreationStudio = () => {
           familyContactDocumentId: m.family_contact_document_id || '',
           familyContactPhone: m.family_contact_phone || '',
           familyContactEmail: m.family_contact_email || '',
-          billingAddress: m.billing_address || ''
+          billingAddress: m.billing_address || '',
+          billingNeighborhood: m.billing_neighborhood || ''
         }));
       } catch (e) {
         console.error('Error cargando memorial:', e);
@@ -252,7 +254,8 @@ const TributeCreationStudio = () => {
         family_contact_document_id: formData?.familyContactDocumentId || null,
         family_contact_phone: formData?.familyContactPhone || null,
         family_contact_email: formData?.familyContactEmail || null,
-        billing_address: formData?.billingAddress || null
+        billing_address: formData?.billingAddress || null,
+        billing_neighborhood: formData?.billingNeighborhood || null
       };
 
       // En modo edicion: PUT; en modo creacion: POST.
