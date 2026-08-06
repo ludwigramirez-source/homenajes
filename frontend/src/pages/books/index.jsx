@@ -16,7 +16,8 @@ const formatDateTime = (iso) => {
   if (Number.isNaN(d.getTime())) return '—';
   return d.toLocaleString('es-CO', {
     day: '2-digit', month: 'short', year: 'numeric',
-    hour: '2-digit', minute: '2-digit'
+    hour: '2-digit', minute: '2-digit',
+    timeZone: 'America/Bogota'
   });
 };
 

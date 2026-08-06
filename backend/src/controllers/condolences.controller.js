@@ -359,7 +359,7 @@ const exportMarketingExcel = async (req, res, next) => {
         nombre: c.sender_name,
         email: c.sender_email,
         telefono: c.sender_phone || '',
-        fecha: c.created_at ? new Date(c.created_at).toLocaleString('es-CO') : '',
+        fecha: c.created_at ? new Date(c.created_at).toLocaleString('es-CO', { timeZone: 'America/Bogota' }) : '',
         difunto: c.deceased_name || '',
         documento: c.deceased_document_id || '',
         sede: c.location_name || '',

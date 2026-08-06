@@ -634,11 +634,25 @@ const DigitalDisplayScreen = () => {
 // Formatea fechas tipo "Sábado 23 de Mayo de 2026 · 2:00 PM"
 const SPANISH_DAYS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 const SPANISH_MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+const BOGOTA_TZ = 'America/Bogota';
+
+// Reinterpreta un instante absoluto como si fuera hora local de Bogota, para
+// que los getters (getDay/getHours/etc) den la hora correcta sin depender de
+// la zona horaria del navegador/dispositivo que renderiza esta pantalla.
+const toZonedDate = (date, timeZone) => {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone, year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+  }).formatToParts(date);
+  const get = (type) => parseInt(parts.find(p => p.type === type).value, 10);
+  return new Date(get('year'), get('month') - 1, get('day'), get('hour') % 24, get('minute'), get('second'));
+};
 
 const formatServiceDateTime = (iso) => {
   if (!iso) return { date: 'Por confirmar', time: '' };
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return { date: 'Por confirmar', time: '' };
+  const raw = new Date(iso);
+  if (Number.isNaN(raw.getTime())) return { date: 'Por confirmar', time: '' };
+  const d = toZonedDate(raw, BOGOTA_TZ);
   const date = `${SPANISH_DAYS[d.getDay()]} ${d.getDate()} de ${SPANISH_MONTHS[d.getMonth()]} de ${d.getFullYear()}`;
   let hour = d.getHours();
   const minute = d.getMinutes().toString().padStart(2, '0');

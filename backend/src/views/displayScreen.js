@@ -361,9 +361,12 @@ function renderFooter(currentScreen, totalScreens, scheduleStart, scheduleEnd) {
   for (var i = 1; i <= totalScreens; i++) {
     dots += '<span class="dot-indicator' + (i === currentScreen ? ' active' : '') + '"></span>';
   }
+  var horario = (scheduleStart && scheduleEnd)
+    ? 'Sala habilitada: ' + escapeHtml(scheduleStart) + ' &ndash; ' + escapeHtml(scheduleEnd)
+    : '';
   return '<div class="footer">\n' +
     '  <table class="footer-table"><tr>\n' +
-    '    <td class="footer-left"></td>\n' +
+    '    <td class="footer-left">' + horario + '</td>\n' +
     '    <td class="footer-center">\n' +
          (LOGO_DATA_URI
            ? '      <img class="footer-logo" src="' + LOGO_DATA_URI + '" alt="Los Olivos">\n'
@@ -1002,9 +1005,12 @@ function renderThemedFooter(screen, totalScreens, scheduleStart, scheduleEnd) {
   for (var i = 1; i <= totalScreens; i++) {
     dots += '<span class="dot-indicator' + (i === screen ? ' active' : '') + '"></span>';
   }
+  var horario = (scheduleStart && scheduleEnd)
+    ? 'Sala habilitada: ' + escapeHtml(scheduleStart) + ' &ndash; ' + escapeHtml(scheduleEnd)
+    : '';
   return '<div class="footer">\n' +
     '<table class="footer-table"><tr>\n' +
-    '  <td class="footer-left"></td>\n' +
+    '  <td class="footer-left">' + horario + '</td>\n' +
     '  <td class="footer-center"></td>\n' +
     '  <td class="footer-right">' + dots + '</td>\n' +
     '</tr></table>\n' +
