@@ -885,11 +885,9 @@ function themedCss(theme, screen, baseUrl) {
     // SIEMPRE en su propia linea, con la etiqueta/nombre/anos/mensaje debajo
     // (si fuera inline-block quedaria en la misma linea que la etiqueta,
     // lado a lado, en vez de apilada).
-    // Foto 260 (no 300): con el mensaje ahora dinamico (biografia real de la
-    // familia, no un texto fijo corto) hace falta mas margen vertical para
-    // mensajes largos antes de que el auto-ajuste tenga que reducir la fuente
-    // al minimo; este recorte + margenes mas chicos abajo liberan ~70px.
-    '.t-card2-photo { display: block; margin: 0 auto; width: 260px; height: 260px; border-radius: 16px; ',
+    // Foto al 150% (390, antes 260) pedido por el cliente para darle mas
+    // protagonismo a la fotografia del difunto en esta pantalla.
+    '.t-card2-photo { display: block; margin: 0 auto; width: 390px; height: 390px; border-radius: 16px; ',
     '  border: 5px solid rgba(255,255,255,0.7); background-color: rgba(255,255,255,0.3); ',
     '  background-position: center top; background-repeat: no-repeat; ',
     '  -webkit-background-size: cover; background-size: cover; }',
@@ -897,18 +895,20 @@ function themedCss(theme, screen, baseUrl) {
     '  background: rgba(255,255,255,0.6); border-radius: 6px; ',
     '  font-family: ' + theme.fontBody + '; font-size: 26px; font-weight: 600; letter-spacing: 2px; ',
     '  text-transform: uppercase; color: ' + theme.eyebrow + '; }',
-    '.t-card2-name { margin-top: 18px; font-family: ' + theme.fontName + '; font-weight: ' + theme.nameWeight + '; ',
+    // Nombre y años: mismo tamano de letra, solo bajan un poco (mas margen
+    // arriba) para dar espacio a la foto mas grande.
+    '.t-card2-name { margin-top: 26px; font-family: ' + theme.fontName + '; font-weight: ' + theme.nameWeight + '; ',
     '  font-size: 88px; line-height: 1.2; color: ' + theme.titulo + '; }',
-    '.t-card2-years { margin-top: 8px; font-family: ' + theme.fontBody + '; font-style: italic; ',
+    '.t-card2-years { margin-top: 14px; font-family: ' + theme.fontBody + '; font-style: italic; ',
     '  font-size: 40px; color: ' + theme.texto + '; }',
-    // max-height 400 (antes 330): el mensaje ahora es la biografia libre que
-    // escribe la familia (antes era un texto fijo corto de la guia), asi que
-    // necesita mas margen antes de que el auto-ajuste (fits: tFitMsg) tenga
-    // que reducir el tamano de fuente al minimo.
-    '.t-card2-msg { display: inline-block; margin-top: 20px; max-width: 1150px; max-height: 400px; ',
-    '  overflow: hidden; padding: 26px 46px; background: rgba(255,255,255,0.55); ',
+    // Mensaje al 75% del tamano anterior (caja y tipografia; ver tambien el
+    // fit de tFitMsg para pantalla 2 centrada en fitScriptJs) y baja un poco
+    // mas su posicion (margin-top), pedido por el cliente para balancear el
+    // peso visual contra la foto ahora mas grande.
+    '.t-card2-msg { display: inline-block; margin-top: 32px; max-width: 860px; max-height: 300px; ',
+    '  overflow: hidden; padding: 20px 35px; background: rgba(255,255,255,0.55); ',
     '  border: 1px solid rgba(255,255,255,0.7); border-radius: 12px; ',
-    '  font-family: ' + theme.fontBody + '; font-size: 40px; line-height: 1.5; color: ' + theme.texto + '; }',
+    '  font-family: ' + theme.fontBody + '; font-size: 30px; line-height: 1.5; color: ' + theme.texto + '; }',
     // max-height + overflow:hidden: le dan al auto-ajuste (modo 'h', id tQrMsg)
     // un limite real contra el cual medir antes de reducir el tamano de fuente.
     // La celda vertical-align:middle tiene ~980px utiles (viewport completo
@@ -1366,7 +1366,14 @@ function renderThemed(opts, theme) {
     }
   } else if (cyc.screen === 2) {
     body = renderThemedEmotional(m, theme);
-    fits = [['tFitMsg', 72, 40, 4, 'h']];
+    // Pedido del cliente: en la tarjeta centrada (naturaleza/nubes/nino/nina/
+    // adulto) el mensaje baja al 75% de su tamaño anterior. Se escala todo
+    // el rango de auto-ajuste de fuente (72->54, 40->30, paso 4->3) para que
+    // el resultado sea 75% mas chico sin importar el largo del mensaje. El
+    // layout legacy de 2 columnas (template 'default') no se toca.
+    fits = theme.emotionalLayout === 'centered'
+      ? [['tFitMsg', 54, 30, 3, 'h']]
+      : [['tFitMsg', 72, 40, 4, 'h']];
   } else {
     body = renderThemedQr(m, theme, opts.qrSvg);
     // tQrMsg solo existe en el layout 'centered' de nubes (mensaje solo en la
