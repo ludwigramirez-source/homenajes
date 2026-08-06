@@ -914,7 +914,9 @@ function themedCss(theme, screen, baseUrl) {
     // La celda vertical-align:middle tiene ~980px utiles (viewport completo
     // menos el footer), asi que 700px deja margen de sobra sin forzar el
     // texto al tamano minimo.
-    '.t-qrtext { font-weight: 600; font-size: 72px; line-height: 1.45; color: ' + theme.texto + '; ',
+    // line-height 1.3 (antes 1.45): pedido del cliente, espaciado entre
+    // lineas un poco menor para el nuevo texto de la pantalla 3 (QR).
+    '.t-qrtext { font-weight: 600; font-size: 72px; line-height: 1.3; color: ' + theme.texto + '; ',
     '  margin-top: 30px; max-height: 700px; overflow: hidden; }',
     '.qr-box2 { display: inline-block; padding: 22px; background: #ffffff; border-radius: 28px; }',
     '.qr-box2 svg { display: block; width: 420px; height: 420px; }',
@@ -1217,8 +1219,9 @@ function renderThemedQr(m, theme, qrSvg) {
         '<div class="t-years">' + yearsHtml(m) + '</div>' +
       '</td>' +
       '<td class="t-qr-r-centered">' +
-        '<div class="t-qrtext" id="tQrMsg" style="margin-top:0;">Brinda un mensaje que proviene desde todo el amor ' +
-        'que hay al recordar con el coraz&oacute;n.</div>' +
+        '<div class="t-qrtext" id="tQrMsg" style="margin-top:0;">Expresa todo tu afecto y deja tu mensaje de ' +
+        'condolencia; tus palabras ser&aacute;n la huella de amor y el apoyo que la familia guardar&aacute; ' +
+        'para siempre.</div>' +
       '</td>' +
       '</tr></table>';
   }
