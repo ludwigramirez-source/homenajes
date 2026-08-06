@@ -1238,7 +1238,10 @@ function renderThemedQr(m, theme, qrSvg) {
       '<td class="t-col-l">' +
         '<div class="t-eyebrow" style="font-size:40px;margin-bottom:14px;">Hazte presente</div>' +
         '<div class="qr-box2">' + (qrSvg || '') + '</div>' +
-        '<div class="t-name2" style="margin-top:20px;">' + escapeHtml(m.name) + '</div>' +
+        // max-height+overflow le dan al auto-ajuste (id tName2, modo 'h' en
+        // fits) un limite real: si el nombre es largo y pasa a 2 lineas, el
+        // script reduce la letra lo justo para no crecer hacia el footer.
+        '<div class="t-name2" id="tName2" style="margin-top:20px;max-height:132px;overflow:hidden;">' + escapeHtml(m.name) + '</div>' +
         '<div class="t-years">' + yearsHtml(m) + '</div>' +
       '</td>' +
       '<td class="t-qr-r-centered">' +
@@ -1281,10 +1284,16 @@ function fitScriptJs(fits) {
     '      var size = cfg[1];\n' +
     '      el.style.fontSize = size + "px";\n' +
     '      var guard = 0;\n' +
+    // Tolerancia de 2px: scrollHeight/scrollWidth pueden quedar 1-2px por
+    // encima de clientHeight/clientWidth aun sin desborde real (redondeo de
+    // sub-pixel del line-height segun la fuente), lo que sin esta tolerancia
+    // gatilla una reduccion de tamano innecesaria incluso en textos cortos
+    // que entran perfecto.
+    '      var TOL = 2;\n' +
     '      function overflows() {\n' +
-    '        if (cfg[4] === "w") return el.scrollWidth > el.clientWidth;\n' +
-    '        if (cfg[4] === "h") return el.scrollHeight > el.clientHeight;\n' +
-    '        return el.scrollWidth > el.clientWidth || el.scrollHeight > el.clientHeight;\n' +
+    '        if (cfg[4] === "w") return el.scrollWidth > el.clientWidth + TOL;\n' +
+    '        if (cfg[4] === "h") return el.scrollHeight > el.clientHeight + TOL;\n' +
+    '        return el.scrollWidth > el.clientWidth + TOL || el.scrollHeight > el.clientHeight + TOL;\n' +
     '      }\n' +
     '      while (overflows() && size > cfg[2] && guard < 120) {\n' +
     '        size -= cfg[3]; guard++;\n' +
@@ -1405,7 +1414,12 @@ function renderThemed(opts, theme) {
     // tQrMsg solo existe en el layout 'centered' de nubes (mensaje solo en la
     // columna derecha); en los demas temas el id no existe y fitScriptJs lo
     // ignora sin error, asi que es seguro incluirlo siempre.
-    fits = [['tQrMsg', 72, 40, 4, 'h']];
+    // tName2: nombre del difunto junto al QR (layout 'centered'). Modo 'h'
+    // permite que siga partiendose en 2 lineas (a diferencia del nombre
+    // gigante de Pantalla 1, que fuerza una sola linea) pero limita cuanto
+    // puede crecer el bloque en alto, para que un nombre largo no empuje el
+    // texto hacia el footer/decorador de la plantilla.
+    fits = [['tQrMsg', 72, 40, 4, 'h'], ['tName2', 80, 60, 3, 'h']];
   }
 
   var schedStart = format12h(m.dailyHoursStart || '08:00');
