@@ -432,12 +432,12 @@ const SmtpSettingsPanel = () => {
               disabled={preset.locked}
               onClick={() => handleField('smtp_secure', !form.smtp_secure)}
               className={cn(
-                'relative inline-flex h-6 w-11 items-center rounded-full transition-colors flex-shrink-0',
-                form.smtp_secure ? 'bg-primary' : 'bg-muted-foreground/30'
+                'relative inline-flex h-6 w-11 items-center rounded-full border transition-colors flex-shrink-0',
+                form.smtp_secure ? 'bg-primary border-primary' : 'bg-muted border-border'
               )}
             >
               <span className={cn(
-                'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
+                'inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform',
                 form.smtp_secure ? 'translate-x-6' : 'translate-x-1'
               )} />
             </button>

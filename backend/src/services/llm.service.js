@@ -232,6 +232,7 @@ async function moderateMessage({ message, senderName }) {
         const body = await response.json();
         if (body?.error?.message) detail = `HTTP ${response.status} ${String(body.error.message).slice(0, 120)}`;
       } catch (_) { /* ignore */ }
+      console.error('[LLM] Error HTTP moderando mensaje:', detail);
       const usageId = await recordUsage({ provider, model, inputTokens: 0, outputTokens: 0, outcome: 'error' });
       return { status: 'unmoderated', reason: 'error de moderacion: ' + detail, published: true, model, usageId };
     }
@@ -251,6 +252,7 @@ async function moderateMessage({ message, senderName }) {
         throw new Error('el campo "aprobado" no es booleano');
       }
     } catch (parseErr) {
+      console.error('[LLM] Respuesta no interpretable:', parseErr.message);
       const usageId = await recordUsage({ provider, model, inputTokens, outputTokens, outcome: 'error' });
       return {
         status: 'unmoderated',
@@ -273,6 +275,7 @@ async function moderateMessage({ message, senderName }) {
     };
   } catch (err) {
     const detail = err.name === 'AbortError' ? 'timeout (12s)' : String(err.message).slice(0, 120);
+    console.error('[LLM] Error de red/timeout moderando mensaje:', detail);
     const usageId = await recordUsage({ provider, model, inputTokens: 0, outputTokens: 0, outcome: 'error' });
     return { status: 'unmoderated', reason: 'error de moderacion: ' + detail, published: true, model, usageId };
   } finally {

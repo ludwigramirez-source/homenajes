@@ -248,12 +248,12 @@ const LlmSettingsPage = () => {
                     aria-checked={enabled}
                     onClick={() => setEnabled(v => !v)}
                     className={cn(
-                      'relative inline-flex h-6 w-11 items-center rounded-full transition-colors flex-shrink-0',
-                      enabled ? 'bg-primary' : 'bg-muted-foreground/30'
+                      'relative inline-flex h-6 w-11 items-center rounded-full border transition-colors flex-shrink-0',
+                      enabled ? 'bg-primary border-primary' : 'bg-muted border-border'
                     )}
                   >
                     <span className={cn(
-                      'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
+                      'inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform',
                       enabled ? 'translate-x-6' : 'translate-x-1'
                     )} />
                   </button>
