@@ -912,7 +912,13 @@ function themedCss(theme, screen, baseUrl) {
     // fit de tFitMsg para pantalla 2 centrada en fitScriptJs) y baja un poco
     // mas su posicion (margin-top), pedido por el cliente para balancear el
     // peso visual contra la foto ahora mas grande.
-    '.t-card2-msg { display: inline-block; margin-top: 32px; max-width: 860px; max-height: 300px; ',
+    // max-width/max-height ampliados (860->1300, 300->340): con el tamano
+    // anterior, mensajes de ~385 caracteres (muy por debajo del maximo de
+    // 500 que acepta el formulario) ya quedaban cortados por el auto-ajuste
+    // al llegar al piso de fuente (30px). El contenedor (.t-card2) ocupa el
+    // stage completo (1920px), asi que hay sobra de espacio para ensanchar
+    // sin chocar con nada.
+    '.t-card2-msg { display: inline-block; margin-top: 32px; max-width: 1300px; max-height: 340px; ',
     '  overflow: hidden; padding: 20px 35px; background: rgba(255,255,255,0.55); ',
     '  border: 1px solid rgba(255,255,255,0.7); border-radius: 12px; ',
     '  font-family: ' + theme.fontBody + '; font-size: 30px; line-height: 1.5; color: ' + theme.texto + '; }',
