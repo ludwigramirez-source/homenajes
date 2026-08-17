@@ -38,11 +38,11 @@ const Login = () => {
         <div className="bg-white rounded-2xl shadow-2xl p-10 w-full max-w-md">
           {/* Logo / Header */}
           <div className="text-center mb-8">
-            <div className="w-20 h-20 mx-auto mb-4 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #1a9490 0%, #155f5d 100%)' }}>
-              <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
-            </div>
+            <img
+              src="/isotipo-los-olivos.png"
+              alt="Los Olivos"
+              className="w-28 h-28 mx-auto mb-4 object-contain"
+            />
             <h1 className="text-2xl font-bold text-gray-800">SERCOFUN</h1>
             <p className="text-sm text-gray-500 mt-1">Sistema de Homenajes Digitales</p>
           </div>
