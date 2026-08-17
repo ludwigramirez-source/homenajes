@@ -7,6 +7,7 @@ import MetricCard from '../../../components/analytics/MetricCard';
 import { cn } from '../../../utils/cn';
 import { useTableSort, SortTh } from '../../../components/ui/sortable';
 import { usePagination, Pagination } from '../../../components/ui/pagination';
+import { useAuth } from '../../../context/AuthContext';
 
 // Accesores para ordenar (numericos devuelven Number; el resto texto).
 const SORT_ACCESSORS = {
@@ -31,11 +32,17 @@ const formatDate = (iso) => {
 };
 
 const TributesList = () => {
+  const { user } = useAuth();
+  // Borrar un homenaje es irreversible (arrastra sus condolencias por
+  // ON DELETE CASCADE) - solo el superadministrador (rol 'admin') puede
+  // hacerlo. El backend valida lo mismo; esto solo oculta el boton al resto.
+  const isSuperAdmin = user?.role === 'admin';
   const [tributes, setTributes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [copiedId, setCopiedId] = useState(null);
   const [bookLoadingId, setBookLoadingId] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
   // Filtro rapido: 'all' | 'active' | 'inactive'
   const [filter, setFilter] = useState('all');
   const [range, setRange] = useState({ from: '', to: '' });
@@ -126,6 +133,24 @@ const TributesList = () => {
       await load();
     } catch (e) {
       alert('Error actualizando estado: ' + (e.response?.data?.error || e.message));
+    }
+  };
+
+  const deleteMemorial = async (t) => {
+    if (!isSuperAdmin) return;
+    const confirmed = window.confirm(
+      `¿Eliminar el homenaje de "${t.deceased_name}"? Esta acción no se puede deshacer y borra ` +
+      `también sus mensajes de condolencia (${t.condolence_count || 0}).`
+    );
+    if (!confirmed) return;
+    try {
+      setDeletingId(t.id);
+      await memorialsService.remove(t.id);
+      await load();
+    } catch (e) {
+      alert('Error eliminando el homenaje: ' + (e.response?.data?.error || e.message));
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -409,6 +434,20 @@ const TributesList = () => {
                       >
                         <Icon name={t.active ? 'PowerOff' : 'Power'} size={16} />
                       </button>
+                      {isSuperAdmin && (
+                        <>
+                          <span className="w-px h-5 bg-border mx-0.5" />
+                          <button
+                            onClick={() => deleteMemorial(t)}
+                            disabled={deletingId === t.id}
+                            className="p-2 rounded-md hover:bg-destructive/10 transition-colors text-destructive disabled:opacity-50"
+                            title="Eliminar homenaje (solo superadministrador)"
+                          >
+                            <Icon name={deletingId === t.id ? 'Loader' : 'Trash2'} size={16}
+                              className={deletingId === t.id ? 'animate-spin' : ''} />
+                          </button>
+                        </>
+                      )}
                     </div>
                   </td>
                 </tr>
