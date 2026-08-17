@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import { cn } from '../../utils/cn';
@@ -26,6 +26,13 @@ const MemorialForm = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [showElements, setShowElements] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  // Ref ademas del state: un doble/triple tap muy rapido puede disparar
+  // varios eventos "click" dentro del mismo tick de JS, antes de que React
+  // llegue a re-renderizar con submitting=true (el state es asincrono). El
+  // ref se muta de forma sincronica e inmediata, asi que si corta la
+  // segunda invocacion aunque el state/el atributo disabled del boton
+  // todavia no se hayan actualizado en el DOM.
+  const submittingRef = useRef(false);
   const [memorialData, setMemorialData] = useState({
     name: '',
     birthYear: '',
@@ -127,12 +134,18 @@ const MemorialForm = () => {
 
   const handleSubmit = async (e) => {
     e?.preventDefault();
+    // submittingRef corta llamadas duplicadas de forma sincronica e
+    // inmediata (ver comentario junto a su declaracion). El state
+    // "submitting" sigue existiendo aparte, solo para pintar el boton
+    // (disabled + spinner).
+    if (submittingRef.current) return;
     if (!validateForm()) return;
     if (!memorialData.id) {
       setErrors({ general: 'No se encontro el memorial activo' });
       return;
     }
 
+    submittingRef.current = true;
     setSubmitting(true);
     try {
       const submitFormData = new FormData();
@@ -159,6 +172,7 @@ const MemorialForm = () => {
         general: err.response?.data?.error || 'Error al enviar el mensaje. Intenta nuevamente.'
       });
     } finally {
+      submittingRef.current = false;
       setSubmitting(false);
     }
   };
@@ -548,10 +562,19 @@ const MemorialForm = () => {
               )}>
                 <button
                   type="submit"
-                  className="w-full py-4 font-bold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+                  disabled={submitting}
+                  className="w-full py-4 font-bold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
                   style={{ fontFamily: 'Spectral, serif', fontSize: '16px', background: theme.accent, color: theme.accentText, boxShadow: `0 4px 20px ${theme.accentShadow}` }}
                 >
-                  Enviar mensaje de homenaje
+                  {submitting ? (
+                    <>
+                      <svg className="w-5 h-5 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3}>
+                        <circle cx="12" cy="12" r="9" strokeOpacity="0.25" />
+                        <path strokeLinecap="round" d="M21 12a9 9 0 00-9-9" />
+                      </svg>
+                      Enviando...
+                    </>
+                  ) : 'Enviar mensaje de homenaje'}
                 </button>
               </div>
             </form>
