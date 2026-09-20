@@ -75,6 +75,27 @@ const getDisplay = async (req, res, next) => {
     `, [roomId]);
 
     if (memorialResult.rows.length === 0) {
+      // Sin homenaje activo: si hay pautas publicitarias activas, rotan una
+      // por request (20s c/u via meta refresh) en vez del mensaje "Sala
+      // disponible". Se re-consultan en cada request (no una vez cacheada),
+      // asi que si se activa un homenaje o se desactivan todas las pautas
+      // mientras tanto, el proximo refresh ya lo refleja solo.
+      const pautasResult = await db.query(
+        'SELECT id, image_url FROM pautas WHERE active = true ORDER BY created_at ASC'
+      );
+      const pautas = pautasResult.rows;
+      if (pautas.length > 0) {
+        let idx = pautas.findIndex((p) => p.id === req.query.pauta);
+        // Sin ?pauta valido (primera carga, o la solicitada ya no esta
+        // activa/fue borrada): se reinicia desde la primera, nunca se cae.
+        if (idx === -1) idx = 0;
+        const current = pautas[idx];
+        const next = pautas[(idx + 1) % pautas.length];
+        const nextUrl = '/digital-display-screen/' + encodeURIComponent(roomId) +
+          '?pauta=' + encodeURIComponent(next.id);
+        const imageUrl = absoluteUploadUrl(baseUrl, current.image_url);
+        return res.send(view.renderPauta(imageUrl, nextUrl, isPreview));
+      }
       return res.send(view.renderEmptyRoom('No hay homenaje activo en esta sala en este momento'));
     }
 

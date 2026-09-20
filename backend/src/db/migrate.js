@@ -346,6 +346,21 @@ const createTables = async () => {
     `);
     console.log('[MIGRATE] Tabla "memorial_views" creada');
 
+    // ========== TABLA: pautas (imagenes de relleno cuando no hay homenaje
+    // activo en una sala; rotan cada 20s entre las que esten "active") ==========
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS pautas (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        image_url TEXT NOT NULL,
+        title VARCHAR(150),
+        active BOOLEAN NOT NULL DEFAULT true,
+        created_by UUID REFERENCES users(id),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log('[MIGRATE] Tabla "pautas" creada');
+
     // ========== INDICES para performance ==========
     await client.query(`CREATE INDEX IF NOT EXISTS idx_rooms_location ON rooms(location_id)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_memorials_room ON memorials(room_id)`);
@@ -360,6 +375,7 @@ const createTables = async () => {
     await client.query(`CREATE INDEX IF NOT EXISTS idx_llm_usage_created ON llm_usage(created_at DESC)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_book_sends_memorial ON book_sends(memorial_id)`);
     await client.query(`CREATE INDEX IF NOT EXISTS idx_book_sends_status ON book_sends(status)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_pautas_active ON pautas(active, created_at)`);
     console.log('[MIGRATE] Indices creados');
 
     // ========== FUNCIONES Y TRIGGERS para updated_at ==========
@@ -373,7 +389,7 @@ const createTables = async () => {
       $$ language 'plpgsql'
     `);
 
-    const tablesWithUpdatedAt = ['users', 'locations', 'rooms', 'memorials', 'ceremony_venues', 'llm_settings', 'email_settings'];
+    const tablesWithUpdatedAt = ['users', 'locations', 'rooms', 'memorials', 'ceremony_venues', 'llm_settings', 'email_settings', 'pautas'];
     for (const table of tablesWithUpdatedAt) {
       await client.query(`
         DROP TRIGGER IF EXISTS update_${table}_updated_at ON ${table};

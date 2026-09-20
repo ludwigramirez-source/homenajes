@@ -34,7 +34,8 @@ const NAV_GROUPS = [
     items: [
       { label: 'Usuarios', path: '/usuarios', icon: 'Users', match: ['/usuarios'], roles: ['admin'] },
       { label: 'Moderación IA', path: '/llm', icon: 'Sparkles', match: ['/llm'], roles: ['admin'] },
-      { label: 'Correo saliente', path: '/configuracion-correo', icon: 'Mail', match: ['/configuracion-correo'], roles: ['admin'] }
+      { label: 'Correo saliente', path: '/configuracion-correo', icon: 'Mail', match: ['/configuracion-correo'], roles: ['admin'] },
+      { label: 'Pautas', path: '/pautas', icon: 'MonitorPlay', match: ['/pautas'], roles: ['admin'] }
     ]
   }
 ];

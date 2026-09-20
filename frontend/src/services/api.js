@@ -145,6 +145,21 @@ export const analyticsService = {
   health: () => api.get('/analytics/health').then(r => r.data)
 };
 
+// ============ PAUTAS (relleno cuando no hay homenaje activo) ============
+export const pautasService = {
+  getAll: () => api.get('/pautas').then(r => r.data),
+  create: (file, title) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    if (title) formData.append('title', title);
+    return api.post('/pautas', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    }).then(r => r.data);
+  },
+  update: (id, data) => api.put(`/pautas/${id}`, data).then(r => r.data),
+  remove: (id) => api.delete(`/pautas/${id}`).then(r => r.data)
+};
+
 // Helper para construir URL completas de archivos subidos
 export const getFileUrl = (path) => {
   if (!path) return null;

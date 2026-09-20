@@ -562,6 +562,38 @@ function renderEmptyRoom(message) {
     '</div></body></html>';
 }
 
+// =========== Pauta publicitaria (relleno cuando no hay homenaje activo) ===========
+// Imagen a pantalla completa, reutiliza el mismo mecanismo de escalado
+// (STAGE_FIT_JS) que las pantallas de homenaje para comportarse igual en la
+// resolucion real de los TV LG. background-size:contain (con prefijo
+// -webkit-, mismo patron que .photo-frame/.t-photo) en vez de la propiedad
+// mas moderna object-fit: si la imagen subida no es exactamente 16:9 se ve
+// completa y centrada sobre fondo negro, sin recortarse ni deformarse.
+function renderPauta(imageUrl, nextUrl, preview) {
+  var refresh = (nextUrl && !preview)
+    ? '<meta http-equiv="refresh" content="20; url=' + escapeHtml(nextUrl) + '">'
+    : '';
+  var bgStyle = imageUrl ? ' style="background-image:url(\'' + escapeHtml(imageUrl) + '\');"' : '';
+  return '<!DOCTYPE html>\n<html lang="es"><head>\n' +
+    '<meta http-equiv="content-type" content="text/html; charset=utf-8">\n' +
+    '<meta http-equiv="X-UA-Compatible" content="IE=edge">\n' +
+    '<meta http-equiv="cache-control" content="no-cache, no-store, must-revalidate">\n' +
+    '<meta http-equiv="pragma" content="no-cache">\n' +
+    '<meta http-equiv="expires" content="0">\n' +
+    refresh + '\n' +
+    '<title>Pauta</title>\n' +
+    '<style type="text/css">\n' +
+    'html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #000000; overflow: hidden; }\n' +
+    '.stage { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; ' +
+      '-webkit-transform-origin: 0 0; transform-origin: 0 0; background-color: #000000; ' +
+      'background-position: center center; background-repeat: no-repeat; ' +
+      '-webkit-background-size: contain; background-size: contain; }\n' +
+    '</style>\n</head>\n<body>\n' +
+    '<div class="stage" id="stage"' + bgStyle + '></div>\n' +
+    '<script type="text/javascript">\n' + STAGE_FIT_JS + '\n</scr' + 'ipt>\n' +
+    '</body></html>';
+}
+
 // ====================================================================
 // ===================== SISTEMA DE PLANTILLAS ========================
 // ====================================================================
@@ -1487,5 +1519,6 @@ function render(opts) {
 module.exports = {
   render: render,
   renderEmptyRoom: renderEmptyRoom,
+  renderPauta: renderPauta,
   TEMPLATE_IDS: TEMPLATE_IDS
 };

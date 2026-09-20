@@ -18,6 +18,7 @@ const usersRoutes = require('./routes/users.routes');
 const llmRoutes = require('./routes/llm.routes');
 const booksRoutes = require('./routes/books.routes');
 const displayRoutes = require('./routes/display.routes');
+const pautasRoutes = require('./routes/pautas.routes');
 
 const app = express();
 
@@ -88,6 +89,7 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/llm', llmRoutes);
 app.use('/api/books', booksRoutes);
+app.use('/api/pautas', pautasRoutes);
 
 // (la ruta /digital-display-screen se registra arriba, antes de helmet,
 // para que el SSR no quede sujeto a CSP estricta)
@@ -124,7 +126,7 @@ app.get('/api/docs', (req, res) => {
         'GET /api/memorials/:id': 'Detalle homenaje (auth)',
         'POST /api/memorials': 'Crear homenaje (auth)',
         'PUT /api/memorials/:id': 'Actualizar homenaje (auth)',
-        'DELETE /api/memorials/:id': 'Eliminar homenaje (admin/supervisor)',
+        'DELETE /api/memorials/:id': 'Eliminar homenaje (admin only)',
         'POST /api/memorials/upload-photo': 'Subir foto (auth)'
       },
       condolences: {
@@ -138,6 +140,12 @@ app.get('/api/docs', (req, res) => {
         'GET /api/analytics/by-location': 'Por sede (auth)',
         'GET /api/analytics/operations': 'Operaciones (auth)',
         'GET /api/analytics/health': 'Estado sistema (publico)'
+      },
+      pautas: {
+        'GET /api/pautas': 'Listar pautas (admin only)',
+        'POST /api/pautas': 'Subir pauta (admin only)',
+        'PUT /api/pautas/:id': 'Activar/desactivar o renombrar pauta (admin only)',
+        'DELETE /api/pautas/:id': 'Eliminar pauta (admin only)'
       }
     }
   });

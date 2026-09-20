@@ -21,6 +21,7 @@ import BooksPage from './pages/books';
 import MarketingContactsPage from './pages/marketing-contacts';
 import LlmSettings from './pages/llm-settings';
 import EmailSettingsPage from './pages/email-settings';
+import PautasPage from './pages/pautas';
 import DigitalDisplayScreen from './pages/digital-display-screen';
 import MemorialForm from './pages/memorial-form';
 
@@ -56,6 +57,7 @@ const Routes = () => {
               <Route path="/usuarios" element={<ProtectedRoute roles={['admin']}><UsersPage /></ProtectedRoute>} />
               <Route path="/llm" element={<ProtectedRoute roles={['admin']}><LlmSettings /></ProtectedRoute>} />
               <Route path="/configuracion-correo" element={<ProtectedRoute roles={['admin']}><EmailSettingsPage /></ProtectedRoute>} />
+              <Route path="/pautas" element={<ProtectedRoute roles={['admin']}><PautasPage /></ProtectedRoute>} />
             </Route>
 
             <Route path="*" element={<NotFound />} />
