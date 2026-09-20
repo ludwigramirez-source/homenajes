@@ -8,7 +8,7 @@ const upload = require('../middleware/upload');
 // una sala): solo superadministrador (rol 'admin'), igual que Salas y sedes,
 // Usuarios y Moderacion IA.
 router.get('/', authenticate, authorize('admin'), controller.getAll);
-router.post('/', authenticate, authorize('admin'), upload.single('image'), controller.create);
+router.post('/', authenticate, authorize('admin'), upload.uploadPauta.single('image'), controller.create);
 router.put('/:id', authenticate, authorize('admin'), controller.update);
 router.delete('/:id', authenticate, authorize('admin'), controller.remove);
 

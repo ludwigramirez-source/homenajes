@@ -50,8 +50,8 @@ const PautasPage = () => {
       setUploadError('Por favor selecciona un archivo de imagen válido');
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      setUploadError('La imagen no debe superar 5MB');
+    if (file.size > 20 * 1024 * 1024) {
+      setUploadError('La imagen no debe superar 20MB');
       return;
     }
     setUploadError(null);
@@ -156,8 +156,8 @@ const PautasPage = () => {
                 {uploading ? 'Subiendo...' : 'Haz clic o arrastra una imagen aquí'}
               </p>
               <p className="text-xs text-muted-foreground">
-                PNG, JPG o WEBP (máx. 5MB) · Recomendado 1920×1080px (16:9), igual que la pantalla del TV.
-                Si subes otra proporción, se ajusta centrada sin recortar ni deformar.
+                PNG, JPG o WEBP (máx. 20MB) · Recomendado 1920×1080px (16:9) en alta resolución, igual que la
+                pantalla del TV. Si subes otra proporción, se ajusta centrada sin recortar ni deformar.
               </p>
               <input
                 ref={fileInputRef}

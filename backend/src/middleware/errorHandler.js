@@ -25,11 +25,14 @@ const errorHandler = (err, req, res, next) => {
     });
   }
 
-  // Error de multer
+  // Error de multer. El limite mostrado depende del campo: 'image' (pautas)
+  // usa un limite mas alto que 'photo'/'files' (foto del difunto, adjuntos
+  // de condolencias), ver backend/src/middleware/upload.js.
   if (err.code === 'LIMIT_FILE_SIZE') {
+    const maxMb = err.field === 'image' ? '20MB' : '5MB';
     return res.status(400).json({
       success: false,
-      error: 'Archivo demasiado grande (max 5MB)'
+      error: `Archivo demasiado grande (max ${maxMb})`
     });
   }
 
