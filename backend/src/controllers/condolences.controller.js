@@ -4,23 +4,36 @@ const llmService = require('../services/llm.service');
 
 // Limite de caracteres del mensaje publico (debe ser legible en la pantalla del display)
 const MESSAGE_MAX_LENGTH = 480;
+// Minimo de digitos del telefono de contacto (validacion espejo de memorial-form/index.jsx).
+const PHONE_MIN_LENGTH = 12;
 
 // PUBLICO - Sin auth, desde el formulario
 const submit = async (req, res, next) => {
   try {
-    const { memorial_id, sender_name, sender_email, sender_phone, message, marketing_consent } = req.body;
+    const { memorial_id, sender_name, sender_email, message, marketing_consent } = req.body;
+    const sender_phone = req.body.sender_phone != null ? String(req.body.sender_phone).trim() : '';
 
     // Validacion
-    if (!memorial_id || !sender_name || !sender_email || !message) {
+    if (!memorial_id || !sender_name || !sender_email || !sender_phone || !message) {
       return res.status(400).json({
         success: false,
-        error: 'Campos requeridos: memorial_id, sender_name, sender_email, message'
+        error: 'Campos requeridos: memorial_id, sender_name, sender_email, sender_phone, message'
       });
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(sender_email)) {
       return res.status(400).json({ success: false, error: 'Email invalido' });
+    }
+
+    if (!/^\d+$/.test(sender_phone)) {
+      return res.status(400).json({ success: false, error: 'El número de contacto solo debe contener números' });
+    }
+    if (sender_phone.length < PHONE_MIN_LENGTH) {
+      return res.status(400).json({
+        success: false,
+        error: `El número de contacto debe tener al menos ${PHONE_MIN_LENGTH} dígitos`
+      });
     }
 
     if (typeof message !== 'string' || message.trim().length === 0) {

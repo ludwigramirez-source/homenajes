@@ -8,6 +8,8 @@ import { getTheme } from './themes';
 // Limite alineado con el backend (condolences.controller.js -> MESSAGE_MAX_LENGTH).
 // Asegura que cada mensaje sea legible como card en la pantalla del display.
 const MESSAGE_MAX_LENGTH = 480;
+// Alineado con el backend (condolences.controller.js -> PHONE_MIN_LENGTH).
+const PHONE_MIN_LENGTH = 12;
 
 const MemorialForm = () => {
   const { roomId } = useParams();
@@ -72,7 +74,10 @@ const MemorialForm = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e?.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    // El campo telefono solo admite digitos: se descarta cualquier otro
+    // caracter apenas se escribe, en vez de solo avisar al enviar.
+    const cleanValue = name === 'phone' ? value.replace(/\D/g, '') : value;
+    setFormData(prev => ({ ...prev, [name]: cleanValue }));
     if (errors?.[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
@@ -126,6 +131,13 @@ const MemorialForm = () => {
       newErrors.message = 'El mensaje es requerido';
     } else if (formData?.message?.length > MESSAGE_MAX_LENGTH) {
       newErrors.message = `El mensaje no puede superar ${MESSAGE_MAX_LENGTH} caracteres`;
+    }
+    if (!formData?.phone?.trim()) {
+      newErrors.phone = 'El número de contacto es requerido';
+    } else if (!/^\d+$/.test(formData.phone)) {
+      newErrors.phone = 'El número de contacto solo debe contener números';
+    } else if (formData.phone.length < PHONE_MIN_LENGTH) {
+      newErrors.phone = `El número de contacto debe tener al menos ${PHONE_MIN_LENGTH} dígitos`;
     }
     if (!authorized) newErrors.authorized = 'Debe autorizar el manejo de datos';
     setErrors(newErrors);
@@ -379,16 +391,22 @@ const MemorialForm = () => {
                 showElements ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
               )}>
                 <label htmlFor="phone" className="block text-sm font-semibold mb-2 text-white opacity-90" style={{ fontFamily: 'Inter, sans-serif' }}>
-                  Número de contacto
+                  Número de contacto *
                 </label>
                 <input
                   type="tel"
                   id="phone"
                   name="phone"
+                  inputMode="numeric"
+                  autoComplete="tel"
+                  maxLength={15}
                   value={formData?.phone}
                   onChange={handleInputChange}
-                  placeholder="Tu número de contacto (opcional)"
-                  className="w-full px-4 py-3.5 rounded-xl transition-all duration-300 focus:outline-none"
+                  placeholder="Tu número de contacto"
+                  className={cn(
+                    "w-full px-4 py-3.5 rounded-xl transition-all duration-300 focus:outline-none",
+                    errors?.phone ? "ring-2 ring-red-400" : ""
+                  )}
                   style={{
                     fontSize: '16px',
                     fontFamily: 'Inter, sans-serif',
@@ -400,6 +418,7 @@ const MemorialForm = () => {
                   onFocus={e => { e.target.style.background = '#fff'; e.target.style.boxShadow = `0 0 0 3px ${theme.focusRing}, 0 2px 8px rgba(0,0,0,0.1)`; }}
                   onBlur={e => { e.target.style.background = 'rgba(255,255,255,0.92)'; e.target.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)'; }}
                 />
+                {errors?.phone && <p className="text-yellow-300 text-sm mt-1.5" style={{ fontFamily: 'Inter, sans-serif' }}>{errors?.phone}</p>}
               </div>
 
               {/* Mensaje */}
