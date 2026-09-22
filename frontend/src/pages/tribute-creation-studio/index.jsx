@@ -169,7 +169,7 @@ const TributeCreationStudio = () => {
   }, [memorialId]);
 
   const tabs = [
-    { id: 'deceased', label: 'Información del Difunto', icon: 'User' },
+    { id: 'deceased', label: 'Información del Ser Querido', icon: 'User' },
     { id: 'template', label: 'Plantilla', icon: 'Palette' },
     { id: 'location', label: 'Ubicación y Servicio', icon: 'MapPin' },
     { id: 'account', label: 'Titular de Cuenta', icon: 'Users' },

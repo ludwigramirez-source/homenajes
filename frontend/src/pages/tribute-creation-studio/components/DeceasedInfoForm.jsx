@@ -44,7 +44,7 @@ const DeceasedInfoForm = ({ formData, errors, updateFormData }) => {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold text-foreground mb-1">Información del Difunto</h3>
+        <h3 className="text-lg font-semibold text-foreground mb-1">Información del Ser Querido</h3>
         <p className="text-sm text-muted-foreground">Ingrese los datos personales y biografía del ser querido</p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -84,7 +84,7 @@ const DeceasedInfoForm = ({ formData, errors, updateFormData }) => {
           value={formData?.deceasedDocumentId}
           onChange={(e) => updateFormData('deceasedDocumentId', e?.target?.value)}
           error={errors?.deceasedDocumentId}
-          description="Cédula u otro documento del difunto. Ayuda a diferenciar homónimos y a cruzar información con sistemas externos (CRM)."
+          description="Cédula u otro documento del ser querido. Ayuda a diferenciar homónimos y a cruzar información con sistemas externos (CRM)."
         />
 
         <div className="md:col-span-2">
@@ -93,7 +93,7 @@ const DeceasedInfoForm = ({ formData, errors, updateFormData }) => {
           </label>
           <textarea
             className="flex min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-            placeholder="Escriba una biografía breve o mensaje conmemorativo que describa la vida y legado del difunto..."
+            placeholder="Escriba una biografía breve o mensaje conmemorativo que describa la vida y legado del ser querido..."
             value={formData?.biography}
             onChange={(e) => updateFormData('biography', e?.target?.value)}
             rows={5}
@@ -105,7 +105,7 @@ const DeceasedInfoForm = ({ formData, errors, updateFormData }) => {
 
         <div className="md:col-span-2">
           <label className="text-sm font-medium text-foreground block mb-2">
-            Fotografía del Difunto <span className="text-destructive">*</span>
+            Fotografía del Ser Querido <span className="text-destructive">*</span>
           </label>
           
           {!formData?.photoPreview ? (
@@ -137,7 +137,7 @@ const DeceasedInfoForm = ({ formData, errors, updateFormData }) => {
               <div className="border border-border rounded-lg p-4 bg-muted/20">
                 <img
                   src={formData?.photoPreview}
-                  alt="Vista previa de fotografía del difunto"
+                  alt="Vista previa de fotografía del ser querido"
                   className="w-full h-64 object-cover rounded-md"
                 />
               </div>

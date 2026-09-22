@@ -178,7 +178,7 @@ const TributesList = () => {
         <Icon name="Inbox" size={48} className="mx-auto mb-4 text-muted-foreground opacity-50" />
         <h3 className="text-lg font-semibold text-foreground mb-1">Aún no hay tributos creados</h3>
         <p className="text-sm text-muted-foreground">
-          Crea tu primer tributo desde el tab "Información del Difunto".
+          Crea tu primer tributo desde el tab "Información del Ser Querido".
         </p>
       </div>
     );
@@ -286,7 +286,7 @@ const TributesList = () => {
                 type="text"
                 value={searchInput}
                 onChange={(e) => { setSearchInput(e.target.value); setPage(1); }}
-                placeholder="Difunto, documento, sede o sala..."
+                placeholder="Ser querido, documento, sede o sala..."
                 className="w-full pl-9 pr-8 py-2 rounded-md border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
               />
               {searchInput && (
@@ -304,7 +304,7 @@ const TributesList = () => {
         <table className="w-full text-sm">
           <thead className="bg-muted/40 text-muted-foreground">
             <tr>
-              <SortTh label="Difunto" sortKey="deceased_name" sort={sort} onSort={toggle} />
+              <SortTh label="Ser Querido" sortKey="deceased_name" sort={sort} onSort={toggle} />
               <SortTh label="Sede / Sala" sortKey="location_name" sort={sort} onSort={toggle} />
               <SortTh label="Ingreso" sortKey="schedule_start" sort={sort} onSort={toggle} />
               <SortTh label="Salida" sortKey="schedule_end" sort={sort} onSort={toggle} />
