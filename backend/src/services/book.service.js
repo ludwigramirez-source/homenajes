@@ -368,10 +368,27 @@ function escapeHtml(s) {
     .replace(/'/g, '&#39;');
 }
 
-// Texto por defecto del correo (editable desde el modal de envio en el panel).
+// Texto por defecto "de fabrica" del correo, usado solo si el admin no ha
+// guardado un mensaje propio en Configuracion de correo (email_settings.book_message).
 function defaultEmailMessage(memorial) {
   const name = memorial.deceased_name || '';
   return `Estimada familia,\n\nAdjuntamos el libro de condolencias con los mensajes de cariño y apoyo recibidos durante el homenaje de ${name}.\n\nCon nuestro más sentido acompañamiento,\nLos Olivos · SERCOFUN`;
+}
+
+// Reemplaza el placeholder {nombre} por el nombre del ser querido en el
+// mensaje personalizado guardado en Configuracion de correo.
+function applyMessageTemplate(template, memorial) {
+  return template.replace(/\{nombre\}/g, memorial.deceased_name || '');
+}
+
+// Mensaje por defecto "efectivo": el guardado por el admin en Configuracion
+// de correo si existe, si no el texto hardcodeado de siempre. Se usa cuando
+// el envio (manual o automatico) no trae un `message` propio.
+async function getEffectiveDefaultMessage(memorial) {
+  const settings = await emailService.getSettings();
+  const custom = settings && settings.book_message && String(settings.book_message).trim();
+  if (custom) return applyMessageTemplate(custom, memorial);
+  return defaultEmailMessage(memorial);
 }
 
 // Cuerpo HTML del correo que acompana el PDF adjunto. `message` es texto
@@ -462,7 +479,7 @@ async function processAndSendBook(memorial, condolences, {
     await emailService.sendMail({
       to: recipientEmail,
       subject: subject || `Libro de condolencias — ${memorial.deceased_name || ''}`,
-      html: buildEmailHtml(memorial, message),
+      html: buildEmailHtml(memorial, message || await getEffectiveDefaultMessage(memorial)),
       attachments: [{
         filename: `Libro-de-condolencias-${(memorial.deceased_name || 'homenaje').replace(/[^a-zA-Z0-9-_ ]/g, '').trim() || 'homenaje'}.pdf`,
         content: pdfBuffer

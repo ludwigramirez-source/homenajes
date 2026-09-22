@@ -9,7 +9,7 @@ const db = require('../config/database');
 async function getSettings() {
   const result = await db.query(`
     SELECT id, smtp_host, smtp_port, smtp_secure, smtp_user, smtp_password,
-           from_name, from_email, send_delay_days, updated_by, updated_at
+           from_name, from_email, send_delay_days, book_message, updated_by, updated_at
     FROM email_settings
     ORDER BY updated_at DESC NULLS LAST
     LIMIT 1
@@ -19,9 +19,12 @@ async function getSettings() {
 
 // Upsert de UNA sola fila. smtp_password solo se actualiza si viene no-vacia
 // (asi la UI puede guardar cambios sin re-escribir la password cada vez).
+// book_message SI se puede dejar vacio a proposito (para volver al texto por
+// defecto hardcodeado en book.service.js#defaultEmailMessage), por eso usa
+// COALESCE normal en vez del CASE especial de smtp_password.
 async function saveSettings({
   smtp_host, smtp_port, smtp_secure, smtp_user, smtp_password,
-  from_name, from_email, send_delay_days, updated_by
+  from_name, from_email, send_delay_days, book_message, updated_by
 }) {
   const current = await getSettings();
 
@@ -29,11 +32,11 @@ async function saveSettings({
     const result = await db.query(`
       INSERT INTO email_settings (
         smtp_host, smtp_port, smtp_secure, smtp_user, smtp_password,
-        from_name, from_email, send_delay_days, updated_by
+        from_name, from_email, send_delay_days, book_message, updated_by
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
       RETURNING id, smtp_host, smtp_port, smtp_secure, smtp_user, smtp_password,
-                from_name, from_email, send_delay_days, updated_by, updated_at
+                from_name, from_email, send_delay_days, book_message, updated_by, updated_at
     `, [
       smtp_host || null,
       Number.isFinite(Number(smtp_port)) ? Number(smtp_port) : 587,
@@ -43,6 +46,7 @@ async function saveSettings({
       from_name || 'SERCOFUN Los Olivos',
       from_email || null,
       Number.isFinite(Number(send_delay_days)) ? Number(send_delay_days) : 1,
+      book_message !== undefined && book_message !== null ? String(book_message) : null,
       updated_by || null
     ]);
     return result.rows[0];
@@ -59,10 +63,11 @@ async function saveSettings({
         from_name = COALESCE($6, from_name),
         from_email = COALESCE($7, from_email),
         send_delay_days = COALESCE($8, send_delay_days),
-        updated_by = COALESCE($9, updated_by)
-    WHERE id = $10
+        book_message = COALESCE($9, book_message),
+        updated_by = COALESCE($10, updated_by)
+    WHERE id = $11
     RETURNING id, smtp_host, smtp_port, smtp_secure, smtp_user, smtp_password,
-              from_name, from_email, send_delay_days, updated_by, updated_at
+              from_name, from_email, send_delay_days, book_message, updated_by, updated_at
   `, [
     smtp_host || null,
     smtp_port !== undefined && smtp_port !== null && Number.isFinite(Number(smtp_port)) ? Number(smtp_port) : null,
@@ -72,6 +77,7 @@ async function saveSettings({
     from_name || null,
     from_email || null,
     send_delay_days !== undefined && send_delay_days !== null && Number.isFinite(Number(send_delay_days)) ? Number(send_delay_days) : null,
+    book_message !== undefined && book_message !== null ? String(book_message) : null,
     updated_by || null,
     current.id
   ]);

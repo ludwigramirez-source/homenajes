@@ -308,11 +308,18 @@ const createTables = async () => {
         from_name VARCHAR(150) DEFAULT 'SERCOFUN Los Olivos',
         from_email VARCHAR(255),
         send_delay_days INTEGER DEFAULT 1,
+        book_message TEXT,
         updated_by UUID REFERENCES users(id),
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
     console.log('[MIGRATE] Tabla "email_settings" creada');
+
+    // Migracion incremental: instalaciones existentes ya tienen la tabla sin esta columna.
+    await client.query(`
+      ALTER TABLE email_settings
+        ADD COLUMN IF NOT EXISTS book_message TEXT
+    `);
 
     // ========== TABLA: book_sends (Registro de envios del libro de condolencias en PDF) ==========
     await client.query(`

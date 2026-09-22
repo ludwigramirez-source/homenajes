@@ -114,8 +114,15 @@ const emptySettingsForm = {
   smtp_password: '',
   from_name: '',
   from_email: '',
-  send_delay_days: 1
+  send_delay_days: 1,
+  book_message: ''
 };
+
+// Mismo texto que backend/src/services/book.service.js#defaultEmailMessage:
+// se muestra como placeholder para que el admin vea que texto se usa si deja
+// el campo vacio.
+const DEFAULT_BOOK_MESSAGE_PLACEHOLDER =
+  'Estimada familia,\n\nAdjuntamos el libro de condolencias con los mensajes de cariño y apoyo recibidos durante el homenaje de {nombre}.\n\nCon nuestro más sentido acompañamiento,\nLos Olivos · SERCOFUN';
 
 const EmailSettingsPage = () => {
   return (
@@ -186,7 +193,8 @@ const SmtpSettingsPanel = () => {
         smtp_password: '',
         from_name: data.from_name || '',
         from_email: data.from_email || '',
-        send_delay_days: data.send_delay_days ?? 1
+        send_delay_days: data.send_delay_days ?? 1,
+        book_message: data.book_message || ''
       });
       setProviderId(detectProvider(data.smtp_host));
     } catch (e) {
@@ -253,7 +261,8 @@ const SmtpSettingsPanel = () => {
         smtp_user: form.smtp_user.trim(),
         from_name: form.from_name.trim(),
         from_email: form.from_email.trim(),
-        send_delay_days: Number(form.send_delay_days) || 0
+        send_delay_days: Number(form.send_delay_days) || 0,
+        book_message: form.book_message
       };
       if (cleanPassword) payload.smtp_password = cleanPassword;
 
@@ -524,6 +533,22 @@ const SmtpSettingsPanel = () => {
             />
             <p className="text-xs text-muted-foreground mt-1.5">
               Días después de finalizar el homenaje en que se enviará automáticamente el libro de condolencias.
+            </p>
+          </div>
+
+          <div className="pt-2 border-t border-border">
+            <label className="block text-sm font-medium text-foreground mb-2 mt-4">
+              Mensaje predeterminado del correo
+            </label>
+            <textarea
+              value={form.book_message}
+              onChange={(e) => handleField('book_message', e.target.value)}
+              placeholder={DEFAULT_BOOK_MESSAGE_PLACEHOLDER}
+              rows={7}
+              className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-y font-mono"
+            />
+            <p className="text-xs text-muted-foreground mt-1.5">
+              Este es el texto que va en el cuerpo del correo cuando se envía el libro de condolencias (automático o manual). Usa <code className="px-1 py-0.5 rounded bg-muted">{'{nombre}'}</code> donde quieras que aparezca el nombre del ser querido. Si lo dejas vacío, se usa el mensaje predeterminado del sistema.
             </p>
           </div>
 

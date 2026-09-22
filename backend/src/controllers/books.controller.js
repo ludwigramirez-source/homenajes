@@ -42,6 +42,7 @@ function sanitizeSettings(row) {
       from_name: 'SERCOFUN Los Olivos',
       from_email: null,
       send_delay_days: 1,
+      book_message: '',
       has_password: false,
       updated_at: null
     };
@@ -55,6 +56,7 @@ function sanitizeSettings(row) {
     from_name: row.from_name,
     from_email: row.from_email,
     send_delay_days: row.send_delay_days,
+    book_message: row.book_message || '',
     has_password: !!row.smtp_password,
     updated_at: row.updated_at
   };
@@ -75,7 +77,7 @@ const updateSettings = async (req, res, next) => {
   try {
     const {
       smtp_host, smtp_port, smtp_secure, smtp_user, smtp_password,
-      from_name, from_email, send_delay_days
+      from_name, from_email, send_delay_days, book_message
     } = req.body;
 
     if (smtp_port !== undefined && smtp_port !== null && !Number.isFinite(Number(smtp_port))) {
@@ -93,7 +95,7 @@ const updateSettings = async (req, res, next) => {
 
     const saved = await emailService.saveSettings({
       smtp_host, smtp_port, smtp_secure, smtp_user, smtp_password,
-      from_name, from_email, send_delay_days,
+      from_name, from_email, send_delay_days, book_message,
       updated_by: req.user.id
     });
     res.json({ success: true, data: sanitizeSettings(saved) });

@@ -1,13 +1,12 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Icon from '../../../components/AppIcon';
 import { booksService } from '../../../services/booksService';
 import { cn } from '../../../utils/cn';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-// Mismo texto por defecto que backend/src/services/book.service.js#defaultEmailMessage,
-// para que lo que ve el staff al abrir el modal coincida con lo que se enviaria
-// si no tocan nada.
+// Texto de fabrica, identico al fallback de backend/src/services/book.service.js#defaultEmailMessage.
+// Se usa mientras carga la configuracion, o si el admin no guardo un mensaje propio.
 const defaultMessage = (name) =>
   `Estimada familia,\n\nAdjuntamos el libro de condolencias con los mensajes de cariño y apoyo recibidos durante el homenaje de ${name || ''}.\n\nCon nuestro más sentido acompañamiento,\nLos Olivos · SERCOFUN`;
 
@@ -23,6 +22,27 @@ const SendBookModal = ({ tribute, onClose, onSent }) => {
   const [message, setMessage] = useState(defaultMessage(tribute?.deceased_name));
   const [sending, setSending] = useState(false);
   const [error, setError] = useState(null);
+  const messageEditedRef = useRef(false);
+
+  // Si el admin guardo un mensaje propio en Configuracion de correo, lo usamos
+  // en vez del texto de fabrica (con {nombre} ya reemplazado por el nombre del
+  // ser querido) -- asi el staff ve exactamente lo que se enviaria si no toca
+  // nada. Si el staff ya empezo a escribir su propio texto antes de que esto
+  // cargue, no lo pisamos.
+  useEffect(() => {
+    let cancelled = false;
+    booksService.getSettings()
+      .then((res) => {
+        if (cancelled || messageEditedRef.current) return;
+        const custom = (res?.data?.book_message || '').trim();
+        if (custom) {
+          setMessage(custom.replace(/\{nombre\}/g, tribute?.deceased_name || ''));
+        }
+      })
+      .catch(() => { /* si falla, se queda el texto de fabrica ya cargado */ });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const addExtraEmail = () => {
     const value = extraInput.trim().replace(/,$/, '');
@@ -168,7 +188,7 @@ const SendBookModal = ({ tribute, onClose, onSent }) => {
             <label className="text-sm font-medium text-foreground block mb-1.5">Mensaje</label>
             <textarea
               value={message}
-              onChange={(e) => setMessage(e.target.value)}
+              onChange={(e) => { messageEditedRef.current = true; setMessage(e.target.value); }}
               rows={7}
               className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-y"
             />
