@@ -569,18 +569,98 @@ function renderEmptyRoom(message) {
 // -webkit-, mismo patron que .photo-frame/.t-photo) en vez de la propiedad
 // mas moderna object-fit: si la imagen subida no es exactamente 16:9 se ve
 // completa y centrada sobre fondo negro, sin recortarse ni deformarse.
-function renderPauta(imageUrl, nextUrl, preview) {
-  var refresh = (nextUrl && !preview)
-    ? '<meta http-equiv="refresh" content="20; url=' + escapeHtml(nextUrl) + '">'
-    : '';
-  var bgStyle = imageUrl ? ' style="background-image:url(\'' + escapeHtml(imageUrl) + '\');"' : '';
+//
+// La rotacion entre pautas NO recarga la pagina (a diferencia de las
+// pantallas de homenaje, que si rotan via meta-refresh): con imagenes de
+// hasta 20MB, recargar toda la pagina en cada ciclo obligaba a re-descargar
+// la imagen de cero y se veia como un parpadeo en negro de varios segundos.
+// En cambio, el HTML trae de entrada la URL de TODAS las pautas activas; el
+// JS del cliente precarga la siguiente con anticipacion (mientras se ve la
+// actual) y al llegar los 20s solo cambia el background-image -- un swap
+// instantaneo, sin red de por medio. Cada ciclo tambien consulta por XHR
+// /:roomId/status (JSON liviano) para saber si ya hay un homenaje activo
+// (navega a esa pantalla) o si cambio la lista de pautas activas.
+function renderPauta(pautas, roomId, preview) {
+  var first = pautas[0];
+  var bgStyle = first ? ' style="background-image:url(\'' + escapeHtml(first.url) + '\');"' : '';
+
+  // Los valores vienen del propio backend (UUID de archivo + URL de nuestro
+  // dominio), no de un usuario final, pero igual se aplica un escape
+  // defensivo de "</" para que ningun valor pueda cerrar el <script> antes
+  // de tiempo.
+  var pautasJson = JSON.stringify(pautas).replace(/<\//g, '<\\/');
+  var roomIdJson = JSON.stringify(roomId);
+
+  var rotationScript = preview ? '' : (
+    'var PAUTAS = ' + pautasJson + ';\n' +
+    'var ROOM_ID = ' + roomIdJson + ';\n' +
+    'var pautaIdx = 0;\n' +
+    'var pautaPreloaded = {};\n' +
+    'function pautaPreload(url) {\n' +
+    '  if (!url || pautaPreloaded[url]) return;\n' +
+    '  var img = new Image();\n' +
+    '  img.src = url;\n' +
+    '  pautaPreloaded[url] = img;\n' +
+    '}\n' +
+    'function pautaShow() {\n' +
+    '  var stage = document.getElementById("stage");\n' +
+    '  if (!stage || !PAUTAS.length) return;\n' +
+    '  stage.style.backgroundImage = "url(\'" + PAUTAS[pautaIdx].url + "\')";\n' +
+    '}\n' +
+    'function pautaPreloadNext() {\n' +
+    '  if (!PAUTAS.length) return;\n' +
+    '  var nextIdx = (pautaIdx + 1) % PAUTAS.length;\n' +
+    '  pautaPreload(PAUTAS[nextIdx].url);\n' +
+    '}\n' +
+    'function pautaAdvance() {\n' +
+    '  if (!PAUTAS.length) return;\n' +
+    '  pautaIdx = (pautaIdx + 1) % PAUTAS.length;\n' +
+    '  pautaShow();\n' +
+    '  pautaPreloadNext();\n' +
+    '}\n' +
+    'function pautaGoTo(url) { window.location.href = url; }\n' +
+    'function pautaCheckStatus() {\n' +
+    '  var statusUrl = "/digital-display-screen/" + encodeURIComponent(ROOM_ID) + "/status";\n' +
+    '  var homeUrl = "/digital-display-screen/" + encodeURIComponent(ROOM_ID);\n' +
+    '  var done = false;\n' +
+    '  function finish(data) {\n' +
+    '    if (done) return;\n' +
+    '    done = true;\n' +
+    '    if (data && data.activeMemorial) { pautaGoTo(homeUrl); return; }\n' +
+    '    if (data && data.pautas && data.pautas.length) {\n' +
+    '      PAUTAS = data.pautas;\n' +
+    '      if (pautaIdx >= PAUTAS.length) pautaIdx = 0;\n' +
+    '    } else if (data && data.pautas) {\n' +
+    '      pautaGoTo(homeUrl); return;\n' +
+    '    }\n' +
+    '    pautaAdvance();\n' +
+    '    setTimeout(pautaCheckStatus, 20000);\n' +
+    '  }\n' +
+    '  setTimeout(function () { finish(null); }, 5000);\n' +
+    '  try {\n' +
+    '    var xhr = new XMLHttpRequest();\n' +
+    '    xhr.open("GET", statusUrl, true);\n' +
+    '    xhr.onreadystatechange = function () {\n' +
+    '      if (xhr.readyState !== 4) return;\n' +
+    '      var data = null;\n' +
+    '      if (xhr.status === 200) {\n' +
+    '        try { data = JSON.parse(xhr.responseText); } catch (e) { data = null; }\n' +
+    '      }\n' +
+    '      finish(data);\n' +
+    '    };\n' +
+    '    xhr.send();\n' +
+    '  } catch (e) { finish(null); }\n' +
+    '}\n' +
+    'pautaPreloadNext();\n' +
+    'setTimeout(pautaCheckStatus, 20000);'
+  );
+
   return '<!DOCTYPE html>\n<html lang="es"><head>\n' +
     '<meta http-equiv="content-type" content="text/html; charset=utf-8">\n' +
     '<meta http-equiv="X-UA-Compatible" content="IE=edge">\n' +
     '<meta http-equiv="cache-control" content="no-cache, no-store, must-revalidate">\n' +
     '<meta http-equiv="pragma" content="no-cache">\n' +
     '<meta http-equiv="expires" content="0">\n' +
-    refresh + '\n' +
     '<title>Pauta</title>\n' +
     '<style type="text/css">\n' +
     'html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #000000; overflow: hidden; }\n' +
@@ -590,7 +670,7 @@ function renderPauta(imageUrl, nextUrl, preview) {
       '-webkit-background-size: contain; background-size: contain; }\n' +
     '</style>\n</head>\n<body>\n' +
     '<div class="stage" id="stage"' + bgStyle + '></div>\n' +
-    '<script type="text/javascript">\n' + STAGE_FIT_JS + '\n</scr' + 'ipt>\n' +
+    '<script type="text/javascript">\n' + STAGE_FIT_JS + '\n' + rotationScript + '\n</scr' + 'ipt>\n' +
     '</body></html>';
 }
 

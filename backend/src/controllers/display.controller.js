@@ -75,26 +75,24 @@ const getDisplay = async (req, res, next) => {
     `, [roomId]);
 
     if (memorialResult.rows.length === 0) {
-      // Sin homenaje activo: si hay pautas publicitarias activas, rotan una
-      // por request (20s c/u via meta refresh) en vez del mensaje "Sala
-      // disponible". Se re-consultan en cada request (no una vez cacheada),
-      // asi que si se activa un homenaje o se desactivan todas las pautas
-      // mientras tanto, el proximo refresh ya lo refleja solo.
+      // Sin homenaje activo: si hay pautas publicitarias activas, se muestran
+      // en vez del mensaje "Sala disponible". La rotacion entre ellas (20s
+      // c/u) la hace JS en el cliente, con la siguiente imagen precargada de
+      // antemano (ver renderPauta) -- asi el cambio de imagen es un swap
+      // instantaneo en vez de recargar toda la pagina (lo que obligaba a
+      // re-descargar la imagen de cero en cada ciclo y se veia como un
+      // parpadeo en negro, mas notorio ahora que las pautas pueden pesar
+      // hasta 20MB). El propio JS consulta /:roomId/status cada 20s para
+      // saber si hay que pasar a un homenaje o si cambio la lista de pautas.
       const pautasResult = await db.query(
         'SELECT id, image_url FROM pautas WHERE active = true ORDER BY created_at ASC'
       );
-      const pautas = pautasResult.rows;
-      if (pautas.length > 0) {
-        let idx = pautas.findIndex((p) => p.id === req.query.pauta);
-        // Sin ?pauta valido (primera carga, o la solicitada ya no esta
-        // activa/fue borrada): se reinicia desde la primera, nunca se cae.
-        if (idx === -1) idx = 0;
-        const current = pautas[idx];
-        const next = pautas[(idx + 1) % pautas.length];
-        const nextUrl = '/digital-display-screen/' + encodeURIComponent(roomId) +
-          '?pauta=' + encodeURIComponent(next.id);
-        const imageUrl = absoluteUploadUrl(baseUrl, current.image_url);
-        return res.send(view.renderPauta(imageUrl, nextUrl, isPreview));
+      if (pautasResult.rows.length > 0) {
+        const pautas = pautasResult.rows.map((p) => ({
+          id: p.id,
+          url: absoluteUploadUrl(baseUrl, p.image_url)
+        }));
+        return res.send(view.renderPauta(pautas, roomId, isPreview));
       }
       return res.send(view.renderEmptyRoom('No hay homenaje activo en esta sala en este momento'));
     }
@@ -211,4 +209,42 @@ const getDisplay = async (req, res, next) => {
   }
 };
 
-module.exports = { getDisplay };
+// PUBLICO - Consultado por XHR desde el JS de rotacion de pautas (ver
+// renderPauta) cada 20s: le dice si ya hay un homenaje activo (para que el
+// cliente navegue a esa pantalla) o cual es la lista de pautas activas
+// vigente (por si el admin activo/desactivo/subio alguna desde la ultima
+// consulta). Nunca dispara un re-render de HTML, solo JSON liviano.
+const getStatus = async (req, res, next) => {
+  try {
+    const { roomId } = req.params;
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+
+    const memorialResult = await db.query(`
+      SELECT 1 FROM memorials m
+      JOIN rooms r ON m.room_id = r.id
+      WHERE (r.code = UPPER($1) OR r.id::text = $1)
+        AND m.active = true
+        AND CURRENT_TIMESTAMP BETWEEN m.schedule_start AND m.schedule_end
+      LIMIT 1
+    `, [roomId]);
+
+    if (memorialResult.rows.length > 0) {
+      return res.json({ activeMemorial: true, pautas: [] });
+    }
+
+    const baseUrl = getBaseUrl(req);
+    const pautasResult = await db.query(
+      'SELECT id, image_url FROM pautas WHERE active = true ORDER BY created_at ASC'
+    );
+    const pautas = pautasResult.rows.map((p) => ({
+      id: p.id,
+      url: absoluteUploadUrl(baseUrl, p.image_url)
+    }));
+
+    res.json({ activeMemorial: false, pautas });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { getDisplay, getStatus };

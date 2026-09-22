@@ -7,4 +7,9 @@ const controller = require('../controllers/display.controller');
 // Nginx la rutea al backend en lugar del frontend SPA.
 router.get('/:roomId', controller.getDisplay);
 
+// PUBLICO - JSON liviano que consulta por XHR el JS de rotacion de pautas
+// (ver renderPauta en displayScreen.js) para saber si ya hay un homenaje
+// activo o si cambio la lista de pautas, sin recargar toda la pagina.
+router.get('/:roomId/status', controller.getStatus);
+
 module.exports = router;
