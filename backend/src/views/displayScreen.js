@@ -1170,9 +1170,15 @@ function renderThemedServiceV2(m, theme) {
   // final de una linea larga. La etiqueta de la hora incluye el nombre del
   // dato ("Hora de Exequias" / "Hora de Destino Final") para que no quede
   // ambigua estando lejos de su etiqueta de lugar.
-  function venueBlock(label, venue, time, extraSpace) {
+  // venueLabel (opcional) permite que la fila del lugar use un texto propio
+  // ("Lugar de Exequias") sin afectar la fila de la hora, que sigue usando
+  // "label" tal cual ("Hora de Exequias" y no "Hora de Lugar de Exequias").
+  // Pedido del cliente: los usuarios confundian "Exequias" con una fecha
+  // porque quedaba junto al nombre del lugar sin aclarar que era eso.
+  function venueBlock(label, venue, time, extraSpace, venueLabel) {
     var spaceStyle = extraSpace ? ' style="margin-top:26px;"' : '';
-    return '<div class="t-v2-venue-row"' + spaceStyle + '><span class="t-v2-lbl">' + label + ':</span> <span class="t-v2-val">' + venue + '</span></div>' +
+    var vLabel = venueLabel || label;
+    return '<div class="t-v2-venue-row"' + spaceStyle + '><span class="t-v2-lbl">' + vLabel + ':</span> <span class="t-v2-val">' + venue + '</span></div>' +
       (time ? '<div class="t-v2-row"' + spaceStyle + '><span class="t-v2-lbl">Hora de ' + label + ':</span> <span class="t-v2-val">' + time + '</span></div>' : '');
   }
 
@@ -1189,7 +1195,7 @@ function renderThemedServiceV2(m, theme) {
       // terminen ocupando una altura similar y se vean simetricos.
       '<td class="t-v2-col">' +
         '<div class="t-v2-row"><span class="t-v2-lbl">Homenaje:</span> <span class="t-v2-val">' + escapeHtml(homenaje) + '</span></div>' +
-        venueBlock('Exequias', exequiasVenue, exqTime, true) +
+        venueBlock('Exequias', exequiasVenue, exqTime, true, 'Lugar de Exequias') +
       '</td>' +
       '<td class="t-v2-col">' +
         '<div class="t-v2-row"><span class="t-v2-lbl">Despedida:</span> <span class="t-v2-val">' + escapeHtml(despedida) + '</span></div>' +
