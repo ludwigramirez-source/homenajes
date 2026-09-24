@@ -321,7 +321,7 @@ const BooksPage = () => {
                         type="text"
                         value={searchInput}
                         onChange={(e) => setSearchInput(e.target.value)}
-                        placeholder="Difunto, documento o correo del titular..."
+                        placeholder="Ser querido, documento o correo del titular..."
                         className="w-full pl-9 pr-8 py-2 rounded-md border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                       />
                       {searchInput && (
@@ -384,7 +384,7 @@ const BooksPage = () => {
                 <table className="w-full text-sm">
                   <thead className="bg-muted/40 text-muted-foreground">
                     <tr>
-                      <th className="text-left font-medium px-4 py-2.5">Difunto</th>
+                      <th className="text-left font-medium px-4 py-2.5">Ser Querido</th>
                       <th className="text-left font-medium px-4 py-2.5">Sede / Sala</th>
                       <th className="text-left font-medium px-4 py-2.5">Fin del homenaje</th>
                       <th className="text-right font-medium px-4 py-2.5">Mensajes</th>

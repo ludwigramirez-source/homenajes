@@ -568,7 +568,7 @@ const MemorialForm = () => {
                     </div>
                   </div>
                   <span className="text-sm leading-relaxed text-white opacity-80" style={{ fontFamily: 'Inter, sans-serif' }}>
-                    Autorizo el manejo de mis datos personales para ser incluidos en el libro de homenaje y compartidos con la familia del difunto.
+                    Autorizo el manejo de mis datos personales para ser incluidos en el libro de homenaje y compartidos con la familia del ser querido.
                   </span>
                 </label>
                 {errors?.authorized && <p className="text-yellow-300 text-sm mt-1.5 ml-8" style={{ fontFamily: 'Inter, sans-serif' }}>{errors?.authorized}</p>}

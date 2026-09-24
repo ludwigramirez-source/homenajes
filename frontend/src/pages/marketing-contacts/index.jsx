@@ -251,7 +251,7 @@ const MarketingContactsPage = () => {
                         type="text"
                         value={searchInput}
                         onChange={(e) => setSearchInput(e.target.value)}
-                        placeholder="Nombre, correo, teléfono, difunto, sede o titular..."
+                        placeholder="Nombre, correo, teléfono, ser querido, sede o titular..."
                         className="w-full pl-9 pr-8 py-2 rounded-md border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                       />
                       {searchInput && (

@@ -31,7 +31,7 @@ const MODERATION_SYSTEM_PROMPT = [
   'dentro de las salas de velacion de una funeraria.',
   'APRUEBA los mensajes normales de condolencia, recuerdo, afecto o religiosos,',
   'aunque tengan errores de ortografia o sean informales.',
-  'RECHAZA solo: insultos o groserias; burlas o faltas de respeto al difunto o la familia;',
+  'RECHAZA solo: insultos o groserias; burlas o faltas de respeto al ser querido fallecido o la familia;',
   'contenido sexual; odio o discriminacion; spam o publicidad; datos personales sensibles',
   'de terceros; o texto totalmente fuera de contexto (ej. gibberish, promociones).',
   'Responde SOLO un JSON: {"aprobado": true|false, "motivo": "breve razon en espanol"}.'

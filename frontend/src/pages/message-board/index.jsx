@@ -289,7 +289,7 @@ const MessageBoardPage = () => {
                     type="text"
                     value={searchInput}
                     onChange={(e) => setSearchInput(e.target.value)}
-                    placeholder="Nombre, correo, mensaje, difunto o documento..."
+                    placeholder="Nombre, correo, mensaje, ser querido o documento..."
                     className="w-full pl-9 pr-8 py-2 rounded-md border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                   />
                   {searchInput && (
