@@ -1157,6 +1157,7 @@ function renderThemedServiceV2(m, theme) {
     ? '<div class="t-v2-relig">Descansa en la paz del se&ntilde;or</div>'
     : '';
 
+  var exqDate = formatDateLong(m.exequiasDatetime);
   var exqTime = timeOnly12h(m.exequiasDatetime);
   var destTime = timeOnly12h(m.finalDestinationDatetime);
   var salidaTime = timeOnly12h(m.scheduleEnd);
@@ -1175,10 +1176,19 @@ function renderThemedServiceV2(m, theme) {
   // "label" tal cual ("Hora de Exequias" y no "Hora de Lugar de Exequias").
   // Pedido del cliente: los usuarios confundian "Exequias" con una fecha
   // porque quedaba junto al nombre del lugar sin aclarar que era eso.
-  function venueBlock(label, venue, time, extraSpace, venueLabel) {
+  // dateLine (opcional) agrega una fila "Fecha de {label}" justo arriba de
+  // la de la hora, para que fecha y hora de exequias queden juntas y
+  // separadas de la fecha del homenaje (velacion), que es un dato distinto.
+  // Lleva id propio (tV2Date_<label>) porque "Fecha de Exequias: <fecha larga>"
+  // es mas ancho que las demas filas (etiqueta larga + fecha completa) y
+  // puede desbordar la columna; el caller la registra en `fits` para que
+  // fitScriptJs la achique automaticamente si hace falta (ver renderThemed).
+  function venueBlock(label, venue, time, extraSpace, venueLabel, dateLine) {
     var spaceStyle = extraSpace ? ' style="margin-top:26px;"' : '';
     var vLabel = venueLabel || label;
+    var dateId = 'tV2Date_' + label.replace(/[^A-Za-z0-9]/g, '');
     return '<div class="t-v2-venue-row"' + spaceStyle + '><span class="t-v2-lbl">' + vLabel + ':</span> <span class="t-v2-val">' + venue + '</span></div>' +
+      (dateLine ? '<div class="t-v2-row" id="' + dateId + '"><span class="t-v2-lbl">Fecha de ' + label + ':</span> <span class="t-v2-val">' + escapeHtml(dateLine) + '</span></div>' : '') +
       (time ? '<div class="t-v2-row"' + spaceStyle + '><span class="t-v2-lbl">Hora de ' + label + ':</span> <span class="t-v2-val">' + time + '</span></div>' : '');
   }
 
@@ -1189,13 +1199,14 @@ function renderThemedServiceV2(m, theme) {
     '<div class="t-v2-sub">Cada vida deja una huella &uacute;nica.<br>' +
       'Gracias por acompa&ntilde;arnos a honrar, recordar y agradecer su historia.</div>' +
     '<table class="t-v2-grid"><tr>' +
-      // Columna izquierda: 3 datos (Homenaje / Exequias / Hora de Exequias).
-      // La derecha tiene 4 (se agrega "Hora de salida"), asi que aca se usa
-      // mas espacio entre lineas (extraSpace) para que ambos bloques de texto
-      // terminen ocupando una altura similar y se vean simetricos.
+      // Columna izquierda: 4 datos (Homenaje / Lugar de Exequias / Fecha de
+      // Exequias / Hora de Exequias), igual que los 4 de la derecha
+      // (Despedida / Hora de salida / Destino Final / Hora de Destino
+      // Final) -- ya no hace falta el margen extra (extraSpace) que
+      // compensaba cuando esta columna tenia solo 3 lineas.
       '<td class="t-v2-col">' +
         '<div class="t-v2-row"><span class="t-v2-lbl">Homenaje:</span> <span class="t-v2-val">' + escapeHtml(homenaje) + '</span></div>' +
-        venueBlock('Exequias', exequiasVenue, exqTime, true, 'Lugar de Exequias') +
+        venueBlock('Exequias', exequiasVenue, exqTime, false, 'Lugar de Exequias', exqDate) +
       '</td>' +
       '<td class="t-v2-col">' +
         '<div class="t-v2-row"><span class="t-v2-lbl">Despedida:</span> <span class="t-v2-val">' + escapeHtml(despedida) + '</span></div>' +
@@ -1505,10 +1516,12 @@ function renderThemed(opts, theme) {
   if (cyc.screen === 1) {
     if (theme.serviceLayout === 'v2') {
       body = renderThemedServiceV2(m, theme);
-      // Auto-ajuste: cada linea del nombre (ancho, sin partir linea).
+      // Auto-ajuste: cada linea del nombre (ancho, sin partir linea) y la
+      // fila "Fecha de Exequias" (ver comentario de dateId en venueBlock).
       fits = [
         ['tV2Name1', 112, 60, 4, 'w'],
-        ['tV2Name2', 112, 60, 4, 'w']
+        ['tV2Name2', 112, 60, 4, 'w'],
+        ['tV2Date_Exequias', 30, 20, 1, 'w']
       ];
     } else {
       body = renderThemedService(m, theme);
